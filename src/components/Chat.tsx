@@ -80,14 +80,6 @@ const Chat: React.FC = () => {
     return () => unsubscribe();
   }, [navigate]);
 
-  // Add accessible festivals effect
-  useEffect(() => {
-    const savedFestivals = localStorage.getItem('accessibleFestivals');
-    if (savedFestivals) {
-      setAccessibleFestivals(new Set(JSON.parse(savedFestivals)));
-    }
-  }, []);
-
   // Fetch chat users (followers/following)
   useEffect(() => {
     const fetchChatUsers = async () => {

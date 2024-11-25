@@ -54,10 +54,19 @@ const Profile: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const savedFestivals = localStorage.getItem('accessibleFestivals');
-    if (savedFestivals) {
-      setAccessibleFestivals(new Set(JSON.parse(savedFestivals)));
-    }
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      setCurrentUser(currentUser);
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserProfile(userData as UserProfile);
+          setAccessibleFestivals(new Set(userData.accessibleFestivals || []));
+        }
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {

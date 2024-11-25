@@ -37,19 +37,14 @@ const Search: React.FC = () => {
       if (currentUser) {
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfile);
+          const userData = userDoc.data();
+          setUserProfile(userData as UserProfile);
+          setAccessibleFestivals(new Set(userData.accessibleFestivals || []));
         }
       }
     });
 
     return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const savedFestivals = localStorage.getItem('accessibleFestivals');
-    if (savedFestivals) {
-      setAccessibleFestivals(new Set(JSON.parse(savedFestivals)));
-    }
   }, []);
 
   const handleSearch = async (e: React.FormEvent) => {

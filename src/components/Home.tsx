@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
@@ -40,6 +40,7 @@ interface UserProfile {
   photoURL?: string;
   followers?: string[];
   following?: string[];
+  accessibleFestivals?: string[];
 }
 
 const Home: React.FC = () => {
@@ -114,19 +115,14 @@ const Home: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const savedFestivals = localStorage.getItem('accessibleFestivals');
-    if (savedFestivals) {
-      setAccessibleFestivals(new Set(JSON.parse(savedFestivals)));
-    }
-  }, []);
-
-  useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         if (userDoc.exists()) {
           setUserProfile(userDoc.data() as UserProfile);
+          const userData = userDoc.data();
+          setAccessibleFestivals(new Set(userData.accessibleFestivals || []));
         }
       }
     });
@@ -191,22 +187,32 @@ const Home: React.FC = () => {
     setSelectedCategory("");
   };
 
-  const handleAccessCodeSubmit = (e: React.FormEvent) => {
+  const handleAccessCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     
-    if (!festivalToAccess) return;
-
-    if (accessCode === festivalToAccess.accessCode) {
-      const newAccessibleFestivals = new Set(accessibleFestivals).add(festivalToAccess.id);
-      setAccessibleFestivals(newAccessibleFestivals);
-      localStorage.setItem('accessibleFestivals', JSON.stringify([...newAccessibleFestivals]));
-      
-      setSelectedFestival(festivalToAccess.id);
-      setShowAccessModal(false);
-      setShowFestivalList(false);
-      setAccessError(null);
+    const festival = festivals.find(f => f.accessCode === generalAccessCode);
+    
+    if (festival) {
+      try {
+        const newAccessibleFestivals = new Set(accessibleFestivals).add(festival.id);
+        
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, {
+          accessibleFestivals: Array.from(newAccessibleFestivals)
+        });
+        
+        setAccessibleFestivals(newAccessibleFestivals);
+        setSelectedFestival(festival.id);
+        setShowAccessInput(false);
+        setShowFestivalList(false);
+        setGeneralAccessError(null);
+      } catch (error) {
+        console.error("Error updating user's accessible festivals:", error);
+        setGeneralAccessError("Error saving access. Please try again.");
+      }
     } else {
-      setAccessError("Invalid access code");
+      setGeneralAccessError("Invalid access code");
     }
   };
 
@@ -263,23 +269,7 @@ const Home: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4 text-center">
               Enter Festival Access Code
             </h2>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const festival = festivals.find(f => f.accessCode === generalAccessCode);
-              
-              if (festival) {
-                const newAccessibleFestivals = new Set(accessibleFestivals).add(festival.id);
-                setAccessibleFestivals(newAccessibleFestivals);
-                localStorage.setItem('accessibleFestivals', JSON.stringify([...newAccessibleFestivals]));
-                
-                setSelectedFestival(festival.id);
-                setShowAccessInput(false);
-                setShowFestivalList(false);
-                setGeneralAccessError(null);
-              } else {
-                setGeneralAccessError("Invalid access code");
-              }
-            }}>
+            <form onSubmit={handleAccessCodeSubmit}>
               <input
                 type="text"
                 value={generalAccessCode}
