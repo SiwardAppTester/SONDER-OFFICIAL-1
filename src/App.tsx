@@ -9,15 +9,24 @@ import { User as FirebaseUser } from "firebase/auth";
 import WelcomeScreen from "./components/WelcomeScreen";
 import BottomTabBar from "./components/BottomTabBar";
 import Search from "./components/Search";
+import AdminPage from "./components/AdminPage";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const isAdmin = (user: FirebaseUser | null) => {
+    return user?.email?.toLowerCase() === "admin@sonder.com";
+  };
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setUser(user);
       setLoading(false);
+      
+      if (user && isAdmin(user)) {
+        console.log("Admin user authenticated");
+      }
     });
 
     return () => unsubscribe();
@@ -38,6 +47,7 @@ const App: React.FC = () => {
               <Route path="/add-post" element={<AddPost />} />
               <Route path="/search" element={<Search />} />
               <Route path="/profile/:userId" element={<Profile />} />
+              {isAdmin(user) && <Route path="/admin" element={<AdminPage />} />}
             </Routes>
           ) : (
             <Routes>
