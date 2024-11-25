@@ -11,8 +11,10 @@ import AdminPage from "./components/AdminPage";
 import Chat from "./components/Chat";
 import Profile from "./components/Profile";
 import Calendar from "./components/Calendar";
+import BusinessCalendar from './components/BusinessCalendar';
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "./firebase";
+import CompleteProfile from "./components/CompleteProfile";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -26,7 +28,6 @@ const App: React.FC = () => {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
-        // Check if business account before setting user state
         const userDoc = await getDoc(doc(db, "users", user.uid));
         const userData = userDoc.data();
         setIsBusinessAccount(!!userData?.isBusinessAccount);
@@ -35,7 +36,6 @@ const App: React.FC = () => {
         setIsBusinessAccount(false);
         setUser(null);
       }
-      
       setLoading(false);
     });
 
@@ -50,38 +50,43 @@ const App: React.FC = () => {
     <Router>
       <div className="app flex flex-col min-h-screen">
         <main className="flex-grow">
-          {user ? (
-            <>
-              <Routes>
-                {isBusinessAccount ? (
-                  // Business accounts can only access AddPost
-                  <>
-                    <Route path="/add-post" element={<AddPost />} />
-                    <Route path="/" element={<Navigate to="/add-post" replace />} />
-                    <Route path="*" element={<Navigate to="/add-post" replace />} />
-                  </>
-                ) : (
-                  // Regular users can access all routes except admin
-                  <>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/add-post" element={<AddPost />} />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/chat" element={<Chat />} />
-                    <Route path="/chat/:userId" element={<Chat />} />
-                    <Route path="/profile/:userId" element={<Profile />} />
-                    <Route path="/calendar" element={<Calendar />} />
-                    {isAdmin(user) && <Route path="/admin" element={<AdminPage />} />}
-                  </>
-                )}
-              </Routes>
-            </>
-          ) : (
-            <Routes>
-              <Route path="/" element={<WelcomeScreen />} />
-              <Route path="/signin" element={<SignIn />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          )}
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={!user ? <WelcomeScreen /> : <Navigate to="/home" />} />
+            <Route path="/signin" element={!user ? <SignIn /> : <Navigate to="/home" />} />
+            
+            {/* Protected routes */}
+            <Route path="/complete-profile" element={user ? <CompleteProfile /> : <Navigate to="/signin" />} />
+            
+            {/* Business user routes */}
+            {isBusinessAccount && user && (
+              <>
+                <Route path="/home" element={<Navigate to="/add-post" replace />} />
+                <Route path="/add-post" element={<AddPost />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/chat/:userId" element={<Chat />} />
+                <Route path="/business-calendar" element={<BusinessCalendar />} />
+              </>
+            )}
+
+            {/* Regular user routes */}
+            {!isBusinessAccount && user && (
+              <>
+                <Route path="/home" element={<Home />} />
+                <Route path="/add-post" element={<AddPost />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/chat/:userId" element={<Chat />} />
+                <Route path="/profile/:userId" element={<Profile />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/business-calendar" element={<BusinessCalendar />} />
+                {isAdmin(user) && <Route path="/admin" element={<AdminPage />} />}
+              </>
+            )}
+
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
+          </Routes>
         </main>
       </div>
     </Router>

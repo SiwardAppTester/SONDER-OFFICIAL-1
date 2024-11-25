@@ -16,6 +16,7 @@ import { auth, db } from "../firebase";
 import { User } from "firebase/auth";
 import { Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
+import BusinessSidebar from "./BusinessSidebar";
 
 interface Message {
   id: string;
@@ -53,6 +54,7 @@ const Chat: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [accessibleFestivals, setAccessibleFestivals] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
+  const [isBusinessAccount, setIsBusinessAccount] = useState(false);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -70,7 +72,9 @@ const Chat: React.FC = () => {
         setCurrentUser(user);
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfile);
+          const userData = userDoc.data();
+          setUserProfile(userData as UserProfile);
+          setIsBusinessAccount(!!userData.isBusinessAccount);
         }
       } else {
         navigate("/signin");
@@ -226,13 +230,23 @@ const Chat: React.FC = () => {
         </div>
       </div>
 
-      <Sidebar
-        isNavOpen={isNavOpen}
-        setIsNavOpen={setIsNavOpen}
-        user={currentUser}
-        userProfile={userProfile}
-        accessibleFestivalsCount={accessibleFestivals.size}
-      />
+      {isBusinessAccount ? (
+        <BusinessSidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={currentUser}
+          userProfile={userProfile}
+          accessibleFestivalsCount={accessibleFestivals.size}
+        />
+      ) : (
+        <Sidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={currentUser}
+          userProfile={userProfile}
+          accessibleFestivalsCount={accessibleFestivals.size}
+        />
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         {/* Users sidebar */}

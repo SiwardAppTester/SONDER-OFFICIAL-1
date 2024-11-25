@@ -117,7 +117,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
             </Link>
             
             <Link
-              to="/business-messages"
+              to="/chat"
               className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
             >
               <MessageCircle size={20} className="text-gray-600" />

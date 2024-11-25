@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { collection, query, orderBy, startAt, endAt, getDocs, getDoc, doc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { Link } from "react-router-dom";
-import { Menu } from "lucide-react";
+import { Menu, CheckCircle } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { User as FirebaseUser } from "firebase/auth";
 
@@ -11,6 +11,7 @@ interface UserResult {
   email: string;
   displayName: string;
   photoURL?: string;
+  isBusinessAccount?: boolean;
 }
 
 interface UserProfile {
@@ -76,13 +77,13 @@ const Search: React.FC = () => {
         
         querySnapshot.forEach((doc) => {
           const userData = doc.data();
-          if (!userData.isBusinessAccount && 
-              userData.email?.toLowerCase() !== "admin@sonder.com") {
+          if (userData.email?.toLowerCase() !== "admin@sonder.com") {
             users.push({
               uid: doc.id,
               email: userData.email,
               displayName: userData.displayName || 'Anonymous User',
               photoURL: userData.photoURL,
+              isBusinessAccount: userData.isBusinessAccount || false,
             });
           }
         });
@@ -163,8 +164,18 @@ const Search: React.FC = () => {
                           {user.displayName[0]}
                         </div>
                       )}
-                      <div>
-                        <p className="font-semibold">{user.displayName}</p>
+                      <div className="flex-grow">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold">{user.displayName}</p>
+                          {user.isBusinessAccount && (
+                            <CheckCircle 
+                              size={16} 
+                              className="text-blue-500" 
+                              fill="currentColor"
+                              aria-label="Verified Business Account"
+                            />
+                          )}
+                        </div>
                         <p className="text-gray-600 text-sm">{user.email}</p>
                       </div>
                     </div>

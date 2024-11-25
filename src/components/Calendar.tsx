@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, query, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, query, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { User } from 'firebase/auth';
 import { Menu } from "lucide-react";
@@ -20,6 +20,7 @@ interface UserProfile {
   photoURL?: string;
   followers?: string[];
   following?: string[];
+  accessibleFestivals?: string[];
 }
 
 const Calendar: React.FC = () => {
@@ -34,9 +35,16 @@ const Calendar: React.FC = () => {
   const [accessibleFestivals, setAccessibleFestivals] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setCurrentUser(user);
       if (user) {
+        // Fetch user profile data
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as UserProfile;
+          setUserProfile(userData);
+          setAccessibleFestivals(new Set(userData.accessibleFestivals || []));
+        }
         fetchEvents();
       }
     });

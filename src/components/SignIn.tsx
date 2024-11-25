@@ -66,6 +66,7 @@ const SignIn: React.FC = () => {
         const userSnap = await getDoc(userRef);
         
         if (!userSnap.exists()) {
+          // First time user - create basic profile
           await setDoc(userRef, {
             email: result.user.email?.toLowerCase(),
             displayName: result.user.displayName || 'Anonymous User',
@@ -73,12 +74,15 @@ const SignIn: React.FC = () => {
             createdAt: serverTimestamp(),
             followers: [],
             following: [],
+            isProfileComplete: false
           });
-          navigate("/");
+          navigate("/complete-profile");
         } else {
-          // Check if business account and redirect accordingly
+          // Existing user - check if profile is complete
           const userData = userSnap.data();
-          if (userData.isBusinessAccount) {
+          if (!userData.isProfileComplete) {
+            navigate("/complete-profile");
+          } else if (userData.isBusinessAccount) {
             navigate("/add-post");
           } else {
             navigate("/");
@@ -106,8 +110,9 @@ const SignIn: React.FC = () => {
             createdAt: serverTimestamp(),
             followers: [],
             following: [],
+            isProfileComplete: false
           });
-          navigate("/");
+          navigate("/complete-profile");
         }
       } else {
         // Sign in to existing account
