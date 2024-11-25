@@ -8,6 +8,7 @@ import SignIn from "./components/SignIn";
 import { User as FirebaseUser } from "firebase/auth";
 import WelcomeScreen from "./components/WelcomeScreen";
 import BottomTabBar from "./components/BottomTabBar";
+import Search from "./components/Search";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -35,6 +36,8 @@ const App: React.FC = () => {
               <Route path="/" element={<Home />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/add-post" element={<AddPost />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/profile/:userId" element={<Profile />} />
             </Routes>
           ) : (
             <Routes>

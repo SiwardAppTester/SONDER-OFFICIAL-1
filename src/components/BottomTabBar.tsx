@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home as HomeIcon, User, PlusSquare } from "lucide-react";
+import { Home as HomeIcon, User, PlusSquare, Search as SearchIcon } from "lucide-react";
 
 const BottomTabBar: React.FC = () => {
   const location = useLocation();
@@ -10,6 +10,12 @@ const BottomTabBar: React.FC = () => {
         className={`text-2xl ${location.pathname === "/" ? "text-blue-400" : ""}`}
       >
         <HomeIcon size={24} />
+      </Link>
+      <Link
+        to="/search"
+        className={`text-2xl ${location.pathname === "/search" ? "text-blue-400" : ""}`}
+      >
+        <SearchIcon size={24} />
       </Link>
       <Link
         to="/add-post"

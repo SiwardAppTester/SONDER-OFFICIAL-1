@@ -2,6 +2,8 @@ import React from "react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 
 const SignIn: React.FC = () => {
   const navigate = useNavigate();
@@ -11,6 +13,20 @@ const SignIn: React.FC = () => {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
+        const userRef = doc(db, "users", result.user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            email: result.user.email?.toLowerCase(),
+            displayName: result.user.displayName || 'Anonymous User',
+            photoURL: result.user.photoURL,
+            createdAt: serverTimestamp(),
+            followers: [],
+            following: [],
+          });
+        }
+        
         navigate("/profile");
       }
     } catch (error) {
