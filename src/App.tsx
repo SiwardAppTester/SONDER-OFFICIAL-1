@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { auth } from "./firebase";
-import Profile from "./components/Profile";
 import Home from "./components/Home";
 import AddPost from "./components/AddPost";
 import SignIn from "./components/SignIn";
@@ -9,6 +8,7 @@ import { User as FirebaseUser } from "firebase/auth";
 import WelcomeScreen from "./components/WelcomeScreen";
 import Search from "./components/Search";
 import AdminPage from "./components/AdminPage";
+import Chat from "./components/Chat";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -40,14 +40,16 @@ const App: React.FC = () => {
       <div className="app flex flex-col min-h-screen">
         <main className="flex-grow">
           {user ? (
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/add-post" element={<AddPost />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/profile/:userId" element={<Profile />} />
-              {isAdmin(user) && <Route path="/admin" element={<AdminPage />} />}
-            </Routes>
+            <>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/add-post" element={<AddPost />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/chat/:userId" element={<Chat />} />
+                {isAdmin(user) && <Route path="/admin" element={<AdminPage />} />}
+              </Routes>
+            </>
           ) : (
             <Routes>
               <Route path="/" element={<WelcomeScreen />} />

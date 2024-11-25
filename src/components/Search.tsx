@@ -1,7 +1,10 @@
-import React, { useState } from "react";
-import { collection, query, orderBy, startAt, endAt, getDocs } from "firebase/firestore";
-import { db } from "../firebase";
+import React, { useState, useEffect } from "react";
+import { collection, query, orderBy, startAt, endAt, getDocs, getDoc, doc } from "firebase/firestore";
+import { db, auth } from "../firebase";
 import { Link } from "react-router-dom";
+import { Menu } from "lucide-react";
+import Sidebar from "./Sidebar";
+import { User as FirebaseUser } from "firebase/auth";
 
 interface UserResult {
   uid: string;
@@ -10,11 +13,44 @@ interface UserResult {
   photoURL?: string;
 }
 
+interface UserProfile {
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  followers?: string[];
+  following?: string[];
+}
+
 const Search: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<UserResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isNavOpen, setIsNavOpen] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [accessibleFestivals, setAccessibleFestivals] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          setUserProfile(userDoc.data() as UserProfile);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const savedFestivals = localStorage.getItem('accessibleFestivals');
+    if (savedFestivals) {
+      setAccessibleFestivals(new Set(JSON.parse(savedFestivals)));
+    }
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,66 +92,90 @@ const Search: React.FC = () => {
   };
 
   return (
-    <div className="search p-4 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4 text-center">Search Users</h2>
-      <form onSubmit={handleSearch} className="mb-6">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by email"
-            className="flex-grow p-2 border rounded"
-            minLength={2}
-          />
+    <div className="flex flex-col h-screen">
+      <div className="p-4">
+        <div className="flex items-center gap-4">
           <button
-            type="submit"
-            disabled={loading || searchTerm.length < 2}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+            onClick={() => setIsNavOpen(!isNavOpen)}
+            className="text-gray-700 hover:text-gray-900"
+            aria-label="Toggle navigation menu"
           >
-            {loading ? "Searching..." : "Search"}
+            <Menu size={24} />
           </button>
+          <h2 className="text-2xl font-bold">Search Users</h2>
         </div>
-      </form>
+      </div>
 
-      {error && (
-        <div className="text-red-500 mb-4">{error}</div>
-      )}
+      <Sidebar
+        isNavOpen={isNavOpen}
+        setIsNavOpen={setIsNavOpen}
+        user={user}
+        userProfile={userProfile}
+        accessibleFestivalsCount={accessibleFestivals.size}
+      />
 
-      <div className="results">
-        {results.length > 0 ? (
-          <div className="space-y-4">
-            {results.map((user) => (
-              <Link
-                to={`/profile/${user.uid}`}
-                key={user.uid}
-                className="block bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+      <div className="flex-1 p-4">
+        <div className="max-w-2xl mx-auto">
+          <form onSubmit={handleSearch} className="mb-6">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by email"
+                className="flex-grow p-2 border rounded"
+                minLength={2}
+              />
+              <button
+                type="submit"
+                disabled={loading || searchTerm.length < 2}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
               >
-                <div className="flex items-center gap-4">
-                  {user.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt={user.displayName}
-                      className="w-12 h-12 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                      {user.displayName[0]}
+                {loading ? "Searching..." : "Search"}
+              </button>
+            </div>
+          </form>
+
+          {error && (
+            <div className="text-red-500 mb-4">{error}</div>
+          )}
+
+          <div className="results">
+            {results.length > 0 ? (
+              <div className="space-y-4">
+                {results.map((user) => (
+                  <Link
+                    to={`/chat/${user.uid}`}
+                    key={user.uid}
+                    className="block bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-center gap-4">
+                      {user.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt={user.displayName}
+                          className="w-12 h-12 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                          {user.displayName[0]}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-semibold">{user.displayName}</p>
+                        <p className="text-gray-600 text-sm">{user.email}</p>
+                      </div>
                     </div>
-                  )}
-                  <div>
-                    <p className="font-semibold">{user.displayName}</p>
-                    <p className="text-gray-600 text-sm">{user.email}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-gray-500">
+                {loading ? "Searching..." : searchTerm ? "No users found" : "Enter an email to search"}
+              </p>
+            )}
           </div>
-        ) : (
-          <p className="text-center text-gray-500">
-            {loading ? "Searching..." : searchTerm ? "No users found" : "Enter an email to search"}
-          </p>
-        )}
+        </div>
       </div>
     </div>
   );
