@@ -392,9 +392,9 @@ const AddPost: React.FC = () => {
       return;
     }
 
-    // Check if there's either text or media content
-    if (!text.trim() && mediaFiles.length === 0) {
-      alert("Please add some content to your post");
+    // Check if there's media content
+    if (mediaFiles.length === 0) {
+      alert("Please add some media content to your post");
       return;
     }
 
@@ -419,7 +419,6 @@ const AddPost: React.FC = () => {
 
     try {
       const postData = {
-        text,
         userId: user.uid,
         createdAt: serverTimestamp(),
         festivalId: selectedFestival,
@@ -434,8 +433,7 @@ const AddPost: React.FC = () => {
 
       await addDoc(collection(db, "posts"), postData);
 
-      // Clear the form instead of navigating
-      setText("");
+      // Clear the form
       setMediaFiles([]);
       // Optionally show a success message
       alert("Post created successfully!");
@@ -501,7 +499,7 @@ const AddPost: React.FC = () => {
 
   return (
     <div className="add-post p-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-4">
             <button
@@ -522,88 +520,93 @@ const AddPost: React.FC = () => {
           accessibleFestivalsCount={festivals.length}
         />
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2 items-center">
-                {festivals.map((festival) => (
-                  <button
-                    key={festival.id}
-                    type="button"
-                    onClick={() => setSelectedFestival(festival.id)}
-                    className={`px-4 py-2 rounded-full transition-colors ${
-                      selectedFestival === festival.id
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {festival.name}
-                  </button>
-                ))}
+        <form onSubmit={handleSubmit} className="space-y-6 w-full">
+          {/* Festival Section */}
+          <div className="flex justify-end mb-6 pt-6">
+            <div className="flex flex-wrap gap-2 items-center">
+              {festivals.map((festival) => (
                 <button
+                  key={festival.id}
                   type="button"
-                  onClick={() => setShowAddFestival(!showAddFestival)}
-                  className="px-4 py-2 rounded-full bg-gray-100 text-blue-500 hover:bg-gray-200 flex items-center gap-1"
+                  onClick={() => setSelectedFestival(festival.id)}
+                  className={`px-4 py-2 rounded-full transition-colors ${
+                    selectedFestival === festival.id
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 >
-                  <Plus size={16} />
-                  New Festival
+                  {festival.name}
                 </button>
-              </div>
-
-              {showAddFestival && (
-                <div className="mt-2 p-4 bg-gray-50 rounded-lg">
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={newFestivalName}
-                      onChange={(e) => setNewFestivalName(e.target.value)}
-                      placeholder="Enter festival name"
-                      className="w-full p-2 border rounded"
-                    />
-                    <input
-                      type="text"
-                      value={newFestivalAccessCode}
-                      onChange={(e) => setNewFestivalAccessCode(e.target.value)}
-                      placeholder="Enter access code"
-                      className="w-full p-2 border rounded"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddFestival}
-                      className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                    >
-                      Add Festival
-                    </button>
-                  </div>
-                  
-                  {/* Display existing festivals with delete option */}
-                  <div className="mt-4 space-y-2">
-                    {festivals.map((festival) => (
-                      <div
-                        key={festival.id}
-                        className="flex justify-between items-center p-2 bg-white rounded shadow"
-                      >
-                        <div>
-                          <span className="block">{festival.name}</span>
-                          <span className="text-sm text-gray-500">
-                            Access Code: {festival.accessCode}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteFestival(festival.id)}
-                          className="text-red-500 hover:text-red-700 text-sm"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              ))}
+              <button
+                type="button"
+                onClick={() => setShowAddFestival(!showAddFestival)}
+                className="px-4 py-2 rounded-full bg-gray-100 text-blue-500 hover:bg-gray-200 flex items-center gap-1"
+              >
+                <Plus size={16} />
+                New Festival
+              </button>
             </div>
+          </div>
 
-            {selectedFestival && (
+          {/* Add Festival Form */}
+          {showAddFestival && (
+            <div className="mb-6">
+              <div className="p-4 bg-gray-50 rounded-lg max-w-md ml-auto">
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={newFestivalName}
+                    onChange={(e) => setNewFestivalName(e.target.value)}
+                    placeholder="Enter festival name"
+                    className="w-full p-2 border rounded"
+                  />
+                  <input
+                    type="text"
+                    value={newFestivalAccessCode}
+                    onChange={(e) => setNewFestivalAccessCode(e.target.value)}
+                    placeholder="Enter access code"
+                    className="w-full p-2 border rounded"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddFestival}
+                    className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                  >
+                    Add Festival
+                  </button>
+                </div>
+                
+                {/* Display existing festivals with delete option */}
+                <div className="mt-4 space-y-2">
+                  {festivals.map((festival) => (
+                    <div
+                      key={festival.id}
+                      className="flex justify-between items-center p-2 bg-white rounded shadow"
+                    >
+                      <div>
+                        <span className="block">{festival.name}</span>
+                        <span className="text-sm text-gray-500">
+                          Access Code: {festival.accessCode}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteFestival(festival.id)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Category Section */}
+          {selectedFestival && (
+            <div className="mb-6 flex justify-end">
               <div className="flex flex-wrap gap-2 items-center">
                 {festivals
                   .find(f => f.id === selectedFestival)
@@ -630,111 +633,44 @@ const AddPost: React.FC = () => {
                   New Category
                 </button>
               </div>
-            )}
-          </div>
-
-          {selectedCategory && (
-            <div className="flex flex-col items-center justify-center">
-              <div className="flex justify-center">
-                <div className="bg-gray-100 rounded-lg p-1 inline-flex">
-                  <button
-                    type="button"
-                    onClick={() => setActiveCategoryMedia(prev => ({
-                      ...prev,
-                      [selectedCategory]: "image"
-                    }))}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeCategoryMedia[selectedCategory] !== "video"
-                        ? "bg-white shadow text-blue-600"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    Images
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveCategoryMedia(prev => ({
-                      ...prev,
-                      [selectedCategory]: "video"
-                    }))}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeCategoryMedia[selectedCategory] === "video"
-                        ? "bg-white shadow text-blue-600"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    Videos
-                  </button>
-                </div>
-              </div>
-
-              {/* Display current media type */}
-              <div className="text-center mt-2 text-sm text-gray-600">
-                Currently uploading: {activeCategoryMedia[selectedCategory] === "video" ? "Videos" : "Images"}
-              </div>
             </div>
           )}
 
+          {/* Rest of the form */}
           <div className="space-y-4">
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="What's on your mind?"
-              className="w-full p-4 border rounded-lg resize-none"
-              rows={4}
-            />
-
-            <input
-              type="file"
-              onChange={handleMediaChange}
-              accept={
-                selectedCategory
-                  ? festivals
-                      .find(f => f.id === selectedFestival)
-                      ?.categories?.find(c => c.id === selectedCategory)
-                      ?.mediaType === "image"
-                    ? "image/*"
-                    : festivals
-                        .find(f => f.id === selectedFestival)
-                        ?.categories?.find(c => c.id === selectedCategory)
-                        ?.mediaType === "video"
-                      ? "video/*"
-                      : "image/*,video/*"
-                  : "image/*,video/*"
-              }
-              className="w-full p-2 border rounded-lg"
-              multiple
-            />
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-              {mediaFiles.map((media, index) => (
-                <div key={index} className="relative w-full">
-                  {media.type === 'video' ? (
-                    <video
-                      src={URL.createObjectURL(media.file)}
-                      className="w-full aspect-[9/16] object-cover rounded-lg"
-                      controls
-                    />
-                  ) : (
-                    <img
-                      src={URL.createObjectURL(media.file)}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full aspect-[9/16] object-cover rounded-lg"
-                    />
-                  )}
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1">
-                    {media.url ? "Upload complete" : `Uploading: ${media.progress.toFixed(0)}%`}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveMedia(index)}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
+            {/* Media Type Toggle Buttons */}
+            {selectedCategory && (
+              <div className="flex justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveCategoryMedia(prev => ({
+                    ...prev,
+                    [selectedCategory]: "image"
+                  }))}
+                  className={`px-4 py-2 rounded ${
+                    activeCategoryMedia[selectedCategory] !== "video"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 hover:bg-gray-300"
+                  }`}
+                >
+                  Images
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveCategoryMedia(prev => ({
+                    ...prev,
+                    [selectedCategory]: "video"
+                  }))}
+                  className={`px-4 py-2 rounded ${
+                    activeCategoryMedia[selectedCategory] === "video"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 hover:bg-gray-300"
+                  }`}
+                >
+                  Videos
+                </button>
+              </div>
+            )}
 
             <button
               type="submit"
@@ -747,61 +683,114 @@ const AddPost: React.FC = () => {
             >
               {isUploading ? 'Uploading...' : 'Post'}
             </button>
+
+            {/* Media Upload and Preview Section */}
+            <div className="mt-8">
+              <div className="flex flex-col gap-4">
+                {/* File Input Button - Full width, shorter height */}
+                <div className="w-full">
+                  <div className="relative w-full h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-blue-500 transition-colors cursor-pointer">
+                    <input
+                      type="file"
+                      onChange={handleMediaChange}
+                      accept={
+                        selectedCategory
+                          ? festivals
+                              .find(f => f.id === selectedFestival)
+                              ?.categories?.find(c => c.id === selectedCategory)
+                              ?.mediaType === "image"
+                            ? "image/*"
+                            : festivals
+                                .find(f => f.id === selectedFestival)
+                                ?.categories?.find(c => c.id === selectedCategory)
+                                ?.mediaType === "video"
+                              ? "video/*"
+                              : "image/*,video/*"
+                          : "image/*,video/*"
+                      }
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      multiple
+                    />
+                    <Plus size={24} className="text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-500">Add Media</span>
+                  </div>
+                </div>
+
+                {/* Uploaded Media Previews - Scrollable container */}
+                {mediaFiles.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <div className="flex gap-4">
+                      {mediaFiles.map((media, index) => (
+                        <div key={index} className="w-[200px] flex-shrink-0">
+                          <div className="relative w-full aspect-[9/16]">
+                            {media.type === 'video' ? (
+                              <video
+                                src={URL.createObjectURL(media.file)}
+                                className="w-full h-full object-cover rounded-lg"
+                                controls
+                              />
+                            ) : (
+                              <img
+                                src={URL.createObjectURL(media.file)}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                            )}
+                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1">
+                              {media.url ? "Upload complete" : `Uploading: ${media.progress.toFixed(0)}%`}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMedia(index)}
+                              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {selectedCategory && (
             <div className="mt-8">
-              <h3 className="text-xl font-semibold mb-6">Existing Content in Category</h3>
-              
-              {activeCategoryMedia[selectedCategory] !== "video" ? (
-                <div className="space-y-6">
-                  <h4 className="text-lg font-medium">Images</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                    {getFilteredPosts(selectedCategory, "image").map(post => (
-                      post.mediaFiles
-                        .filter(media => media.type === "image" && media.categoryId === selectedCategory)
-                        .map((media, mediaIndex) => (
-                          <div key={`${post.id}-${mediaIndex}`} className="relative w-full">
-                            <img
-                              src={media.url}
-                              alt={`Post content ${mediaIndex + 1}`}
-                              className="w-full aspect-[9/16] object-cover rounded-lg"
-                            />
-                            {post.text && (
-                              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
-                                {post.text}
-                              </div>
-                            )}
-                          </div>
-                        ))
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <h4 className="text-lg font-medium">Videos</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                    {getFilteredPosts(selectedCategory, "video").map(post => (
-                      post.mediaFiles
-                        .filter(media => media.type === "video" && media.categoryId === selectedCategory)
-                        .map((media, mediaIndex) => (
-                          <div key={`${post.id}-${mediaIndex}`} className="relative w-full">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                {getFilteredPosts(selectedCategory, activeCategoryMedia[selectedCategory] === "video" ? "video" : "image")
+                  .map(post => (
+                    post.mediaFiles
+                      .filter(media => 
+                        media.type === (activeCategoryMedia[selectedCategory] === "video" ? "video" : "image") && 
+                        media.categoryId === selectedCategory
+                      )
+                      .map((media, mediaIndex) => (
+                        <div key={`${post.id}-${mediaIndex}`} className="relative w-full">
+                          {media.type === 'video' ? (
                             <video
                               src={media.url}
                               className="w-full aspect-[9/16] object-cover rounded-lg"
                               controls
                             />
-                            {post.text && (
-                              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
-                                {post.text}
-                              </div>
-                            )}
-                          </div>
-                        ))
-                    ))}
-                  </div>
-                </div>
-              )}
+                          ) : (
+                            <img
+                              src={media.url}
+                              alt={`Post content ${mediaIndex + 1}`}
+                              className="w-full aspect-[9/16] object-cover rounded-lg"
+                            />
+                          )}
+                          {post.text && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
+                              {post.text}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                  ))
+                }
+              </div>
             </div>
           )}
         </form>
