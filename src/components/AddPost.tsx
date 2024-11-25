@@ -2,21 +2,76 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { db, storage } from "../firebase";
+
+interface MediaFile {
+  file: File;
+  type: "image" | "video";
+  progress: number;
+  url?: string;
+}
 
 const AddPost: React.FC = () => {
   const [text, setText] = useState("");
-  const [mediaFiles, setMediaFiles] = useState<{ file: File; type: "image" | "video" }[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
+
+  const uploadFile = async (file: File, type: "image" | "video", index: number) => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const mediaRef = ref(storage, `posts/${user.uid}/${Date.now()}_${type}`);
+    const uploadTask = uploadBytesResumable(mediaRef, file);
+
+    uploadTask.on('state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setMediaFiles(prev => prev.map((item, i) => 
+          i === index ? { ...item, progress } : item
+        ));
+      },
+      (error) => {
+        console.error("Error uploading file:", error);
+      },
+      async () => {
+        const url = await getDownloadURL(mediaRef);
+        setMediaFiles(prev => prev.map((item, i) => 
+          i === index ? { ...item, url } : item
+        ));
+        
+        // Check if all files are uploaded
+        setMediaFiles(prev => {
+          const allUploaded = prev.every(file => file.url);
+          if (allUploaded) {
+            setIsUploading(false);
+          }
+          return prev;
+        });
+      }
+    );
+  };
 
   const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
+      setIsUploading(true);
       const newFiles = Array.from(e.target.files).map(file => ({
         file,
-        type: file.type.startsWith('image/') ? 'image' : 'video'
+        type: file.type.startsWith('image/') ? 'image' : 'video' as "image" | "video",
+        progress: 0
       }));
+
+      // Get current length before updating state
+      const currentLength = mediaFiles.length;
+      
       setMediaFiles(prev => [...prev, ...newFiles]);
+
+      // Start uploading each file immediately using currentLength
+      newFiles.forEach((file, index) => {
+        uploadFile(file.file, file.type, currentLength + index);
+      });
     }
   };
 
@@ -31,19 +86,18 @@ const AddPost: React.FC = () => {
     if (!user) return;
 
     try {
-      const mediaUrls = await Promise.all(
-        mediaFiles.map(async ({ file, type }) => {
-          const mediaRef = ref(storage, `posts/${user.uid}/${Date.now()}_${type}`);
-          await uploadBytes(mediaRef, file);
-          const url = await getDownloadURL(mediaRef);
-          return { url, type };
-        })
-      );
+      // Only include successfully uploaded files
+      const uploadedFiles = mediaFiles
+        .filter(file => file.url)
+        .map(file => ({
+          url: file.url!,
+          type: file.type
+        }));
 
       await addDoc(collection(db, "posts"), {
         userId: user.uid,
         text,
-        mediaFiles: mediaUrls,
+        mediaFiles: uploadedFiles,
         createdAt: serverTimestamp(),
       });
 
@@ -87,6 +141,13 @@ const AddPost: React.FC = () => {
                 className="w-full h-48 object-cover rounded-lg"
               />
             )}
+            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1">
+              {media.url ? (
+                "Upload complete"
+              ) : (
+                `Uploading: ${media.progress.toFixed(0)}%`
+              )}
+            </div>
             <button
               type="button"
               onClick={() => handleRemoveMedia(index)}
@@ -99,9 +160,14 @@ const AddPost: React.FC = () => {
       </div>
       <button
         type="submit"
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        disabled={isUploading}
+        className={`w-full px-4 py-2 rounded ${
+          isUploading 
+            ? 'bg-gray-400 cursor-not-allowed' 
+            : 'bg-blue-500 hover:bg-blue-600 text-white'
+        }`}
       >
-        Post
+        {isUploading ? 'Uploading...' : 'Post'}
       </button>
     </form>
   );

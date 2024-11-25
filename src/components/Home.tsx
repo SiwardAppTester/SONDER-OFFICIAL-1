@@ -6,8 +6,10 @@ import { db, storage } from "../firebase";
 interface Post {
   id: string;
   text: string;
-  mediaUrl: string;
-  mediaType: "image" | "video" | null;
+  mediaFiles: {
+    url: string;
+    type: "image" | "video";
+  }[];
   userId: string;
   createdAt: any;
 }
@@ -29,8 +31,7 @@ const Home: React.FC = () => {
           return {
             id: doc.id,
             text: data.text || "",
-            mediaUrl: data.mediaUrl || "",
-            mediaType: data.mediaType || null,
+            mediaFiles: data.mediaFiles || [],
             userId: data.userId || "",
             createdAt: data.createdAt,
           } as Post;
@@ -93,50 +94,50 @@ const Home: React.FC = () => {
             key={post.id}
             className="post bg-white shadow-md rounded-lg p-4 mb-4"
           >
-            <div className="media-container mb-4 relative">
-              {post.mediaUrl && post.mediaType === 'image' && (
-                <>
-                  <img
-                    src={post.mediaUrl}
-                    alt="Post content"
-                    className="w-full max-h-96 object-contain rounded-lg"
-                    onError={(e) => {
-                      console.error("Image failed to load:", post.mediaUrl);
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                  <button
-                    onClick={() => handleDownload(post.mediaUrl, 'image', post.id)}
-                    className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
-                  >
-                    Download
-                  </button>
-                </>
-              )}
-              {post.mediaUrl && post.mediaType === 'video' && (
-                <>
-                  <video
-                    src={post.mediaUrl}
-                    className="w-full max-h-96 object-contain rounded-lg"
-                    controls
-                    onError={(e) => {
-                      console.error("Video failed to load:", post.mediaUrl);
-                      (e.target as HTMLVideoElement).style.display = 'none';
-                    }}
-                  />
-                  <button
-                    onClick={() => handleDownload(post.mediaUrl, 'video', post.id)}
-                    className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
-                  >
-                    Download
-                  </button>
-                </>
-              )}
+            <div className="media-container mb-4">
+              {post.mediaFiles && post.mediaFiles.map((media, index) => (
+                <div key={index} className="relative mb-2">
+                  {media.type === 'video' ? (
+                    <>
+                      <video
+                        src={media.url}
+                        className="w-full max-h-96 object-contain rounded-lg"
+                        controls
+                        onError={(e) => {
+                          console.error("Video failed to load:", media.url);
+                          (e.target as HTMLVideoElement).style.display = 'none';
+                        }}
+                      />
+                      <button
+                        onClick={() => handleDownload(media.url, 'video', post.id)}
+                        className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+                      >
+                        Download
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <img
+                        src={media.url}
+                        alt={`Post content ${index + 1}`}
+                        className="w-full max-h-96 object-contain rounded-lg"
+                        onError={(e) => {
+                          console.error("Image failed to load:", media.url);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <button
+                        onClick={() => handleDownload(media.url, 'image', post.id)}
+                        className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+                      >
+                        Download
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
             </div>
             <p className="text-gray-800">{post.text}</p>
-            {post.mediaUrl && !post.mediaType && (
-              <p className="text-red-500 text-sm">Media type not specified</p>
-            )}
           </div>
         ))}
         {posts.length === 0 && !loadingError && (
