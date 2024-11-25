@@ -12,6 +12,7 @@ interface UserResult {
   displayName: string;
   photoURL?: string;
   isBusinessAccount?: boolean;
+  username: string;
 }
 
 interface UserProfile {
@@ -84,6 +85,7 @@ const Search: React.FC = () => {
               displayName: userData.displayName || 'Anonymous User',
               photoURL: userData.photoURL,
               isBusinessAccount: userData.isBusinessAccount || false,
+              username: userData.username || userData.email.split('@')[0],
             });
           }
         });
@@ -176,7 +178,7 @@ const Search: React.FC = () => {
                             />
                           )}
                         </div>
-                        <p className="text-gray-600 text-sm">{user.email}</p>
+                        <p className="text-gray-600 text-sm">@{user.username}</p>
                       </div>
                     </div>
                   </Link>

@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon } from "lucide-react";
+import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon, Camera } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
-import { signOut } from "firebase/auth";
+import { signOut, updateProfile } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 interface UserProfile {
   email: string;
@@ -31,6 +34,47 @@ const Sidebar: React.FC<SidebarProps> = ({
   accessibleFestivalsCount,
 }) => {
   const navigate = useNavigate();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [localPhotoURL, setLocalPhotoURL] = useState<string | undefined>(userProfile?.photoURL);
+
+  useEffect(() => {
+    setLocalPhotoURL(userProfile?.photoURL);
+  }, [userProfile?.photoURL]);
+
+  const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    try {
+      const storage = getStorage();
+      const storageRef = ref(storage, `profile_images/${user.uid}`);
+      
+      // Upload image
+      await uploadBytes(storageRef, file);
+      
+      // Get download URL
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      // Update user profile in Firestore
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        photoURL: downloadURL
+      });
+
+      // Update local state immediately
+      setLocalPhotoURL(downloadURL);
+
+      // Also update Firebase Auth user profile
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, {
+          photoURL: downloadURL
+        });
+      }
+
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -64,19 +108,35 @@ const Sidebar: React.FC<SidebarProps> = ({
           {/* User Profile Section */}
           <div className="border-b border-gray-200 pb-4 mb-4">
             <div className="flex flex-col items-center mb-4">
-              {userProfile?.photoURL ? (
-                <img
-                  src={userProfile.photoURL}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full mb-2"
+              <div className="relative">
+                {localPhotoURL ? (
+                  <img
+                    src={localPhotoURL}
+                    alt="Profile"
+                    className="w-16 h-16 rounded-full mb-2"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-2">
+                    {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
+                  </div>
+                )}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-2 right-0 bg-gray-800 rounded-full p-1 hover:bg-gray-700 transition-colors"
+                  aria-label="Change profile picture"
+                >
+                  <Camera size={14} className="text-white" />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  accept="image/*"
+                  className="hidden"
                 />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-2">
-                  {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
-                </div>
-              )}
+              </div>
               <span className="text-sm text-gray-600 mb-2">
-                {user?.email}
+                {userProfile?.displayName || user?.email}
               </span>
             </div>
 
