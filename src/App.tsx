@@ -11,13 +11,20 @@ import BottomTabBar from "./components/BottomTabBar";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       setUser(user);
+      setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  }
 
   return (
     <Router>

@@ -10,6 +10,8 @@ import {
 import { signOut } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { Link, useNavigate } from "react-router-dom";
+import { ref, getDownloadURL } from "firebase/storage";
+import { storage } from "../firebase";
 
 interface Post {
   id: string;
@@ -59,6 +61,38 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleDownload = (url: string, mediaType: string, postId: string) => {
+    try {
+      // Fetch the file first
+      fetch(url)
+        .then(response => response.blob())
+        .then(blob => {
+          // Create a blob URL
+          const blobUrl = window.URL.createObjectURL(blob);
+          
+          // Create an anchor element
+          const link = document.createElement('a');
+          
+          // Set the href to the blob URL
+          link.href = blobUrl;
+          
+          // Set download attribute with filename
+          const extension = mediaType === 'image' ? 'jpg' : 'mp4';
+          link.download = `post_${postId}.${extension}`;
+          
+          // Append to document, click, and cleanup
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Cleanup blob URL
+          window.URL.revokeObjectURL(blobUrl);
+        });
+    } catch (error) {
+      console.error('Error initiating download:', error);
+    }
+  };
+
   if (!user) {
     return (
       <div className="profile p-4">
@@ -90,20 +124,36 @@ const Profile: React.FC = () => {
             key={post.id}
             className="post bg-white shadow-md rounded-lg p-4 mb-4"
           >
-            <div className="media-container mb-4">
+            <div className="media-container mb-4 relative">
               {post.mediaUrl && post.mediaType === 'image' && (
-                <img
-                  src={post.mediaUrl}
-                  alt="Post"
-                  className="w-full max-h-96 object-contain rounded-lg"
-                />
+                <>
+                  <img
+                    src={post.mediaUrl}
+                    alt="Post"
+                    className="w-full max-h-96 object-contain rounded-lg"
+                  />
+                  <button
+                    onClick={() => handleDownload(post.mediaUrl, 'image', post.id)}
+                    className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+                  >
+                    Download
+                  </button>
+                </>
               )}
               {post.mediaUrl && post.mediaType === 'video' && (
-                <video
-                  src={post.mediaUrl}
-                  className="w-full max-h-96 object-contain rounded-lg"
-                  controls
-                />
+                <>
+                  <video
+                    src={post.mediaUrl}
+                    className="w-full max-h-96 object-contain rounded-lg"
+                    controls
+                  />
+                  <button
+                    onClick={() => handleDownload(post.mediaUrl, 'video', post.id)}
+                    className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+                  >
+                    Download
+                  </button>
+                </>
               )}
             </div>
             <p className="text-gray-800">{post.text}</p>

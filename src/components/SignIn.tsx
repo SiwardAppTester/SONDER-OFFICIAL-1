@@ -9,8 +9,10 @@ const SignIn: React.FC = () => {
   const handleGoogleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      navigate("/profile");
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        navigate("/profile");
+      }
     } catch (error) {
       console.error("Error signing in with Google:", error);
     }
