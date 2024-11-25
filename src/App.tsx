@@ -10,6 +10,7 @@ import Search from "./components/Search";
 import AdminPage from "./components/AdminPage";
 import Chat from "./components/Chat";
 import Profile from "./components/Profile";
+import Calendar from "./components/Calendar";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -49,6 +50,7 @@ const App: React.FC = () => {
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/chat/:userId" element={<Chat />} />
                 <Route path="/profile/:userId" element={<Profile />} />
+                <Route path="/calendar" element={<Calendar />} />
                 {isAdmin(user) && <Route path="/admin" element={<AdminPage />} />}
               </Routes>
             </>

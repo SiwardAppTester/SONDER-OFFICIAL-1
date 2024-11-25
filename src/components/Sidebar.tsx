@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon } from "lucide-react";
+import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
@@ -125,6 +125,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
               <MessageCircle size={20} className="text-gray-600" />
               <span className="text-gray-600">Messages</span>
+            </Link>
+
+            <Link
+              to="/calendar"
+              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
+            >
+              <CalendarIcon size={20} className="text-gray-600" />
+              <span className="text-gray-600">Calendar</span>
             </Link>
           </div>
         </div>
