@@ -74,12 +74,15 @@ const Search: React.FC = () => {
       
       querySnapshot.forEach((doc) => {
         const userData = doc.data();
-        users.push({
-          uid: doc.id,
-          email: userData.email,
-          displayName: userData.displayName || 'Anonymous User',
-          photoURL: userData.photoURL,
-        });
+        if (!userData.isBusinessAccount && 
+            userData.email?.toLowerCase() !== "admin@sonder.com") {
+          users.push({
+            uid: doc.id,
+            email: userData.email,
+            displayName: userData.displayName || 'Anonymous User',
+            photoURL: userData.photoURL,
+          });
+        }
       });
 
       setResults(users);
@@ -102,7 +105,6 @@ const Search: React.FC = () => {
           >
             <Menu size={24} />
           </button>
-          <h2 className="text-2xl font-bold">Search Users</h2>
         </div>
       </div>
 
@@ -145,7 +147,7 @@ const Search: React.FC = () => {
               <div className="space-y-4">
                 {results.map((user) => (
                   <Link
-                    to={`/chat/${user.uid}`}
+                    to={`/profile/${user.uid}`}
                     key={user.uid}
                     className="block bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow"
                   >

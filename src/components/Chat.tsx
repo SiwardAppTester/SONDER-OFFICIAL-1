@@ -52,6 +52,7 @@ const Chat: React.FC = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [accessibleFestivals, setAccessibleFestivals] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -181,6 +182,12 @@ const Chat: React.FC = () => {
     navigate(`/chat/${user.uid}`);
   };
 
+  // Add this function to filter chat users
+  const filteredChatUsers = chatUsers.filter((user) =>
+    user.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (!currentUser) return null;
 
   return (
@@ -194,7 +201,6 @@ const Chat: React.FC = () => {
           >
             <Menu size={24} />
           </button>
-          <h2 className="text-2xl font-bold">Messages</h2>
         </div>
       </div>
 
@@ -211,31 +217,50 @@ const Chat: React.FC = () => {
         <div className="w-1/4 bg-gray-50 border-r overflow-y-auto">
           <div className="p-4">
             <h2 className="text-xl font-semibold mb-4">Chats</h2>
-            {chatUsers.map((user) => (
-              <div
-                key={user.uid}
-                onClick={() => handleUserSelect(user)}
-                className={`flex items-center p-3 cursor-pointer rounded-lg mb-2 ${
-                  selectedUser?.uid === user.uid ? "bg-blue-50" : "hover:bg-gray-100"
-                }`}
-              >
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName}
-                    className="w-10 h-10 rounded-full mr-3"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3">
-                    {user.displayName[0]}
+            
+            {/* Add search input */}
+            <div className="mb-4">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search users..."
+                className="w-full p-2 border rounded-lg focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Update the users list to use filteredChatUsers */}
+            {filteredChatUsers.length > 0 ? (
+              filteredChatUsers.map((user) => (
+                <div
+                  key={user.uid}
+                  onClick={() => handleUserSelect(user)}
+                  className={`flex items-center p-3 cursor-pointer rounded-lg mb-2 ${
+                    selectedUser?.uid === user.uid ? "bg-blue-50" : "hover:bg-gray-100"
+                  }`}
+                >
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName}
+                      className="w-10 h-10 rounded-full mr-3"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3">
+                      {user.displayName[0]}
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-medium">{user.displayName}</div>
+                    <div className="text-sm text-gray-500">{user.email}</div>
                   </div>
-                )}
-                <div>
-                  <div className="font-medium">{user.displayName}</div>
-                  <div className="text-sm text-gray-500">{user.email}</div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center text-gray-500 mt-4">
+                {chatUsers.length === 0 ? "No users to chat with" : "No matching users found"}
               </div>
-            ))}
+            )}
           </div>
         </div>
 

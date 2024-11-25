@@ -237,8 +237,16 @@ const Home: React.FC = () => {
           >
             <Menu size={24} />
           </button>
-          <h1 className="text-2xl font-bold">Home Feed</h1>
         </div>
+        <button
+          onClick={() => {
+            setShowFestivalList(true);
+            setShowAccessInput(false);
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          All Festivals
+        </button>
       </div>
 
       <Sidebar
@@ -332,45 +340,36 @@ const Home: React.FC = () => {
             <div className="flex flex-col gap-4 bg-white p-4 rounded-lg shadow-md">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Filter by Festival
+                  Filter by Category
                 </label>
-                <select
-                  value={selectedFestival}
-                  onChange={(e) => handleFestivalSelect(e.target.value)}
-                  className="w-full p-2 border rounded"
-                >
-                  <option value="">All Accessible Festivals</option>
-                  {festivals
-                    .filter(festival => accessibleFestivals.has(festival.id))
-                    .map((festival) => (
-                      <option key={festival.id} value={festival.id}>
-                        {festival.name}
-                      </option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedFestival && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Filter by Category
-                  </label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full p-2 border rounded"
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setSelectedCategory("")}
+                    className={`px-4 py-2 rounded ${
+                      selectedCategory === ""
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200"
+                    }`}
                   >
-                    <option value="">All Categories</option>
-                    {festivals
-                      .find(f => f.id === selectedFestival)
-                      ?.categories?.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                  </select>
+                    All Categories
+                  </button>
+                  {festivals
+                    .find(f => f.id === selectedFestival)
+                    ?.categories?.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => setSelectedCategory(category.id)}
+                        className={`px-4 py-2 rounded ${
+                          selectedCategory === category.id
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-200"
+                        }`}
+                      >
+                        {category.name}
+                      </button>
+                    ))}
                 </div>
-              )}
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
