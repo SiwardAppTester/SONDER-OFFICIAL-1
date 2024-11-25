@@ -122,7 +122,18 @@ const Chat: React.FC = () => {
 
   // Subscribe to messages
   useEffect(() => {
-    if (!currentUser || !selectedUser) return;
+    if (!currentUser || !selectedUser) {
+      console.log("Messages subscription skipped:", {
+        hasCurrentUser: Boolean(currentUser),
+        hasSelectedUser: Boolean(selectedUser)
+      });
+      return;
+    }
+
+    console.log("Setting up messages subscription for:", {
+      currentUserId: currentUser.uid,
+      selectedUserId: selectedUser.uid
+    });
 
     const q = query(
       collection(db, "messages"),
@@ -144,7 +155,10 @@ const Chat: React.FC = () => {
           } as Message);
         }
       });
+      console.log("Received messages:", newMessages.length);
       setMessages(newMessages);
+    }, (error) => {
+      console.error("Error in messages subscription:", error);
     });
 
     return () => unsubscribe();
@@ -152,10 +166,24 @@ const Chat: React.FC = () => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUser || !selectedUser) return;
+    if (!newMessage.trim() || !currentUser || !selectedUser) {
+      console.log("Message validation failed:", {
+        hasMessage: Boolean(newMessage.trim()),
+        hasCurrentUser: Boolean(currentUser),
+        hasSelectedUser: Boolean(selectedUser)
+      });
+      return;
+    }
 
     try {
-      await addDoc(collection(db, "messages"), {
+      console.log("Attempting to send message:", {
+        text: newMessage.trim(),
+        senderId: currentUser.uid,
+        receiverId: selectedUser.uid,
+        participants: [currentUser.uid, selectedUser.uid]
+      });
+
+      const messageRef = await addDoc(collection(db, "messages"), {
         text: newMessage.trim(),
         senderId: currentUser.uid,
         receiverId: selectedUser.uid,
@@ -163,9 +191,11 @@ const Chat: React.FC = () => {
         createdAt: serverTimestamp(),
       });
 
+      console.log("Message sent successfully with ID:", messageRef.id);
       setNewMessage("");
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Detailed error sending message:", error);
+      alert("Failed to send message. Please try again.");
     }
   };
 

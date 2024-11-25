@@ -48,16 +48,18 @@ const Sidebar: React.FC<SidebarProps> = ({
           isNavOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex-1 p-4">
-          <div className="flex justify-end mb-6">
-            <button
-              onClick={() => setIsNavOpen(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ×
-            </button>
-          </div>
+        {/* Close button */}
+        <div className="p-4 flex justify-end">
+          <button
+            onClick={() => setIsNavOpen(false)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ×
+          </button>
+        </div>
 
+        {/* Main content area */}
+        <div className="flex-1 px-4">
           {/* User Profile Section */}
           <div className="border-b border-gray-200 pb-4 mb-4">
             <div className="flex flex-col items-center mb-4">
@@ -97,44 +99,44 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div className="text-xs text-gray-500">Festivals</div>
               </div>
             </div>
-
-            {/* Navigation Links */}
-            <div className="space-y-2">
-              <Link
-                to="/"
-                className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-              >
-                <HomeIcon size={20} className="text-gray-600" />
-                <span className="text-gray-600">Home</span>
-              </Link>
-              
-              <Link
-                to="/search"
-                className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-              >
-                <SearchIcon size={20} className="text-gray-600" />
-                <span className="text-gray-600">Search</span>
-              </Link>
-
-              <Link
-                to="/chat"
-                className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-              >
-                <MessageCircle size={20} className="text-gray-600" />
-                <span className="text-gray-600">Messages</span>
-              </Link>
-            </div>
           </div>
 
-          {/* Sign Out Button */}
-          <div className="p-4 border-t border-gray-200">
-            <button
-              onClick={handleSignOut}
-              className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          {/* Navigation Links */}
+          <div className="space-y-2">
+            <Link
+              to="/"
+              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
             >
-              Sign Out
-            </button>
+              <HomeIcon size={20} className="text-gray-600" />
+              <span className="text-gray-600">Home</span>
+            </Link>
+            
+            <Link
+              to="/search"
+              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
+            >
+              <SearchIcon size={20} className="text-gray-600" />
+              <span className="text-gray-600">Search</span>
+            </Link>
+
+            <Link
+              to="/chat"
+              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
+            >
+              <MessageCircle size={20} className="text-gray-600" />
+              <span className="text-gray-600">Messages</span>
+            </Link>
           </div>
+        </div>
+
+        {/* Sign Out Button - Positioned at bottom */}
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={handleSignOut}
+            className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+          >
+            Sign Out
+          </button>
         </div>
       </div>
 
