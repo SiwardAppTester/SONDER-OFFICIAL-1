@@ -39,55 +39,69 @@ const Search: React.FC = () => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setUserProfile(userData as UserProfile);
-          setAccessibleFestivals(new Set(userData.accessibleFestivals || []));
+          const festivals = userData.accessibleFestivals || [];
+          setAccessibleFestivals(new Set(festivals));
         }
+      } else {
+        setUserProfile(null);
+        setAccessibleFestivals(new Set());
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchTerm.trim()) return;
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (!searchTerm.trim() || searchTerm.length < 2) {
+        setResults([]);
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-    try {
-      const searchTermLower = searchTerm.toLowerCase();
-      const usersRef = collection(db, "users");
-      const q = query(
-        usersRef,
-        orderBy("email"),
-        startAt(searchTermLower),
-        endAt(searchTermLower + '\uf8ff')
-      );
+      try {
+        const searchTermLower = searchTerm.toLowerCase();
+        const usersRef = collection(db, "users");
+        const q = query(
+          usersRef,
+          orderBy("email"),
+          startAt(searchTermLower),
+          endAt(searchTermLower + '\uf8ff')
+        );
 
-      const querySnapshot = await getDocs(q);
-      const users: UserResult[] = [];
-      
-      querySnapshot.forEach((doc) => {
-        const userData = doc.data();
-        if (!userData.isBusinessAccount && 
-            userData.email?.toLowerCase() !== "admin@sonder.com") {
-          users.push({
-            uid: doc.id,
-            email: userData.email,
-            displayName: userData.displayName || 'Anonymous User',
-            photoURL: userData.photoURL,
-          });
-        }
-      });
+        const querySnapshot = await getDocs(q);
+        const users: UserResult[] = [];
+        
+        querySnapshot.forEach((doc) => {
+          const userData = doc.data();
+          if (!userData.isBusinessAccount && 
+              userData.email?.toLowerCase() !== "admin@sonder.com") {
+            users.push({
+              uid: doc.id,
+              email: userData.email,
+              displayName: userData.displayName || 'Anonymous User',
+              photoURL: userData.photoURL,
+            });
+          }
+        });
 
-      setResults(users);
-    } catch (err) {
-      console.error("Error searching users:", err);
-      setError("Failed to search users. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+        setResults(users);
+      } catch (err) {
+        console.error("Error searching users:", err);
+        setError("Failed to search users. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      searchUsers();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -113,25 +127,16 @@ const Search: React.FC = () => {
 
       <div className="flex-1 p-4">
         <div className="max-w-2xl mx-auto">
-          <form onSubmit={handleSearch} className="mb-6">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by email"
-                className="flex-grow p-2 border rounded"
-                minLength={2}
-              />
-              <button
-                type="submit"
-                disabled={loading || searchTerm.length < 2}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
-              >
-                {loading ? "Searching..." : "Search"}
-              </button>
-            </div>
-          </form>
+          <div className="mb-6">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by email"
+              className="w-full p-2 border rounded"
+              minLength={2}
+            />
+          </div>
 
           {error && (
             <div className="text-red-500 mb-4">{error}</div>

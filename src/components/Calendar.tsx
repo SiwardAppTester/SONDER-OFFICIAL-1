@@ -27,13 +27,7 @@ const Calendar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
-  const [newEvent, setNewEvent] = useState({
-    title: '',
-    description: '',
-    date: selectedDate,
-  });
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -61,37 +55,6 @@ const Calendar: React.FC = () => {
       setEvents(eventsList);
     } catch (error) {
       console.error('Error fetching events:', error);
-    }
-  };
-
-  const handleAddEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-
-    try {
-      const eventData = {
-        ...newEvent,
-        userId: currentUser.uid,
-        date: selectedDate,
-      };
-
-      await addDoc(collection(db, 'events'), eventData);
-      await fetchEvents();
-      setNewEvent({ title: '', description: '', date: selectedDate });
-      setIsAddingEvent(false);
-    } catch (error) {
-      console.error('Error adding event:', error);
-    }
-  };
-
-  const handleDeleteEvent = async (eventId: string) => {
-    if (!window.confirm('Are you sure you want to delete this event?')) return;
-
-    try {
-      await deleteDoc(doc(db, 'events', eventId));
-      await fetchEvents();
-    } catch (error) {
-      console.error('Error deleting event:', error);
     }
   };
 
@@ -226,57 +189,6 @@ const Calendar: React.FC = () => {
 
           {/* Event List for Selected Date */}
           <div className="mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">
-                Events for {new Date(selectedDate).toLocaleDateString()}
-              </h2>
-              <button
-                onClick={() => setIsAddingEvent(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              >
-                Add Event
-              </button>
-            </div>
-
-            {isAddingEvent && (
-              <form onSubmit={handleAddEvent} className="mb-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Title</label>
-                  <input
-                    type="text"
-                    value={newEvent.title}
-                    onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                    className="w-full p-2 border rounded"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Description</label>
-                  <textarea
-                    value={newEvent.description}
-                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                    className="w-full p-2 border rounded"
-                    rows={3}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                  >
-                    Save Event
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingEvent(false)}
-                    className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-
             <div className="space-y-4">
               {events
                 .filter(event => event.date === selectedDate)
@@ -290,12 +202,6 @@ const Calendar: React.FC = () => {
                         <h3 className="font-semibold">{event.title}</h3>
                         <p className="text-gray-600">{event.description}</p>
                       </div>
-                      <button
-                        onClick={() => handleDeleteEvent(event.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Delete
-                      </button>
                     </div>
                   </div>
                 ))}

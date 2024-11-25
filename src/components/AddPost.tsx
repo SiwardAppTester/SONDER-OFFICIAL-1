@@ -606,33 +606,94 @@ const AddPost: React.FC = () => {
 
           {/* Category Section */}
           {selectedFestival && (
-            <div className="mb-6 flex justify-end">
-              <div className="flex flex-wrap gap-2 items-center">
-                {festivals
-                  .find(f => f.id === selectedFestival)
-                  ?.categories?.map((category) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`px-4 py-2 rounded-full transition-colors ${
-                        selectedCategory === category.id
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {category.name}
-                    </button>
-                  ))}
-                <button
-                  type="button"
-                  onClick={() => setShowAddCategory(!showAddCategory)}
-                  className="px-4 py-2 rounded-full bg-gray-100 text-blue-500 hover:bg-gray-200 flex items-center gap-1"
-                >
-                  <Plus size={16} />
-                  New Category
-                </button>
+            <div className="mb-6">
+              <div className="flex justify-end">
+                <div className="flex flex-wrap gap-2 items-center">
+                  {festivals
+                    .find(f => f.id === selectedFestival)
+                    ?.categories?.map((category) => (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => setSelectedCategory(category.id)}
+                        className={`px-4 py-2 rounded-full transition-colors ${
+                          selectedCategory === category.id
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCategory(!showAddCategory)}
+                    className="px-4 py-2 rounded-full bg-gray-100 text-blue-500 hover:bg-gray-200 flex items-center gap-1"
+                  >
+                    <Plus size={16} />
+                    New Category
+                  </button>
+                </div>
               </div>
+
+              {/* Add Category Form */}
+              {showAddCategory && (
+                <div className="mt-4">
+                  <div className="p-4 bg-gray-50 rounded-lg max-w-md ml-auto">
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Enter category name"
+                        className="w-full p-2 border rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCategory}
+                        className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                      >
+                        Add Category
+                      </button>
+                    </div>
+                    
+                    {/* Display existing categories with delete option */}
+                    <div className="mt-4 space-y-2">
+                      {festivals
+                        .find(f => f.id === selectedFestival)
+                        ?.categories?.map((category) => (
+                          <div
+                            key={category.id}
+                            className="flex justify-between items-center p-2 bg-white rounded shadow"
+                          >
+                            <div>
+                              <span className="block">{category.name}</span>
+                              <span className="text-sm text-gray-500">
+                                Media Type: {category.mediaType}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleMediaType(category.id, category.mediaType)}
+                                className="text-blue-500 hover:text-blue-700 text-sm"
+                              >
+                                Toggle Type
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCategory(category.id)}
+                                className="text-red-500 hover:text-red-700 text-sm"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

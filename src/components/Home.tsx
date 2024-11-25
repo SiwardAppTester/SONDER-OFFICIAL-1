@@ -120,8 +120,8 @@ const Home: React.FC = () => {
       if (currentUser) {
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfile);
-          const userData = userDoc.data();
+          const userData = userDoc.data() as UserProfile;
+          setUserProfile(userData);
           setAccessibleFestivals(new Set(userData.accessibleFestivals || []));
         }
       }
@@ -260,7 +260,7 @@ const Home: React.FC = () => {
         setIsNavOpen={setIsNavOpen}
         user={user}
         userProfile={userProfile}
-        accessibleFestivalsCount={accessibleFestivals.size}
+        accessibleFestivalsCount={userProfile?.accessibleFestivals?.length || 0}
       />
 
       {showAccessInput ? (

@@ -12,6 +12,7 @@ interface UserProfile {
   photoURL?: string;
   followers?: string[];
   following?: string[];
+  accessibleFestivals?: string[];
 }
 
 const Profile: React.FC = () => {
@@ -31,7 +32,10 @@ const Profile: React.FC = () => {
       
       const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
-        setProfileUser(userDoc.data() as UserProfile);
+        const userData = userDoc.data() as UserProfile;
+        setProfileUser(userData);
+        // Set accessible festivals from the profile user's data
+        setAccessibleFestivals(new Set(userData.accessibleFestivals || []));
       }
     };
 
@@ -46,22 +50,6 @@ const Profile: React.FC = () => {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           setUserProfile(userDoc.data() as UserProfile);
-        }
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-      setCurrentUser(currentUser);
-      if (currentUser) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setUserProfile(userData as UserProfile);
-          setAccessibleFestivals(new Set(userData.accessibleFestivals || []));
         }
       }
     });
@@ -188,7 +176,7 @@ const Profile: React.FC = () => {
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="text-xl font-semibold">
-                  {accessibleFestivals.size}
+                  {profileUser?.accessibleFestivals?.length || 0}
                 </div>
                 <div className="text-gray-600">Festivals</div>
               </div>

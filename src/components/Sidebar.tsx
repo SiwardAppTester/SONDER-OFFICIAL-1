@@ -12,6 +12,7 @@ interface UserProfile {
   photoURL?: string;
   followers?: string[];
   following?: string[];
+  accessibleFestivals?: string[];
 }
 
 interface SidebarProps {
