@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
-import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
@@ -31,6 +31,19 @@ interface Festival {
   categories?: Category[];
 }
 
+interface Post {
+  id: string;
+  text: string;
+  mediaFiles: {
+    url: string;
+    type: "image" | "video";
+    categoryId?: string;
+  }[];
+  userId: string;
+  createdAt: any;
+  festivalId: string;
+}
+
 const AddPost: React.FC = () => {
   const [text, setText] = useState("");
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
@@ -44,11 +57,18 @@ const AddPost: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [activeCategoryMedia, setActiveCategoryMedia] = useState<Record<string, "image" | "video">>({});
+  const [categoryPosts, setCategoryPosts] = useState<Record<string, Post[]>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchFestivals();
   }, []);
+
+  useEffect(() => {
+    if (selectedCategory) {
+      fetchCategoryPosts(selectedCategory);
+    }
+  }, [selectedCategory, selectedFestival]);
 
   const fetchFestivals = async () => {
     try {
@@ -367,27 +387,33 @@ const AddPost: React.FC = () => {
     }
 
     try {
-      const uploadedFiles = mediaFiles
-        .filter(file => file.url)
-        .map(file => ({
-          url: file.url!,
-          type: file.type,
-          categoryId: file.categoryId
-        }));
-
-      await addDoc(collection(db, "posts"), {
-        userId: user.uid,
-        festivalId: selectedFestival,
+      const postData = {
         text,
-        mediaFiles: uploadedFiles,
+        userId: user.uid,
         createdAt: serverTimestamp(),
-      });
+        festivalId: selectedFestival,
+        mediaFiles: mediaFiles
+          .filter(media => media.url) // Only include fully uploaded files
+          .map(media => ({
+            url: media.url,
+            type: media.type,
+            categoryId: selectedCategory || null
+          }))
+      };
 
+      await addDoc(collection(db, "posts"), postData);
+
+      // Clear the form instead of navigating
       setText("");
       setMediaFiles([]);
-      setSelectedFestival("");
-      setSelectedCategory("");
-      navigate("/");
+      // Optionally show a success message
+      alert("Post created successfully!");
+      
+      // Refresh the category posts to show the new content
+      if (selectedCategory) {
+        fetchCategoryPosts(selectedCategory);
+      }
+
     } catch (error) {
       console.error("Error creating post:", error);
       alert("Failed to create post. Please try again.");
@@ -401,6 +427,45 @@ const AddPost: React.FC = () => {
     } catch (error) {
       console.error("Error signing out:", error);
     }
+  };
+
+  const fetchCategoryPosts = async (categoryId: string) => {
+    try {
+      console.log('Fetching posts for category:', categoryId);
+      const postsQuery = query(
+        collection(db, "posts"),
+        where("festivalId", "==", selectedFestival),
+        orderBy("createdAt", "desc")
+      );
+
+      const snapshot = await getDocs(postsQuery);
+      console.log('Found posts:', snapshot.docs.length);
+      const posts = snapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Post))
+        .filter(post => 
+          post.mediaFiles.some(media => media.categoryId === categoryId)
+        );
+      console.log('Filtered posts:', posts.length);
+
+      setCategoryPosts(prev => ({
+        ...prev,
+        [categoryId]: posts
+      }));
+    } catch (error) {
+      console.error("Error fetching category posts:", error);
+    }
+  };
+
+  // First, let's add a helper function to filter posts by media type
+  const getFilteredPosts = (categoryId: string, mediaType: "image" | "video") => {
+    return categoryPosts[categoryId]?.filter(post => 
+      post.mediaFiles.some(media => 
+        media.categoryId === categoryId && media.type === mediaType
+      )
+    ) || [];
   };
 
   return (
@@ -668,6 +733,41 @@ const AddPost: React.FC = () => {
                             </div>
                           )}
                         </div>
+
+                        {/* Display Existing Posts */}
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Existing Content</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {categoryPosts[category.id]?.map((post) => (
+                              <div key={post.id}>
+                                {post.mediaFiles
+                                  .filter(media => media.categoryId === category.id)
+                                  .map((media, mediaIndex) => (
+                                    <div key={mediaIndex} className="relative mb-2">
+                                      {media.type === 'video' ? (
+                                        <video
+                                          src={media.url}
+                                          className="w-full h-24 object-cover rounded"
+                                          controls
+                                        />
+                                      ) : (
+                                        <img
+                                          src={media.url}
+                                          alt={`Post content ${mediaIndex + 1}`}
+                                          className="w-full h-24 object-cover rounded"
+                                        />
+                                      )}
+                                      {post.text && (
+                                        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1">
+                                          {post.text}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     ))}
                 </div>
@@ -790,6 +890,66 @@ const AddPost: React.FC = () => {
         >
           {isUploading ? 'Uploading...' : 'Post'}
         </button>
+
+        {/* Add the existing content display here */}
+        {selectedCategory && (
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Existing Content in Category</h3>
+            
+            {/* Only show content based on active media type */}
+            {activeCategoryMedia[selectedCategory] !== "video" ? (
+              /* Images Section */
+              <div className="mb-6">
+                <h4 className="text-md font-medium mb-2">Images</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {getFilteredPosts(selectedCategory, "image").map(post => (
+                    post.mediaFiles
+                      .filter(media => media.type === "image" && media.categoryId === selectedCategory)
+                      .map((media, mediaIndex) => (
+                        <div key={`${post.id}-${mediaIndex}`} className="relative">
+                          <img
+                            src={media.url}
+                            alt={`Post content ${mediaIndex + 1}`}
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                          {post.text && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
+                              {post.text}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* Videos Section */
+              <div>
+                <h4 className="text-md font-medium mb-2">Videos</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {getFilteredPosts(selectedCategory, "video").map(post => (
+                    post.mediaFiles
+                      .filter(media => media.type === "video" && media.categoryId === selectedCategory)
+                      .map((media, mediaIndex) => (
+                        <div key={`${post.id}-${mediaIndex}`} className="relative">
+                          <video
+                            src={media.url}
+                            className="w-full h-48 object-cover rounded-lg"
+                            controls
+                          />
+                          {post.text && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
+                              {post.text}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </form>
     </div>
   );
