@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { collection, query, orderBy, onSnapshot, where, getDocs } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../firebase";
+import { db, storage, auth } from "../firebase";
+import { signOut } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
 
 interface Post {
   id: string;
@@ -22,6 +24,7 @@ interface Festival {
 }
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [accessCode, setAccessCode] = useState("");
@@ -138,9 +141,26 @@ const Home: React.FC = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   return (
     <div className="home p-4">
-      <h1 className="text-2xl font-bold mb-4 text-center">Home Feed</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Home Feed</h1>
+        <button
+          onClick={handleSignOut}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+        >
+          Sign Out
+        </button>
+      </div>
       
       <div className="max-w-md mx-auto mb-8">
         <form onSubmit={handleVerifyAccessCode} className="flex gap-2">

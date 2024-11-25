@@ -74,9 +74,16 @@ const SignIn: React.FC = () => {
             followers: [],
             following: [],
           });
+          navigate("/");
+        } else {
+          // Check if business account and redirect accordingly
+          const userData = userSnap.data();
+          if (userData.isBusinessAccount) {
+            navigate("/add-post");
+          } else {
+            navigate("/");
+          }
         }
-        
-        navigate("/profile");
       }
     } catch (error) {
       console.error("Error signing in with Google:", error);
@@ -95,21 +102,27 @@ const SignIn: React.FC = () => {
           const userRef = doc(db, "users", result.user.uid);
           await setDoc(userRef, {
             email: result.user.email?.toLowerCase(),
-            displayName: email.split('@')[0], // Use part before @ as display name
+            displayName: email.split('@')[0],
             createdAt: serverTimestamp(),
             followers: [],
             following: [],
           });
+          navigate("/");
         }
       } else {
         // Sign in to existing account
         const result = await signInWithEmailAndPassword(auth, email, password);
         
-        // Check if user is admin and redirect accordingly
+        // Check user type and redirect accordingly
+        const userDoc = await getDoc(doc(db, "users", result.user.uid));
+        const userData = userDoc.data();
+        
         if (result.user.email?.toLowerCase() === "admin@sonder.com") {
           navigate("/admin");
+        } else if (userData?.isBusinessAccount) {
+          navigate("/add-post");
         } else {
-          navigate("/profile");
+          navigate("/");
         }
       }
     } catch (error: any) {

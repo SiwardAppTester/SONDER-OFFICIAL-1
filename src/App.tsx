@@ -7,7 +7,6 @@ import AddPost from "./components/AddPost";
 import SignIn from "./components/SignIn";
 import { User as FirebaseUser } from "firebase/auth";
 import WelcomeScreen from "./components/WelcomeScreen";
-import BottomTabBar from "./components/BottomTabBar";
 import Search from "./components/Search";
 import AdminPage from "./components/AdminPage";
 
@@ -56,7 +55,6 @@ const App: React.FC = () => {
             </Routes>
           )}
         </main>
-        {user && <BottomTabBar />}
       </div>
     </Router>
   );

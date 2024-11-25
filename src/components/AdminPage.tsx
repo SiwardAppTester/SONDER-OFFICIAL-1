@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { collection, query, getDocs, where, doc, setDoc } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { db, auth } from "../firebase";
+import { useNavigate } from "react-router-dom";
 
 interface User {
   uid: string;
@@ -12,6 +13,7 @@ interface User {
 }
 
 const AdminPage: React.FC = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,13 +125,30 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }
 
   return (
     <div className="admin-page p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <button
+          onClick={handleSignOut}
+          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+        >
+          Sign Out
+        </button>
+      </div>
 
       {/* Toggle Buttons */}
       <div className="flex gap-4 mb-6">
