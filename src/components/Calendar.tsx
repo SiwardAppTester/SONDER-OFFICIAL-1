@@ -9,7 +9,8 @@ interface Event {
   id: string;
   title: string;
   date: string;
-  time?: string;
+  startTime?: string;
+  endTime?: string;
   description: string;
   userId: string;
   festivalId?: string;
@@ -278,7 +279,7 @@ const Calendar: React.FC = () => {
                 
                 <div className="space-y-4">
                   {filterEventsByGenre(events.filter(event => event.date === selectedDate))
-                    .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+                    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
                     .map(event => (
                       <div
                         key={event.id}
@@ -286,9 +287,11 @@ const Calendar: React.FC = () => {
                       >
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-semibold text-lg">{event.title}</h3>
-                          {event.time && (
+                          {(event.startTime || event.endTime) && (
                             <span className="text-sm font-medium bg-gray-100 px-2 py-1 rounded">
-                              {event.time}
+                              {event.startTime && event.endTime 
+                                ? `${event.startTime} - ${event.endTime}`
+                                : event.startTime || event.endTime}
                             </span>
                           )}
                         </div>

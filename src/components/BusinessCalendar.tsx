@@ -9,7 +9,8 @@ interface Event {
   id: string;
   title: string;
   date: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   description: string;
   genre: string;
   userId: string;
@@ -45,7 +46,8 @@ const BusinessCalendar: React.FC = () => {
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
-    time: '',
+    startTime: '',
+    endTime: '',
     genre: '',
     isPublic: true
   });
@@ -96,8 +98,14 @@ const BusinessCalendar: React.FC = () => {
     e.preventDefault();
     if (!currentUser || !userProfile) return;
 
-    if (!newEvent.title.trim() || !newEvent.description.trim() || !newEvent.time || !newEvent.genre) {
+    if (!newEvent.title.trim() || !newEvent.description.trim() || 
+        !newEvent.startTime || !newEvent.endTime || !newEvent.genre) {
       alert('Please fill in all required fields');
+      return;
+    }
+
+    if (newEvent.endTime <= newEvent.startTime) {
+      alert('End time must be after start time');
       return;
     }
 
@@ -106,7 +114,8 @@ const BusinessCalendar: React.FC = () => {
         title: newEvent.title,
         description: newEvent.description,
         date: selectedDate,
-        time: newEvent.time,
+        startTime: newEvent.startTime,
+        endTime: newEvent.endTime,
         genre: newEvent.genre,
         userId: currentUser.uid,
         createdBy: userProfile.displayName || userProfile.email,
@@ -120,7 +129,8 @@ const BusinessCalendar: React.FC = () => {
       setNewEvent({
         title: '',
         description: '',
-        time: '',
+        startTime: '',
+        endTime: '',
         genre: '',
         isPublic: true
       });
@@ -303,17 +313,32 @@ const BusinessCalendar: React.FC = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Time *
-                    </label>
-                    <input
-                      type="time"
-                      value={newEvent.time}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, time: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Start Time *
+                      </label>
+                      <input
+                        type="time"
+                        value={newEvent.startTime}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        End Time *
+                      </label>
+                      <input
+                        type="time"
+                        value={newEvent.endTime}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -398,7 +423,7 @@ const BusinessCalendar: React.FC = () => {
                         <h4 className="font-semibold">{event.title}</h4>
                         <p className="text-gray-600">{event.description}</p>
                         <div className="text-sm text-gray-500 mt-1 space-y-1">
-                          <p>Time: {event.time}</p>
+                          <p>Time: {event.startTime} - {event.endTime}</p>
                           <p>Genre: {event.genre}</p>
                           <p>{event.isPublic ? 'Public Event' : 'Private Event'}</p>
                         </div>

@@ -255,7 +255,8 @@ const Chat: React.FC = () => {
 
     console.log("Setting up messages subscription for:", {
       currentUserId: currentUser.uid,
-      selectedUserId: selectedUser.uid
+      selectedUserId: selectedUser.uid,
+      isGroup: selectedUser.isGroup
     });
 
     const q = query(
@@ -269,8 +270,12 @@ const Chat: React.FC = () => {
       snapshot.forEach((doc) => {
         const data = doc.data();
         if (
-          (data.senderId === currentUser.uid && data.receiverId === selectedUser.uid) ||
-          (data.senderId === selectedUser.uid && data.receiverId === currentUser.uid)
+          // Handle group messages
+          (selectedUser.isGroup && data.groupId === selectedUser.uid) ||
+          // Handle direct messages
+          (!selectedUser.isGroup && 
+            ((data.senderId === currentUser.uid && data.receiverId === selectedUser.uid) ||
+            (data.senderId === selectedUser.uid && data.receiverId === currentUser.uid)))
         ) {
           newMessages.push({
             id: doc.id,
