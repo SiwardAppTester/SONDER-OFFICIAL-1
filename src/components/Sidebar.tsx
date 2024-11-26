@@ -183,37 +183,54 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      <div className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+      <div className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        {/* Close button */}
-        <div className="p-1 flex justify-end">
+        {/* Close button with modern styling */}
+        <div className="p-4 flex justify-end">
           <button
             onClick={() => setIsNavOpen(false)}
-            className="text-gray-500 hover:text-gray-700"
+            className="relative group w-12 h-12 flex items-center justify-center 
+                      bg-white/50 backdrop-blur-sm rounded-xl
+                      transition-all duration-300 transform
+                      hover:scale-105 hover:bg-white/70
+                      hover:shadow-lg hover:shadow-purple-500/20"
           >
-            ×
+            <svg 
+              className="w-6 h-6 text-purple-600 transition-transform duration-300 
+                        group-hover:rotate-180" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
 
-        {/* Profile Section */}
+        {/* Profile Section with new styling */}
         <div className="px-4 -mt-2">
-          <div className="flex flex-col items-center mb-2">
-            <div className="relative">
+          <div className="flex flex-col items-center mb-4">
+            <div className="relative transform hover:scale-105 transition-all duration-300">
               {localPhotoURL ? (
                 <img
                   src={localPhotoURL}
                   alt="Profile"
-                  className="w-14 h-14 rounded-full mb-1"
+                  className="w-16 h-16 rounded-full mb-2 shadow-lg hover:shadow-purple-500/50 transition-shadow duration-300"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center mb-1">
+                <div className="w-16 h-16 rounded-full bg-white shadow-lg hover:shadow-purple-500/50 transition-shadow duration-300 flex items-center justify-center mb-2">
                   {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
                 </div>
               )}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-2 right-0 bg-gray-800 rounded-full p-1 hover:bg-gray-700 transition-colors"
+                className="absolute bottom-2 right-0 bg-purple-600 rounded-full p-1.5 hover:bg-purple-700 transition-colors shadow-lg"
                 aria-label="Change profile picture"
               >
                 <Camera size={14} className="text-white" />
@@ -226,56 +243,37 @@ const Sidebar: React.FC<SidebarProps> = ({
                 className="hidden"
               />
             </div>
-            <span className="text-sm text-gray-600 mb-1">
+            <span className="text-gray-800 font-medium">
               {userProfile?.displayName || user?.email}
             </span>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-2 text-center mb-2 stats-grid">
-            <div 
-              className={`bg-gray-50 p-2 rounded cursor-pointer transition-colors ${
-                openDropdown === 'followers' ? 'bg-blue-50' : 'hover:bg-gray-100'
-              }`}
-              onClick={() => toggleDropdown('followers')}
-            >
-              <div className="font-semibold flex items-center justify-center gap-1">
-                {userProfile?.followers?.length || 0}
-                {openDropdown === 'followers' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {/* Stats Grid with new styling */}
+          <div className="grid grid-cols-3 gap-3 text-center mb-4 stats-grid">
+            {[
+              { label: 'Followers', count: userProfile?.followers?.length || 0, type: 'followers' as const },
+              { label: 'Following', count: userProfile?.following?.length || 0, type: 'following' as const },
+              { label: 'Festivals', count: accessibleFestivalsCount, type: 'festivals' as const }
+            ].map(({ label, count, type }) => (
+              <div 
+                key={type}
+                className={`bg-white/80 backdrop-blur-sm p-2 rounded-xl cursor-pointer transition-all duration-300 
+                  ${openDropdown === type ? 'shadow-purple-500/30 scale-105' : 'hover:scale-105 shadow-lg'}
+                  transform hover:shadow-purple-500/30`}
+                onClick={() => toggleDropdown(type)}
+              >
+                <div className="font-semibold flex items-center justify-center gap-1 text-gray-800">
+                  {count}
+                  {openDropdown === type ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </div>
+                <div className="text-xs text-gray-600">{label}</div>
               </div>
-              <div className="text-xs text-gray-500">Followers</div>
-            </div>
-
-            <div 
-              className={`bg-gray-50 p-2 rounded cursor-pointer transition-colors ${
-                openDropdown === 'following' ? 'bg-blue-50' : 'hover:bg-gray-100'
-              }`}
-              onClick={() => toggleDropdown('following')}
-            >
-              <div className="font-semibold flex items-center justify-center gap-1">
-                {userProfile?.following?.length || 0}
-                {openDropdown === 'following' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </div>
-              <div className="text-xs text-gray-500">Following</div>
-            </div>
-
-            <div 
-              className={`bg-gray-50 p-2 rounded cursor-pointer transition-colors ${
-                openDropdown === 'festivals' ? 'bg-blue-50' : 'hover:bg-gray-100'
-              }`}
-              onClick={() => toggleDropdown('festivals')}
-            >
-              <div className="font-semibold flex items-center justify-center gap-1">
-                {accessibleFestivalsCount}
-                {openDropdown === 'festivals' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </div>
-              <div className="text-xs text-gray-500">Festivals</div>
-            </div>
+            ))}
           </div>
 
-          {/* Dropdown Content - Only visible when a dropdown is open */}
+          {/* Dropdown Content with new styling */}
           {openDropdown && (
-            <div className="h-48 border-y border-gray-200">
+            <div className="h-48 border-y border-white/50 bg-white/30 backdrop-blur-sm rounded-lg mb-4">
               {openDropdown === 'followers' && followersDetails.length > 0 && (
                 <div className="h-full overflow-y-auto py-2">
                   {followersDetails.map((follower) => (
@@ -347,58 +345,47 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Navigation Links - Pushed down */}
+        {/* Navigation Links with new styling */}
         <div className="flex-1 px-4 pt-4">
-          <div className="space-y-2">
-            <Link
-              to="/"
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-            >
-              <HomeIcon size={20} className="text-gray-600" />
-              <span className="text-gray-600">Home</span>
-            </Link>
-            
-            <Link
-              to="/search"
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-            >
-              <SearchIcon size={20} className="text-gray-600" />
-              <span className="text-gray-600">Search</span>
-            </Link>
-
-            <Link
-              to="/chat"
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-            >
-              <MessageCircle size={20} className="text-gray-600" />
-              <span className="text-gray-600">Messages</span>
-            </Link>
-
-            <Link
-              to="/calendar"
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-            >
-              <CalendarIcon size={20} className="text-gray-600" />
-              <span className="text-gray-600">Calendar</span>
-            </Link>
+          <div className="space-y-3">
+            {[
+              { to: "/", icon: HomeIcon, label: "Home" },
+              { to: "/search", icon: SearchIcon, label: "Search" },
+              { to: "/chat", icon: MessageCircle, label: "Messages" },
+              { to: "/calendar", icon: CalendarIcon, label: "Calendar" }
+            ].map(({ to, icon: Icon, label }) => (
+              <Link
+                key={to}
+                to={to}
+                className="flex items-center space-x-3 p-3 bg-white/50 backdrop-blur-sm rounded-xl
+                  hover:bg-white/70 transition-all duration-300 transform hover:scale-105
+                  hover:shadow-lg hover:shadow-purple-500/20"
+              >
+                <Icon size={20} className="text-purple-600" />
+                <span className="text-gray-800 font-medium">{label}</span>
+              </Link>
+            ))}
           </div>
         </div>
 
-        {/* Sign Out Button */}
-        <div className="p-4 border-t border-gray-200">
+        {/* Sign Out Button with new styling */}
+        <div className="p-4">
           <button
             onClick={handleSignOut}
-            className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="w-full px-8 py-3 rounded-full bg-purple-600 text-white font-semibold
+              transition-all duration-300 transform hover:scale-105
+              shadow-[0_0_20px_rgba(168,85,247,0.5)]
+              hover:shadow-[0_0_30px_rgba(168,85,247,0.8)]"
           >
             Sign Out
           </button>
         </div>
       </div>
 
-      {/* Overlay */}
+      {/* Overlay with blur effect */}
       {isNavOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
           onClick={() => setIsNavOpen(false)}
         />
       )}
