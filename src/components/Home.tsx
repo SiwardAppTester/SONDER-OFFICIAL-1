@@ -233,15 +233,15 @@ const Home: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-pink-50">
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
       {/* Navigation */}
       <div className="flex justify-between items-center p-4">
         <button
           onClick={() => setIsNavOpen(!isNavOpen)}
-          className="text-gray-700 hover:text-gray-900"
+          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
           aria-label="Toggle navigation menu"
         >
-          <Menu size={24} />
+          <Menu size={28} />
         </button>
         <button
           onClick={() => {
