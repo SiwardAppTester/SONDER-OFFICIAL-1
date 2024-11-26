@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { collection, addDoc, query, getDocs, deleteDoc, doc, updateDoc, getDoc, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { User } from 'firebase/auth';
-import { Menu, Plus } from "lucide-react";
+import { Menu, Plus, X } from "lucide-react";
 import BusinessSidebar from "./BusinessSidebar";
 
 interface Event {
   id: string;
   title: string;
   date: string;
+  time: string;
   description: string;
+  genre: string;
   userId: string;
-  createdBy: string; // business name
+  createdBy: string;
   isBusinessEvent: boolean;
-  isPublic: boolean; // determines if event shows on regular calendar
+  isPublic: boolean;
 }
 
 interface UserProfile {
@@ -24,6 +26,11 @@ interface UserProfile {
   following?: string[];
   isBusinessAccount?: boolean;
 }
+
+const danceGenres = [
+  "House", "Techno", "Trance", "Drum & Bass", "Dubstep", "EDM", 
+  "Garage", "Breakbeat", "Hardstyle", "Ambient", "Other"
+];
 
 const BusinessCalendar: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -38,6 +45,8 @@ const BusinessCalendar: React.FC = () => {
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
+    time: '',
+    genre: '',
     isPublic: true
   });
 
@@ -49,12 +58,17 @@ const BusinessCalendar: React.FC = () => {
         if (userDoc.exists()) {
           setUserProfile(userDoc.data() as UserProfile);
         }
-        fetchBusinessEvents();
       }
     });
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchBusinessEvents();
+    }
+  }, [currentUser]);
 
   const fetchBusinessEvents = async () => {
     if (!currentUser) return;
@@ -82,11 +96,18 @@ const BusinessCalendar: React.FC = () => {
     e.preventDefault();
     if (!currentUser || !userProfile) return;
 
+    if (!newEvent.title.trim() || !newEvent.description.trim() || !newEvent.time || !newEvent.genre) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     try {
       const eventData = {
         title: newEvent.title,
         description: newEvent.description,
         date: selectedDate,
+        time: newEvent.time,
+        genre: newEvent.genre,
         userId: currentUser.uid,
         createdBy: userProfile.displayName || userProfile.email,
         isBusinessEvent: true,
@@ -99,6 +120,8 @@ const BusinessCalendar: React.FC = () => {
       setNewEvent({
         title: '',
         description: '',
+        time: '',
+        genre: '',
         isPublic: true
       });
       setShowAddEvent(false);
@@ -252,60 +275,108 @@ const BusinessCalendar: React.FC = () => {
             </button>
           </div>
 
-          {/* Add Event Form */}
+          {/* Add Event Modal */}
           {showAddEvent && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <form onSubmit={handleAddEvent} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Event Title
-                  </label>
-                  <input
-                    type="text"
-                    value={newEvent.title}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Description
-                  </label>
-                  <textarea
-                    value={newEvent.description}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    rows={3}
-                  />
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={newEvent.isPublic}
-                    onChange={(e) => setNewEvent(prev => ({ ...prev, isPublic: e.target.checked }))}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <label className="ml-2 text-sm text-gray-700">
-                    Show on public calendar
-                  </label>
-                </div>
-                <div className="flex gap-2">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Add New Event</h2>
                   <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  >
-                    Add Event
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setShowAddEvent(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                    className="text-gray-500 hover:text-gray-700"
                   >
-                    Cancel
+                    <X size={24} />
                   </button>
                 </div>
-              </form>
+
+                <form onSubmit={handleAddEvent} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Event Title *
+                    </label>
+                    <input
+                      type="text"
+                      value={newEvent.title}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Time *
+                    </label>
+                    <input
+                      type="time"
+                      value={newEvent.time}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, time: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Dance Genre *
+                    </label>
+                    <select
+                      value={newEvent.genre}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, genre: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">Select a genre</option>
+                      {danceGenres.map((genre) => (
+                        <option key={genre} value={genre}>
+                          {genre}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Description *
+                    </label>
+                    <textarea
+                      value={newEvent.description}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      rows={3}
+                      required
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={newEvent.isPublic}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, isPublic: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label className="ml-2 text-sm text-gray-700">
+                      Show on public calendar
+                    </label>
+                  </div>
+
+                  <div className="flex gap-2 justify-end mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddEvent(false)}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                      Add Event
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
@@ -326,9 +397,11 @@ const BusinessCalendar: React.FC = () => {
                       <div>
                         <h4 className="font-semibold">{event.title}</h4>
                         <p className="text-gray-600">{event.description}</p>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {event.isPublic ? 'Public Event' : 'Private Event'}
-                        </p>
+                        <div className="text-sm text-gray-500 mt-1 space-y-1">
+                          <p>Time: {event.time}</p>
+                          <p>Genre: {event.genre}</p>
+                          <p>{event.isPublic ? 'Public Event' : 'Private Event'}</p>
+                        </div>
                       </div>
                       <button
                         onClick={() => handleDeleteEvent(event.id)}

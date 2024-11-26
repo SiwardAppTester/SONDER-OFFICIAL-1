@@ -4,8 +4,8 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 
 const musicGenres = [
-  "Pop", "Rock", "Hip Hop", "R&B", "Jazz", "Classical", "Electronic", 
-  "Country", "Folk", "Metal", "Blues", "Reggae", "Other"
+  "House", "Techno", "Trance", "Drum & Bass", "Dubstep", "EDM", 
+  "Garage", "Breakbeat", "Hardstyle", "Ambient", "Other"
 ];
 
 const CompleteProfile: React.FC = () => {
