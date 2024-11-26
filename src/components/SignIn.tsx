@@ -5,12 +5,17 @@ import { auth } from "../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 
-const SignIn: React.FC = () => {
+interface SignInProps {
+  initialFestivalCode?: string;
+}
+
+const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState("");
+  const [festivalCode] = useState(initialFestivalCode || "");
 
   useEffect(() => {
     // Create admin account if it doesn't exist
@@ -141,67 +146,99 @@ const SignIn: React.FC = () => {
   };
 
   return (
-    <div className="sign-in p-4 flex flex-col items-center">
-      <h2 className="text-2xl font-bold mb-4">Sign In</h2>
-      
-      {/* Email/Password Form */}
-      <form onSubmit={handleEmailSignIn} className="w-full max-w-sm mb-4">
-        <div className="mb-4">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full p-2 border rounded"
-            required
-            minLength={6}
-          />
-        </div>
-        {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white font-semibold py-2 px-4 rounded mb-2"
-        >
-          {isRegistering ? "Register" : "Sign In"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsRegistering(!isRegistering)}
-          className="w-full text-blue-500 text-sm"
-        >
-          {isRegistering ? "Already have an account? Sign in" : "Need an account? Register"}
-        </button>
-      </form>
-
-      {/* Divider */}
-      <div className="flex items-center w-full max-w-sm mb-4">
-        <div className="flex-grow border-t border-gray-300"></div>
-        <span className="px-4 text-gray-500 text-sm">OR</span>
-        <div className="flex-grow border-t border-gray-300"></div>
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100 flex flex-col justify-center items-center relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -top-20 -left-20 animate-pulse"></div>
+        <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -bottom-20 -right-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      {/* Existing Google Sign In Button */}
-      <button
-        onClick={handleGoogleSignIn}
-        className="bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded shadow flex items-center"
-      >
-        <img
-          src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-          alt="Google logo"
-          className="w-6 h-6 mr-2"
-        />
-        Sign in with Google
-      </button>
+      <div className="w-full max-w-md mx-auto px-4 relative z-10">
+        {/* Logo */}
+        <div className="text-6xl font-bold mb-12 transform hover:scale-105 transition-transform duration-300 cursor-default flex justify-center">
+          <span className="text-purple-600">S</span>
+          <span style={{ color: '#DC2626' }}>o</span>
+          <span className="text-purple-600">nder</span>
+        </div>
+
+        {/* Sign In Form */}
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg p-8 w-full max-w-md mx-auto">
+          <h2 className="text-2xl font-bold mb-6 text-center text-gray-900 min-w-[300px]">
+            {isRegistering ? "Create Account" : "Welcome Back"}
+          </h2>
+          
+          <form onSubmit={handleEmailSignIn} className="space-y-4 mb-6">
+            <div className="w-full">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                className="w-full p-3 border border-gray-200 rounded-lg bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                required
+              />
+            </div>
+            <div className="w-full">
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className="w-full p-3 border border-gray-200 rounded-lg bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                required
+                minLength={6}
+              />
+            </div>
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+            <div className="w-full">
+              <button
+                type="submit"
+                className="w-full px-8 py-3 rounded-lg bg-purple-600 text-white font-semibold text-lg
+                         transition-all duration-300 
+                         shadow-[0_0_20px_rgba(168,85,247,0.3)] 
+                         hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]
+                         hover:bg-purple-500"
+              >
+                {isRegistering ? "Register" : "Sign In"}
+              </button>
+            </div>
+            <div className="w-full">
+              <button
+                type="button"
+                onClick={() => setIsRegistering(!isRegistering)}
+                className="w-full text-purple-600 text-sm hover:text-purple-500 transition-colors"
+              >
+                {isRegistering ? "Already have an account? Sign in" : "Need an account? Register"}
+              </button>
+            </div>
+          </form>
+
+          {/* Divider */}
+          <div className="flex items-center mb-6">
+            <div className="flex-grow border-t border-gray-300"></div>
+            <span className="px-4 text-gray-500 text-sm">OR</span>
+            <div className="flex-grow border-t border-gray-300"></div>
+          </div>
+
+          {/* Google Sign In Button */}
+          <button
+            onClick={handleGoogleSignIn}
+            className="w-full bg-white text-gray-700 font-semibold py-3 px-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-3"
+          >
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="Google logo"
+              className="w-6 h-6"
+            />
+            Sign in with Google
+          </button>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-gray-600 mt-8 hover:text-gray-900 transition-colors duration-300">
+          Experience the moment. Cherish forever.
+        </p>
+      </div>
     </div>
   );
 };
