@@ -338,14 +338,25 @@ const AddPost: React.FC = () => {
       return;
     }
 
-    const festival = festivals.find(f => f.id === selectedFestival);
-    if (!festival?.categories?.length) {
-      alert("Please create a category in this festival first");
+    if (!selectedCategory) {
+      alert("Please select a category before uploading media");
       return;
     }
 
-    if (!selectedCategory) {
-      alert("Please select a category before uploading media");
+    // Validate that the selected category belongs to the selected festival
+    const festival = festivals.find(f => f.id === selectedFestival);
+    const categoryBelongsToFestival = festival?.categories?.some(
+      c => c.id === selectedCategory
+    );
+
+    if (!categoryBelongsToFestival) {
+      alert("This category does not belong to the selected festival");
+      setSelectedCategory(""); // Reset the category selection
+      return;
+    }
+
+    if (!festival?.categories?.length) {
+      alert("Please create a category in this festival first");
       return;
     }
 
@@ -403,14 +414,25 @@ const AddPost: React.FC = () => {
       return;
     }
 
-    const festival = festivals.find(f => f.id === selectedFestival);
-    if (!festival?.categories?.length) {
-      alert("Please create a category in this festival first");
+    if (!selectedCategory) {
+      alert("Please select a category before posting");
       return;
     }
 
-    if (!selectedCategory) {
-      alert("Please select a category before posting");
+    // Validate that the selected category belongs to the selected festival
+    const festival = festivals.find(f => f.id === selectedFestival);
+    const categoryBelongsToFestival = festival?.categories?.some(
+      c => c.id === selectedCategory
+    );
+
+    if (!categoryBelongsToFestival) {
+      alert("This category does not belong to the selected festival");
+      setSelectedCategory(""); // Reset the category selection
+      return;
+    }
+
+    if (!festival?.categories?.length) {
+      alert("Please create a category in this festival first");
       return;
     }
 
@@ -424,9 +446,16 @@ const AddPost: React.FC = () => {
       return;
     }
 
+    // Ensure all media files have the selected category
+    setMediaFiles(prev => prev.map(media => ({
+      ...media,
+      categoryId: selectedCategory
+    })));
+
     try {
       const postData = {
         userId: user.uid,
+        text: text.trim(),
         createdAt: serverTimestamp(),
         festivalId: selectedFestival,
         mediaFiles: mediaFiles
@@ -434,7 +463,7 @@ const AddPost: React.FC = () => {
           .map(media => ({
             url: media.url,
             type: media.type,
-            categoryId: selectedCategory || null
+            categoryId: selectedCategory
           }))
       };
 
@@ -504,6 +533,26 @@ const AddPost: React.FC = () => {
     ) || [];
   };
 
+  const handleFestivalSelect = (festivalId: string) => {
+    setSelectedFestival(festivalId);
+    
+    // Get the selected festival's categories
+    const festival = festivals.find(f => f.id === festivalId);
+    const firstCategory = festival?.categories?.[0];
+    
+    // If there's at least one category, select it automatically
+    if (firstCategory) {
+      setSelectedCategory(firstCategory.id);
+      // Also set the default media type view for this category
+      setActiveCategoryMedia(prev => ({
+        ...prev,
+        [firstCategory.id]: "image" // Default to image view
+      }));
+    } else {
+      setSelectedCategory(""); // Clear selection if no categories exist
+    }
+  };
+
   return (
     <div className="add-post p-4">
       <div className="w-full">
@@ -535,7 +584,7 @@ const AddPost: React.FC = () => {
                 <button
                   key={festival.id}
                   type="button"
-                  onClick={() => setSelectedFestival(festival.id)}
+                  onClick={() => handleFestivalSelect(festival.id)}
                   className={`px-4 py-2 rounded-full transition-colors ${
                     selectedFestival === festival.id
                       ? 'bg-blue-500 text-white'
