@@ -30,6 +30,8 @@ interface BusinessSidebarProps {
 interface Festival {
   id: string;
   name: string;
+  festivalName?: string;
+  active?: boolean;
 }
 
 interface UserDetails {
@@ -81,31 +83,34 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
           getDocs(
             query(
               collection(db, "festivals"),
-              where("userId", "==", user.uid)
+              where("userId", "==", user.uid),
+              where("active", "==", true)
             )
           ),
           getDocs(
             query(
               collection(db, "festivals"),
-              where("ownerId", "==", user.uid)
+              where("ownerId", "==", user.uid),
+              where("active", "==", true)
             )
           )
         ]);
         
         const festivals = [...userIdSnapshot.docs, ...ownerIdSnapshot.docs]
-          .reduce((acc, doc) => {
+          .map(doc => {
             const data = doc.data();
-            if (!acc.some(f => f.id === doc.id)) {
-              acc.push({
-                id: doc.id,
-                name: data.festivalName || data.name || 'Unnamed Festival'
-              });
-            }
-            return acc;
-          }, [] as Festival[])
-          .filter(festival => festival.name !== 'Unnamed Festival');
+            return {
+              id: doc.id,
+              name: data.festivalName || data.name || 'Unnamed Festival',
+              active: data.active
+            };
+          })
+          .filter((festival, index, self) => 
+            index === self.findIndex(f => f.id === festival.id) && 
+            festival.name !== 'Unnamed Festival' &&
+            festival.active === true
+          );
         
-        console.log('Fetched festivals:', festivals);
         setFestivalDetails(festivals);
       } catch (error) {
         console.error("Error fetching festival details:", error);
@@ -193,96 +198,131 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
 
   return (
     <>
-      {/* Navigation Drawer */}
-      <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
-          isNavOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
+      <div className={`fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+        isNavOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
         {/* Close button */}
-        <div className="p-4 flex justify-end">
+        <div className="p-3 flex justify-end">
           <button
             onClick={() => setIsNavOpen(false)}
-            className="text-gray-500 hover:text-gray-700"
+            className="relative group w-10 h-10 flex items-center justify-center 
+                      bg-white/60 backdrop-blur-sm rounded-xl
+                      transition-all duration-300 transform
+                      hover:scale-105 hover:bg-white/80
+                      hover:shadow-lg hover:shadow-purple-500/20"
           >
-            ×
+            <svg 
+              className="w-5 h-5 text-purple-600 transition-transform duration-300 
+                        group-hover:rotate-180" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
 
-        {/* Main content area */}
-        <div className="flex-1 px-4 -mt-4">
-          {/* Business Profile Section */}
-          <div className="border-b border-gray-200 pb-4 mb-4">
-            <div className="flex flex-col items-center mb-2">
+        {/* Enhanced Profile Section */}
+        <div className="px-6 -mt-2">
+          <div className="flex flex-col items-center mb-6">
+            <div className="relative transform hover:scale-105 transition-all duration-300">
               {localPhotoURL ? (
                 <img
                   src={localPhotoURL}
-                  alt="Business Profile"
-                  className="w-14 h-14 rounded-full mb-1"
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full mb-3 shadow-lg hover:shadow-purple-500/50 
+                           transition-all duration-300 object-cover border-2 border-white"
                 />
               ) : (
-                <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center mb-1">
+                <div className="w-24 h-24 rounded-full bg-white shadow-lg hover:shadow-purple-500/50 
+                              transition-all duration-300 flex items-center justify-center mb-3
+                              text-2xl font-semibold text-purple-600">
                   {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
                 </div>
               )}
-              <span className="font-semibold text-gray-800">
-                {userProfile?.displayName || 'Business Account'}
-              </span>
-              <span className="text-sm text-gray-600 mb-1">
-                {user?.email}
-              </span>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-3 right-0 bg-purple-600 rounded-full p-2 
+                         hover:bg-purple-700 transition-colors shadow-lg
+                         hover:scale-110 transform duration-300"
+                aria-label="Change profile picture"
+              >
+                <Camera size={14} className="text-white" />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                className="hidden"
+              />
             </div>
+            <span className="text-gray-800 font-semibold text-lg">
+              {userProfile?.displayName || 'Business Account'}
+            </span>
+            <span className="text-sm text-gray-600">
+              {user?.email}
+            </span>
+          </div>
 
-            <div className="grid grid-cols-3 gap-2 text-center mb-4 stats-grid">
+          {/* Enhanced Stats Grid */}
+          <div className="grid grid-cols-3 gap-3 text-center mb-6 stats-grid">
+            {[
+              { label: 'Followers', count: userProfile?.followers?.length || 0, type: 'followers' as const },
+              { label: 'Following', count: userProfile?.following?.length || 0, type: 'following' as const },
+              { label: 'Festivals', count: accessibleFestivalsCount, type: 'festivals' as const }
+            ].map(({ label, count, type }) => (
               <div 
-                className={`bg-gray-50 p-2 rounded cursor-pointer transition-colors ${
-                  openDropdown === 'followers' ? 'bg-blue-50' : 'hover:bg-gray-100'
-                }`}
-                onClick={() => toggleDropdown('followers')}
+                key={type}
+                className={`bg-white/80 backdrop-blur-sm p-3 rounded-xl cursor-pointer
+                  transition-all duration-300 border border-transparent
+                  ${openDropdown === type 
+                    ? 'shadow-lg shadow-purple-500/30 scale-105 border-purple-200' 
+                    : 'hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20'}
+                  transform`}
+                onClick={() => toggleDropdown(type)}
               >
-                <div className="font-semibold flex items-center justify-center gap-1">
-                  {userProfile?.followers?.length || 0}
-                  {openDropdown === 'followers' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                <div className="font-semibold flex items-center justify-center gap-1.5 text-gray-800">
+                  {count}
+                  {openDropdown === type 
+                    ? <ChevronUp size={14} className="text-purple-500" /> 
+                    : <ChevronDown size={14} className="text-purple-500" />}
                 </div>
-                <div className="text-xs text-gray-500">Followers</div>
+                <div className="text-sm text-gray-600 font-medium">{label}</div>
               </div>
+            ))}
+          </div>
 
-              <div 
-                className={`bg-gray-50 p-2 rounded cursor-pointer transition-colors ${
-                  openDropdown === 'following' ? 'bg-blue-50' : 'hover:bg-gray-100'
-                }`}
-                onClick={() => toggleDropdown('following')}
-              >
-                <div className="font-semibold flex items-center justify-center gap-1">
-                  {userProfile?.following?.length || 0}
-                  {openDropdown === 'following' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </div>
-                <div className="text-xs text-gray-500">Following</div>
-              </div>
-
-              <div 
-                className={`bg-gray-50 p-2 rounded cursor-pointer transition-colors ${
-                  openDropdown === 'festivals' ? 'bg-blue-50' : 'hover:bg-gray-100'
-                }`}
-                onClick={() => toggleDropdown('festivals')}
-              >
-                <div className="font-semibold flex items-center justify-center gap-1">
-                  {accessibleFestivalsCount}
-                  {openDropdown === 'festivals' ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </div>
-                <div className="text-xs text-gray-500">Festivals</div>
-              </div>
-            </div>
-
-            {openDropdown && (
-              <div className="h-48 border-y border-gray-200">
+          {/* Enhanced Dropdown Content */}
+          {openDropdown && (
+            <div 
+              className="h-28 border border-purple-100 bg-white/40 backdrop-blur-sm 
+                        rounded-xl mb-4 shadow-inner overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 
+                            scrollbar-track-transparent py-2">
                 {openDropdown === 'followers' && followersDetails.length > 0 && (
-                  <div className="h-full overflow-y-auto py-2">
+                  <div className="h-full overflow-y-auto py-1 px-2">
                     {followersDetails.map((follower) => (
                       <Link
                         key={follower.id}
                         to={`/profile/${follower.id}`}
-                        className="block py-2 px-2 hover:bg-blue-50 text-sm text-gray-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdown(null);
+                          setIsNavOpen(false);
+                        }}
+                        className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
+                                  transition-all duration-300 group
+                                  hover:shadow-sm border border-purple-100/50
+                                  bg-white/40 overflow-hidden cursor-pointer"
                       >
                         <div className="flex items-center gap-2">
                           {follower.photoURL ? (
@@ -304,12 +344,20 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
                 )}
 
                 {openDropdown === 'following' && followingDetails.length > 0 && (
-                  <div className="h-full overflow-y-auto py-2">
+                  <div className="h-full overflow-y-auto py-1 px-2">
                     {followingDetails.map((following) => (
                       <Link
                         key={following.id}
                         to={`/profile/${following.id}`}
-                        className="block py-2 px-2 hover:bg-blue-50 text-sm text-gray-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdown(null);
+                          setIsNavOpen(false);
+                        }}
+                        className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
+                                  transition-all duration-300 group
+                                  hover:shadow-sm border border-purple-100/50
+                                  bg-white/40 overflow-hidden cursor-pointer"
                       >
                         <div className="flex items-center gap-2">
                           {following.photoURL ? (
@@ -331,12 +379,20 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
                 )}
 
                 {openDropdown === 'festivals' && festivalDetails.length > 0 && (
-                  <div className="h-full overflow-y-auto py-2">
+                  <div className="h-full overflow-y-auto py-1 px-2">
                     {festivalDetails.map((festival) => (
                       <Link
                         key={festival.id}
                         to={`/festival/${festival.id}`}
-                        className="block py-2 px-2 hover:bg-blue-50 text-sm text-gray-700"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdown(null);
+                          setIsNavOpen(false);
+                        }}
+                        className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
+                                  transition-all duration-300 group
+                                  hover:shadow-sm border border-purple-100/50
+                                  bg-white/40 overflow-hidden cursor-pointer"
                       >
                         <div className="flex items-center gap-2">
                           <span>{festival.name}</span>
@@ -346,68 +402,53 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
                   </div>
                 )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
 
-          {/* Business Navigation Links */}
+        {/* Enhanced Navigation Links */}
+        <div className="flex-1 px-6 pt-4">
           <div className="space-y-2">
-            <Link
-              to="/add-post"
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-            >
-              <Plus size={20} className="text-gray-600" />
-              <span className="text-gray-600">Create Post</span>
-            </Link>
-
-            <Link
-              to="/business-dashboard"
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-            >
-              <HomeIcon size={20} className="text-gray-600" />
-              <span className="text-gray-600">Dashboard</span>
-            </Link>
-            
-            <Link
-              to="/chat"
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-            >
-              <MessageCircle size={20} className="text-gray-600" />
-              <span className="text-gray-600">Messages</span>
-            </Link>
-
-            <Link
-              to="/business-calendar"
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-            >
-              <CalendarIcon size={20} className="text-gray-600" />
-              <span className="text-gray-600">Calendar</span>
-            </Link>
-
-            <Link
-              to="/business-settings"
-              className="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg w-full"
-            >
-              <Settings size={20} className="text-gray-600" />
-              <span className="text-gray-600">Settings</span>
-            </Link>
+            {[
+              { to: "/add-post", icon: Plus, label: "Create Post" },
+              { to: "/business-dashboard", icon: HomeIcon, label: "Dashboard" },
+              { to: "/chat", icon: MessageCircle, label: "Messages" },
+              { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" },
+              { to: "/business-settings", icon: Settings, label: "Settings" }
+            ].map(({ to, icon: Icon, label }) => (
+              <Link
+                key={to}
+                to={to}
+                className="flex items-center space-x-4 p-4 bg-white/50 backdrop-blur-sm rounded-xl
+                  hover:bg-white/70 transition-all duration-300 transform hover:scale-102
+                  hover:shadow-lg hover:shadow-purple-500/20 group"
+              >
+                <Icon size={20} className="text-purple-600 group-hover:scale-110 transition-transform duration-300" />
+                <span className="text-gray-800 font-medium">{label}</span>
+              </Link>
+            ))}
           </div>
         </div>
 
-        {/* Sign Out Button */}
-        <div className="p-4 border-t border-gray-200">
+        {/* Enhanced Sign Out Button */}
+        <div className="p-6">
           <button
             onClick={handleSignOut}
-            className="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="w-full px-8 py-4 rounded-xl bg-purple-600 text-white font-semibold
+              transition-all duration-300 transform hover:scale-102
+              shadow-[0_4px_20px_rgba(168,85,247,0.3)]
+              hover:shadow-[0_4px_30px_rgba(168,85,247,0.5)]
+              hover:bg-purple-700 active:scale-98"
           >
             Sign Out
           </button>
         </div>
       </div>
 
-      {/* Overlay */}
+      {/* Enhanced Overlay */}
       {isNavOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300"
           onClick={() => setIsNavOpen(false)}
         />
       )}
