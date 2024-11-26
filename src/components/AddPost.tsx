@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
 import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, getDoc, updateDoc, arrayUnion, arrayRemove, query, where, orderBy } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
 import BusinessSidebar from "./BusinessSidebar";
@@ -559,6 +559,71 @@ const AddPost: React.FC = () => {
     }
   };
 
+  // Add this new function to handle post media deletion
+  const handleDeletePostMedia = async (postId: string, mediaUrl: string, event: React.MouseEvent) => {
+    // Prevent event from bubbling up to parent elements
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (!window.confirm("Are you sure you want to delete this media?")) {
+      return;
+    }
+
+    try {
+      // Get the current post
+      const postRef = doc(db, "posts", postId);
+      const postDoc = await getDoc(postRef);
+      
+      if (!postDoc.exists()) {
+        console.error("Post not found");
+        return;
+      }
+
+      const post = postDoc.data() as Post;
+      
+      // Filter out the media to be deleted
+      const updatedMediaFiles = post.mediaFiles.filter(media => media.url !== mediaUrl);
+
+      // Delete the file from Firebase Storage
+      try {
+        const storageRef = ref(storage, mediaUrl);
+        await deleteObject(storageRef);
+      } catch (error) {
+        console.error("Error deleting file from storage:", error);
+      }
+
+      if (updatedMediaFiles.length === 0) {
+        // If no media left, delete the entire post
+        await deleteDoc(postRef);
+        
+        // Update local state to remove the post
+        setCategoryPosts(prev => ({
+          ...prev,
+          [selectedCategory]: prev[selectedCategory]?.filter(p => p.id !== postId) || []
+        }));
+      } else {
+        // Update the post with the remaining media
+        await updateDoc(postRef, {
+          mediaFiles: updatedMediaFiles
+        });
+        
+        // Update local state
+        setCategoryPosts(prev => ({
+          ...prev,
+          [selectedCategory]: prev[selectedCategory]?.map(p => 
+            p.id === postId 
+              ? { ...p, mediaFiles: updatedMediaFiles }
+              : p
+          ) || []
+        }));
+      }
+
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      alert("Failed to delete media. Please try again.");
+    }
+  };
+
   return (
     <div className="add-post p-4">
       <div className="w-full">
@@ -916,7 +981,7 @@ const AddPost: React.FC = () => {
                         media.categoryId === selectedCategory
                       )
                       .map((media, mediaIndex) => (
-                        <div key={`${post.id}-${mediaIndex}`} className="relative w-full">
+                        <div key={`${post.id}-${mediaIndex}`} className="relative w-full group">
                           {media.type === 'video' ? (
                             <video
                               src={media.url}
@@ -930,6 +995,15 @@ const AddPost: React.FC = () => {
                               className="w-full aspect-[9/16] object-cover rounded-lg"
                             />
                           )}
+                          <button
+                            onClick={(e) => handleDeletePostMedia(post.id, media.url, e)}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                            title="Delete media"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
                           {post.text && (
                             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
                               {post.text}
