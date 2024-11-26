@@ -233,23 +233,22 @@ const Home: React.FC = () => {
   });
 
   return (
-    <div className="home p-4">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsNavOpen(!isNavOpen)}
-            className="text-gray-700 hover:text-gray-900"
-            aria-label="Toggle navigation menu"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-white to-pink-50">
+      {/* Navigation */}
+      <div className="flex justify-between items-center p-4">
+        <button
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          className="text-gray-700 hover:text-gray-900"
+          aria-label="Toggle navigation menu"
+        >
+          <Menu size={24} />
+        </button>
         <button
           onClick={() => {
             setShowFestivalList(true);
             setShowAccessInput(false);
           }}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition-colors"
         >
           All Festivals
         </button>
@@ -261,12 +260,13 @@ const Home: React.FC = () => {
         user={user}
         userProfile={userProfile}
         accessibleFestivalsCount={userProfile?.accessibleFestivals?.length || 0}
+        className="z-50"
       />
 
       {showAccessInput ? (
-        <div className="max-w-md mx-auto mt-20">
-          <div className="bg-white rounded-lg p-6 shadow-md">
-            <h2 className="text-xl font-semibold mb-4 text-center">
+        <div className="max-w-md mx-auto mt-20 px-4">
+          <div className="bg-white rounded-2xl p-8 shadow-lg">
+            <h2 className="text-xl font-semibold mb-6 text-center">
               Enter Festival Access Code
             </h2>
             <form onSubmit={handleAccessCodeSubmit}>
@@ -275,70 +275,110 @@ const Home: React.FC = () => {
                 value={generalAccessCode}
                 onChange={(e) => setGeneralAccessCode(e.target.value)}
                 placeholder="Enter access code"
-                className="w-full p-2 border rounded mb-4"
+                className="w-full p-3 border rounded-lg mb-4"
               />
               {generalAccessError && (
                 <p className="text-red-500 text-sm mb-4">{generalAccessError}</p>
               )}
               <button
                 type="submit"
-                className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                className="w-full bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-colors"
               >
-                Access Content
+                Hold to Join the Revolution
               </button>
             </form>
           </div>
+          <p className="text-center text-gray-600 mt-8">
+            Experience the moment. Cherish forever.
+          </p>
         </div>
       ) : showFestivalList ? (
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-xl font-semibold mb-4">Your Accessible Festivals</h2>
-          <div className="grid gap-4">
+        <div className="max-w-4xl mx-auto px-4 mt-12 relative">
+          {/* Animated background elements */}
+          <div className="fixed inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -top-20 -left-20 animate-pulse"></div>
+            <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -bottom-20 -right-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+          </div>
+
+          <div className="text-center mb-16 relative z-10">
+            <h1 className="text-6xl font-bold text-gray-900 mb-4">Your Festivals</h1>
+            <p className="text-xl text-gray-600">Select a festival to view content</p>
+          </div>
+
+          <div className="grid gap-6 relative z-10">
             {festivals
               .filter(festival => accessibleFestivals.has(festival.id))
               .map((festival) => (
                 <div
                   key={festival.id}
-                  className="bg-white p-4 rounded-lg shadow-md"
+                  className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-xl 
+                           transform hover:scale-[1.02] transition-all duration-300
+                           border border-gray-100"
                 >
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">{festival.name}</h3>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{festival.name}</h3>
+                      <p className="text-gray-500">
+                        {festival.categories?.length || 0} Categories Available
+                      </p>
+                    </div>
                     <button
                       onClick={() => {
                         setSelectedFestival(festival.id);
                         setShowFestivalList(false);
+                        setIsNavOpen(false);
                       }}
-                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                      className="bg-purple-600 text-white px-8 py-3 rounded-full 
+                               hover:bg-purple-700 transition-all duration-300
+                               transform hover:scale-105 hover:shadow-lg
+                               shadow-[0_0_20px_rgba(168,85,247,0.3)]
+                               hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]"
                     >
                       View Content
                     </button>
                   </div>
                 </div>
-            ))}
+              ))}
           </div>
-          <div className="mt-4">
+
+          <div className="mt-12 relative z-10">
             <button
-              onClick={() => setShowAccessInput(true)}
-              className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              onClick={() => {
+                setShowAccessInput(true);
+                setIsNavOpen(false);
+              }}
+              className="w-full px-8 py-4 rounded-full bg-purple-600 text-white text-xl 
+                       font-semibold transition-all duration-300 
+                       shadow-[0_0_20px_rgba(168,85,247,0.3)]
+                       hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]
+                       hover:bg-purple-700 transform hover:scale-[1.02]
+                       relative overflow-hidden group"
             >
-              Access Another Festival
+              <span className="relative z-10">Access Another Festival</span>
+              <div 
+                className="absolute inset-0 bg-gradient-to-r from-purple-600 to-purple-500 
+                         transition-opacity duration-300 opacity-0 group-hover:opacity-100"
+              />
             </button>
           </div>
         </div>
       ) : (
-        <>
-          <div className="max-w-5xl mx-auto px-4 mb-6">
-            <div className="flex flex-col gap-4 bg-white p-4 rounded-lg shadow-md">
+        <div className="max-w-6xl mx-auto px-4">
+          {/* Filters Section */}
+          <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
+            <div className="space-y-6">
+              {/* Category Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Filter by Category
                 </label>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCategory("")}
-                    className={`px-4 py-2 rounded ${
+                    className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 ${
                       selectedCategory === ""
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200"
+                        ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                        : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
                     }`}
                   >
                     All Categories
@@ -349,10 +389,10 @@ const Home: React.FC = () => {
                       <button
                         key={category.id}
                         onClick={() => setSelectedCategory(category.id)}
-                        className={`px-4 py-2 rounded ${
+                        className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 ${
                           selectedCategory === category.id
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200"
+                            ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
                         }`}
                       >
                         {category.name}
@@ -361,115 +401,92 @@ const Home: React.FC = () => {
                 </div>
               </div>
 
+              {/* Media Type Filter */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Media Type
                 </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setSelectedMediaType("all")}
-                    className={`px-4 py-2 rounded ${
-                      selectedMediaType === "all"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200"
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setSelectedMediaType("image")}
-                    className={`px-4 py-2 rounded ${
-                      selectedMediaType === "image"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200"
-                    }`}
-                  >
-                    Images
-                  </button>
-                  <button
-                    onClick={() => setSelectedMediaType("video")}
-                    className={`px-4 py-2 rounded ${
-                      selectedMediaType === "video"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200"
-                    }`}
-                  >
-                    Videos
-                  </button>
+                <div className="inline-flex bg-gray-100 p-1 rounded-full">
+                  {["all", "image", "video"].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedMediaType(type as "all" | "image" | "video")}
+                      className={`px-6 py-2 rounded-full transition-all duration-200 ${
+                        selectedMediaType === type
+                          ? "bg-purple-600 text-white shadow-lg transform scale-105"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="max-w-5xl mx-auto">
-            {loadingError && (
-              <div className="text-red-500 text-center mb-4">{loadingError}</div>
-            )}
-            
-            <div 
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: '1rem',
-                gridAutoFlow: 'row dense'
-              }}
-            >
-              {filteredPosts.flatMap((post) => 
-                post.mediaFiles.map((media, index) => (
-                  <div
-                    key={`${post.id}-${index}`}
-                    className="w-full"
-                  >
-                    {media.type === 'video' ? (
-                      <div className="aspect-[9/16] relative">
-                        <video
-                          src={media.url}
-                          className="w-full h-full object-cover rounded-lg"
-                          controls
-                          onError={(e) => {
-                            console.error("Video failed to load:", media.url);
-                            (e.target as HTMLVideoElement).style.display = 'none';
-                          }}
-                        />
-                        <button
-                          onClick={() => handleDownload(media.url, 'video', post.id)}
-                          className="absolute bottom-2 right-2 bg-blue-500 text-white px-2 py-1 rounded-lg text-sm opacity-80 hover:opacity-100 transition-opacity"
-                        >
-                          Download
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="aspect-[9/16] relative">
-                        <img
-                          src={media.url}
-                          alt={`Post content ${index + 1}`}
-                          className="w-full h-full object-cover rounded-lg"
-                          onError={(e) => {
-                            console.error("Image failed to load:", media.url);
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                        <button
-                          onClick={() => handleDownload(media.url, 'image', post.id)}
-                          className="absolute bottom-2 right-2 bg-blue-500 text-white px-2 py-1 rounded-lg text-sm opacity-80 hover:opacity-100 transition-opacity"
-                        >
-                          Download
-                        </button>
-                      </div>
-                    )}
-                    <p className="text-gray-800 mt-2 text-center text-xs">{post.text}</p>
-                  </div>
-                ))
-              )}
-            </div>
-            
-            {filteredPosts.length === 0 && !loadingError && (
-              <p className="text-center text-gray-500 mt-8">
-                {posts.length === 0 ? "No posts yet" : "No posts match the selected filters"}
-              </p>
+          {/* Media Grid */}
+          {loadingError && (
+            <div className="text-red-500 text-center mb-4">{loadingError}</div>
+          )}
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredPosts.flatMap((post) => 
+              post.mediaFiles.map((media, index) => (
+                <div key={`${post.id}-${index}`} className="relative group">
+                  {media.type === 'video' ? (
+                    <div className="aspect-[9/16] rounded-2xl overflow-hidden">
+                      <video
+                        src={media.url}
+                        className="w-full h-full object-cover"
+                        controls
+                        onError={(e) => {
+                          console.error("Video failed to load:", media.url);
+                          (e.target as HTMLVideoElement).style.display = 'none';
+                        }}
+                      />
+                      <button
+                        onClick={() => handleDownload(media.url, 'video', post.id)}
+                        className="absolute bottom-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        Download
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="aspect-[9/16] rounded-2xl overflow-hidden">
+                      <img
+                        src={media.url}
+                        alt={`Post content ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error("Image failed to load:", media.url);
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <button
+                        onClick={() => handleDownload(media.url, 'image', post.id)}
+                        className="absolute bottom-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        Download
+                      </button>
+                    </div>
+                  )}
+                  {post.text && (
+                    <p className="text-gray-800 mt-2 text-sm text-center">{post.text}</p>
+                  )}
+                </div>
+              ))
             )}
           </div>
-        </>
+          
+          {filteredPosts.length === 0 && !loadingError && (
+            <div className="text-center text-gray-500 mt-12">
+              <p className="text-xl">
+                {posts.length === 0 ? "No posts yet" : "No posts match the selected filters"}
+              </p>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
