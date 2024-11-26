@@ -141,18 +141,16 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Navigation Header */}
-      <div className="p-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsNavOpen(!isNavOpen)}
-            className="text-gray-700 hover:text-gray-900"
-            aria-label="Toggle navigation menu"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
+      {/* Navigation - reduced top padding */}
+      <div className="flex justify-between items-center p-2">
+        <button
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
+          aria-label="Toggle navigation menu"
+        >
+          <Menu size={28} />
+        </button>
       </div>
 
       {/* Sidebar */}
@@ -164,17 +162,17 @@ const Calendar: React.FC = () => {
         accessibleFestivalsCount={accessibleFestivals.size}
       />
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto p-4 w-full">
-        <div className="bg-white rounded-lg shadow p-6">
-          {/* Genre Filter */}
-          <div className="mb-6">
+      {/* Main Content - adjusted max width and padding */}
+      <div className="max-w-4xl mx-auto px-4 mt-2">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 mb-6">
+          {/* Genre Filter - reduced margin */}
+          <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-medium text-gray-700">Filter by Genre</h3>
               {selectedGenres.size > 0 && (
                 <button
                   onClick={() => setSelectedGenres(new Set())}
-                  className="text-sm text-blue-500 hover:text-blue-700"
+                  className="text-purple-600 hover:text-purple-700 text-sm"
                 >
                   Clear Filters
                 </button>
@@ -185,10 +183,10 @@ const Calendar: React.FC = () => {
                 <button
                   key={genre}
                   onClick={() => toggleGenre(genre)}
-                  className={`px-3 py-1 rounded-full text-sm ${
+                  className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 ${
                     selectedGenres.has(genre)
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                      : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
                   }`}
                 >
                   {genre}
@@ -197,29 +195,29 @@ const Calendar: React.FC = () => {
             </div>
           </div>
 
-          {/* Month Navigation */}
+          {/* Month Navigation - reduced margin */}
           <div className="flex justify-between items-center mb-4">
             <button
               onClick={handlePreviousMonth}
-              className="p-2 hover:bg-gray-100 rounded"
+              className="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition-colors"
             >
-              ←
+              Previous
             </button>
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-2xl font-bold text-gray-900">
               {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
             </h2>
             <button
               onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-100 rounded"
+              className="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition-colors"
             >
-              →
+              Next
             </button>
           </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2 mb-6">
+          {/* Calendar Grid - adjusted cell height */}
+          <div className="grid grid-cols-7 gap-1">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center font-semibold">
+              <div key={day} className="text-center font-semibold text-gray-700 py-1 text-sm">
                 {day}
               </div>
             ))}
@@ -234,17 +232,18 @@ const Calendar: React.FC = () => {
               return (
                 <div
                   key={index}
-                  className={`min-h-[100px] border rounded p-2 ${
-                    day ? 'cursor-pointer hover:bg-gray-50' : ''
-                  } ${selectedDate === date ? 'bg-blue-50' : ''}`}
+                  className={`min-h-[80px] border rounded-xl p-2 transition-all duration-300 
+                    ${day ? 'cursor-pointer hover:shadow-lg transform hover:scale-[1.02]' : ''}
+                    ${selectedDate === date ? 'bg-purple-50 border-purple-200' : 'bg-white/60'}
+                    ${!day ? 'bg-gray-50/30' : ''}`}
                   onClick={() => day && handleDayClick(date)}
                 >
                   {day && (
                     <>
-                      <div className="font-semibold">{day}</div>
+                      <div className="font-semibold text-gray-900 text-sm">{day}</div>
                       {dayEvents.length > 0 && (
                         <div className="mt-1">
-                          <span className="inline-flex items-center justify-center bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center justify-center bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">
                             {dayEvents.length} {dayEvents.length === 1 ? 'event' : 'events'}
                           </span>
                         </div>
@@ -255,99 +254,112 @@ const Calendar: React.FC = () => {
               );
             })}
           </div>
+        </div>
+      </div>
 
-          {/* Event Modal */}
-          {showEventModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto mx-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">
-                    Events for {new Date(selectedDate).toLocaleDateString()}
+      {/* Event Modal */}
+      {showEventModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">
+                Events for {new Date(selectedDate).toLocaleDateString('default', { 
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+                {selectedGenres.size > 0 && (
+                  <span className="text-sm font-normal text-gray-600 block mt-1">
+                    Filtered by: {Array.from(selectedGenres).join(", ")}
+                  </span>
+                )}
+              </h2>
+              <button
+                onClick={() => setShowEventModal(false)}
+                className="text-purple-600 hover:text-purple-700 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+              {filterEventsByGenre(events.filter(event => event.date === selectedDate))
+                .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
+                .map(event => (
+                  <div
+                    key={event.id}
+                    className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl 
+                             transform hover:scale-[1.02] transition-all duration-300
+                             border border-gray-100"
+                  >
+                    <div className="flex justify-between items-start">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                      {(event.startTime || event.endTime) && (
+                        <span className="bg-purple-100 text-purple-800 px-4 py-1 rounded-full text-sm font-medium">
+                          {event.startTime && event.endTime 
+                            ? `${event.startTime} - ${event.endTime}`
+                            : event.startTime || event.endTime}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-gray-600 text-lg mb-3">{event.description}</p>
+
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3">
+                      {event.createdBy && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Organizer:</span>
+                          <span className="text-purple-600">{event.createdBy}</span>
+                        </div>
+                      )}
+                      {event.genre && (
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Genre:</span>
+                          <span className="text-purple-600">{event.genre}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {event.festivalId && (
+                        <span className="bg-purple-100 text-purple-800 px-4 py-1.5 rounded-full text-sm font-medium">
+                          Festival Event
+                        </span>
+                      )}
+                      {event.isBusinessEvent && (
+                        <span className="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-sm font-medium">
+                          Business Event
+                        </span>
+                      )}
+                      {event.isPublic !== undefined && (
+                        <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+                          event.isPublic 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {event.isPublic ? 'Public' : 'Private'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+              {filterEventsByGenre(events.filter(event => event.date === selectedDate)).length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 text-lg">
+                    No events scheduled for this day
                     {selectedGenres.size > 0 && (
-                      <span className="text-sm font-normal text-gray-600 block mt-1">
+                      <span className="block mt-2 text-sm">
                         Filtered by: {Array.from(selectedGenres).join(", ")}
                       </span>
                     )}
-                  </h2>
-                  <button
-                    onClick={() => setShowEventModal(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X size={24} />
-                  </button>
+                  </p>
                 </div>
-                
-                <div className="space-y-4">
-                  {filterEventsByGenre(events.filter(event => event.date === selectedDate))
-                    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
-                    .map(event => (
-                      <div
-                        key={event.id}
-                        className="border rounded-lg p-4 hover:bg-gray-50"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold text-lg">{event.title}</h3>
-                          {(event.startTime || event.endTime) && (
-                            <span className="text-sm font-medium bg-gray-100 px-2 py-1 rounded">
-                              {event.startTime && event.endTime 
-                                ? `${event.startTime} - ${event.endTime}`
-                                : event.startTime || event.endTime}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <p className="text-gray-600 mb-3">{event.description}</p>
-                        
-                        <div className="grid grid-cols-2 gap-2 text-sm text-gray-500 mb-3">
-                          {event.createdBy && (
-                            <div>
-                              <span className="font-medium">Organizer:</span> {event.createdBy}
-                            </div>
-                          )}
-                          {event.genre && (
-                            <div>
-                              <span className="font-medium">Genre:</span> {event.genre}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          {event.festivalId && (
-                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-                              Festival Event
-                            </span>
-                          )}
-                          {event.isBusinessEvent && (
-                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
-                              Business Event
-                            </span>
-                          )}
-                          {event.isPublic !== undefined && (
-                            <span className={`${
-                              event.isPublic 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                              } text-xs px-2 py-1 rounded`}
-                            >
-                              {event.isPublic ? 'Public' : 'Private'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  
-                  {filterEventsByGenre(events.filter(event => event.date === selectedDate)).length === 0 && (
-                    <p className="text-gray-500 text-center py-4">
-                      No events scheduled for this day
-                      {selectedGenres.size > 0 && ` matching selected genres (${Array.from(selectedGenres).join(", ")})`}
-                    </p>
-                  )}
-                </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

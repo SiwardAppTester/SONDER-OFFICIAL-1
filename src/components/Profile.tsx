@@ -100,22 +100,17 @@ const Profile: React.FC = () => {
     }
   };
 
-  if (!profileUser) {
-    return <div className="text-center p-4">Loading...</div>;
-  }
-
   return (
-    <div className="flex flex-col h-screen">
-      <div className="p-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsNavOpen(!isNavOpen)}
-            className="text-gray-700 hover:text-gray-900"
-            aria-label="Toggle navigation menu"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
+      {/* Navigation */}
+      <div className="flex justify-between items-center p-4">
+        <button
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
+          aria-label="Toggle navigation menu"
+        >
+          <Menu size={28} />
+        </button>
       </div>
 
       <Sidebar
@@ -124,37 +119,47 @@ const Profile: React.FC = () => {
         user={currentUser}
         userProfile={userProfile}
         accessibleFestivalsCount={accessibleFestivals.size}
+        className="z-50"
       />
 
-      <div className="flex-1 p-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            {/* Profile Header */}
-            <div className="flex flex-col items-center mb-6">
+      {!profileUser ? (
+        <div className="text-center p-4">Loading...</div>
+      ) : (
+        <div className="max-w-4xl mx-auto px-4 mt-12 relative">
+          {/* Animated background elements */}
+          <div className="fixed inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -top-20 -left-20 animate-pulse"></div>
+            <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -bottom-20 -right-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+          </div>
+
+          {/* Profile Card */}
+          <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-gray-100 relative z-10">
+            <div className="flex flex-col items-center">
               {profileUser.photoURL ? (
                 <img
                   src={profileUser.photoURL}
                   alt={profileUser.fullName || profileUser.displayName}
-                  className="w-24 h-24 rounded-full mb-4"
+                  className="w-32 h-32 rounded-full mb-6 border-4 border-purple-100 shadow-lg"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-4">
+                <div className="w-32 h-32 rounded-full bg-purple-100 flex items-center justify-center mb-6 text-3xl font-bold text-purple-600">
                   {profileUser.fullName?.[0] || profileUser.username?.[0] || '?'}
                 </div>
               )}
-              <h1 className="text-2xl font-bold mb-1">
+
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {profileUser.fullName || 'Anonymous User'}
               </h1>
-              <p className="text-gray-600">@{profileUser.username || 'anonymous'}</p>
-              
-              {/* Add follow button if not viewing own profile */}
+              <p className="text-xl text-gray-600 mb-6">@{profileUser.username || 'anonymous'}</p>
+
+              {/* Follow Button */}
               {currentUser && currentUser.uid !== userId && (
                 <button
                   onClick={handleFollowToggle}
-                  className={`mt-4 px-6 py-2 rounded-full font-semibold ${
+                  className={`px-8 py-3 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 ${
                     isFollowing
-                      ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                      ? 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-200'
                   }`}
                 >
                   {isFollowing ? 'Unfollow' : 'Follow'}
@@ -163,29 +168,29 @@ const Profile: React.FC = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-xl font-semibold">
+            <div className="grid grid-cols-3 gap-6 mt-12">
+              <div className="bg-white/90 p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
+                <div className="text-3xl font-bold text-purple-600 mb-2">
                   {followersCount}
                 </div>
-                <div className="text-gray-600">Followers</div>
+                <div className="text-gray-600 font-medium">Followers</div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-xl font-semibold">
+              <div className="bg-white/90 p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
+                <div className="text-3xl font-bold text-purple-600 mb-2">
                   {profileUser.following?.length || 0}
                 </div>
-                <div className="text-gray-600">Following</div>
+                <div className="text-gray-600 font-medium">Following</div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-xl font-semibold">
+              <div className="bg-white/90 p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
+                <div className="text-3xl font-bold text-purple-600 mb-2">
                   {profileUser?.accessibleFestivals?.length || 0}
                 </div>
-                <div className="text-gray-600">Festivals</div>
+                <div className="text-gray-600 font-medium">Festivals</div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
