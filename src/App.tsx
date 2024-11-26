@@ -15,6 +15,7 @@ import BusinessCalendar from './components/BusinessCalendar';
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "./firebase";
 import CompleteProfile from "./components/CompleteProfile";
+import BusinessDashboard from './components/BusinessDashboard';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -66,6 +67,7 @@ const App: React.FC = () => {
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/chat/:userId" element={<Chat />} />
                 <Route path="/business-calendar" element={<BusinessCalendar />} />
+                <Route path="/business-dashboard" element={<BusinessDashboard />} />
               </>
             )}
 

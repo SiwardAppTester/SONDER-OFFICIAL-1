@@ -326,7 +326,7 @@ const Home: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="max-w-2xl mx-auto mb-6">
+          <div className="max-w-5xl mx-auto px-4 mb-6">
             <div className="flex flex-col gap-4 bg-white p-4 rounded-lg shadow-md">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -406,74 +406,62 @@ const Home: React.FC = () => {
               <div className="text-red-500 text-center mb-4">{loadingError}</div>
             )}
             
-            {filteredPosts.map((post) => (
-              <div
-                key={post.id}
-                className="post bg-white shadow-md rounded-lg p-4 mb-4"
-              >
-                <div className="mb-4">
-                  <div className="text-sm text-gray-500">
-                    Festival: {festivals.find(f => f.id === post.festivalId)?.name || 'Unknown Festival'}
+            <div className="grid grid-cols-3 gap-4">
+              {filteredPosts.map((post) => (
+                <div
+                  key={post.id}
+                  className="post flex flex-col items-center"
+                >
+                  <div className="media-container w-full">
+                    {post.mediaFiles && post.mediaFiles.map((media, index) => (
+                      <div key={index} className="relative mb-4">
+                        {media.type === 'video' ? (
+                          <>
+                            <video
+                              src={media.url}
+                              className="w-full aspect-[3/4] object-cover rounded-lg"
+                              controls
+                              onError={(e) => {
+                                console.error("Video failed to load:", media.url);
+                                (e.target as HTMLVideoElement).style.display = 'none';
+                              }}
+                            />
+                            <button
+                              onClick={() => handleDownload(media.url, 'video', post.id)}
+                              className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+                            >
+                              Download
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <img
+                              src={media.url}
+                              alt={`Post content ${index + 1}`}
+                              className="w-full aspect-[3/4] object-cover rounded-lg"
+                              onError={(e) => {
+                                console.error("Image failed to load:", media.url);
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                            <button
+                              onClick={() => handleDownload(media.url, 'image', post.id)}
+                              className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+                            >
+                              Download
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  {post.mediaFiles[0]?.categoryId && (
-                    <div className="text-sm text-gray-500">
-                      Category: {
-                        festivals
-                          .find(f => f.id === post.festivalId)
-                          ?.categories?.find(c => c.id === post.mediaFiles[0].categoryId)
-                          ?.name || 'Unknown Category'
-                      }
-                    </div>
-                  )}
+                  <p className="text-gray-800 mt-2 text-center text-sm">{post.text}</p>
                 </div>
-                <div className="media-container mb-4">
-                  {post.mediaFiles && post.mediaFiles.map((media, index) => (
-                    <div key={index} className="relative mb-2">
-                      {media.type === 'video' ? (
-                        <>
-                          <video
-                            src={media.url}
-                            className="w-full max-h-96 object-contain rounded-lg"
-                            controls
-                            onError={(e) => {
-                              console.error("Video failed to load:", media.url);
-                              (e.target as HTMLVideoElement).style.display = 'none';
-                            }}
-                          />
-                          <button
-                            onClick={() => handleDownload(media.url, 'video', post.id)}
-                            className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
-                          >
-                            Download
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <img
-                            src={media.url}
-                            alt={`Post content ${index + 1}`}
-                            className="w-full max-h-96 object-contain rounded-lg"
-                            onError={(e) => {
-                              console.error("Image failed to load:", media.url);
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                          <button
-                            onClick={() => handleDownload(media.url, 'image', post.id)}
-                            className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
-                          >
-                            Download
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <p className="text-gray-800">{post.text}</p>
-              </div>
-            ))}
+              ))}
+            </div>
+            
             {filteredPosts.length === 0 && !loadingError && (
-              <p className="text-center text-gray-500">
+              <p className="text-center text-gray-500 mt-8">
                 {posts.length === 0 ? "No posts yet" : "No posts match the selected filters"}
               </p>
             )}
