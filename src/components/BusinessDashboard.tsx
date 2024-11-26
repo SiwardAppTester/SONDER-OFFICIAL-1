@@ -306,6 +306,33 @@ const BusinessDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Downloads by Festival */}
+        <div className="col-span-1 lg:col-span-2 bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Downloads by Festival</h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={Object.entries(stats.downloadsByFestival).map(([festivalId, count]) => ({
+                  festival: festivals.find(f => f.id === festivalId)?.name || 'Unknown Festival',
+                  downloads: count
+                }))}
+                layout="vertical"
+                margin={{ left: 120 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis 
+                  type="category" 
+                  dataKey="festival" 
+                  width={100}
+                />
+                <Tooltip />
+                <Bar dataKey="downloads" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     </div>
   );

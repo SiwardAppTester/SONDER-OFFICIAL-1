@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /downloads/{downloadId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Validate the download document structure
+      allow create: if request.resource.data.keys().hasAll([
+        'postId', 'mediaType', 'downloadedAt', 'userId', 'festivalId'
+      ]) &&
+      request.resource.data.mediaType in ['image', 'video'];
+    }
+    
+    match /posts/{postId} {
+      allow read: if request.auth != null;
+    }
+  }
+} 
