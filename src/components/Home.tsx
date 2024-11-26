@@ -401,63 +401,66 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             {loadingError && (
               <div className="text-red-500 text-center mb-4">{loadingError}</div>
             )}
             
-            <div className="grid grid-cols-3 gap-4">
-              {filteredPosts.map((post) => (
-                <div
-                  key={post.id}
-                  className="post flex flex-col items-center"
-                >
-                  <div className="media-container w-full">
-                    {post.mediaFiles && post.mediaFiles.map((media, index) => (
-                      <div key={index} className="relative mb-4">
-                        {media.type === 'video' ? (
-                          <>
-                            <video
-                              src={media.url}
-                              className="w-full aspect-[3/4] object-cover rounded-lg"
-                              controls
-                              onError={(e) => {
-                                console.error("Video failed to load:", media.url);
-                                (e.target as HTMLVideoElement).style.display = 'none';
-                              }}
-                            />
-                            <button
-                              onClick={() => handleDownload(media.url, 'video', post.id)}
-                              className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
-                            >
-                              Download
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <img
-                              src={media.url}
-                              alt={`Post content ${index + 1}`}
-                              className="w-full aspect-[3/4] object-cover rounded-lg"
-                              onError={(e) => {
-                                console.error("Image failed to load:", media.url);
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                            <button
-                              onClick={() => handleDownload(media.url, 'image', post.id)}
-                              className="absolute bottom-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
-                            >
-                              Download
-                            </button>
-                          </>
-                        )}
+            <div 
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '1rem',
+                gridAutoFlow: 'row dense'
+              }}
+            >
+              {filteredPosts.flatMap((post) => 
+                post.mediaFiles.map((media, index) => (
+                  <div
+                    key={`${post.id}-${index}`}
+                    className="w-full"
+                  >
+                    {media.type === 'video' ? (
+                      <div className="aspect-[9/16] relative">
+                        <video
+                          src={media.url}
+                          className="w-full h-full object-cover rounded-lg"
+                          controls
+                          onError={(e) => {
+                            console.error("Video failed to load:", media.url);
+                            (e.target as HTMLVideoElement).style.display = 'none';
+                          }}
+                        />
+                        <button
+                          onClick={() => handleDownload(media.url, 'video', post.id)}
+                          className="absolute bottom-2 right-2 bg-blue-500 text-white px-2 py-1 rounded-lg text-sm opacity-80 hover:opacity-100 transition-opacity"
+                        >
+                          Download
+                        </button>
                       </div>
-                    ))}
+                    ) : (
+                      <div className="aspect-[9/16] relative">
+                        <img
+                          src={media.url}
+                          alt={`Post content ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg"
+                          onError={(e) => {
+                            console.error("Image failed to load:", media.url);
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <button
+                          onClick={() => handleDownload(media.url, 'image', post.id)}
+                          className="absolute bottom-2 right-2 bg-blue-500 text-white px-2 py-1 rounded-lg text-sm opacity-80 hover:opacity-100 transition-opacity"
+                        >
+                          Download
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-gray-800 mt-2 text-center text-xs">{post.text}</p>
                   </div>
-                  <p className="text-gray-800 mt-2 text-center text-sm">{post.text}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             
             {filteredPosts.length === 0 && !loadingError && (
