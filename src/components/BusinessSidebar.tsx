@@ -413,8 +413,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
               { to: "/add-post", icon: Plus, label: "Create Post" },
               { to: "/business-dashboard", icon: HomeIcon, label: "Dashboard" },
               { to: "/chat", icon: MessageCircle, label: "Messages" },
-              { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" },
-              { to: "/business-settings", icon: Settings, label: "Settings" }
+              { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" }
             ].map(({ to, icon: Icon, label }) => (
               <Link
                 key={to}

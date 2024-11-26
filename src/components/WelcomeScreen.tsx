@@ -5,49 +5,9 @@ import { useNavigate } from 'react-router-dom';
 const WelcomeScreen: React.FC = () => {
   const [showSignIn, setShowSignIn] = useState(false);
   const [festivalCode, setFestivalCode] = useState('');
-  const [isHolding, setIsHolding] = useState(false);
-  const [holdProgress, setHoldProgress] = useState(0);
-  const holdTimeRef = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
-  const HOLD_DURATION = 1500; // 1.5 seconds to hold
-  const PROGRESS_INTERVAL = 10; // Update progress every 10ms
-
-  const startHolding = () => {
-    setIsHolding(true);
-    setHoldProgress(0);
-    
-    let progress = 0;
-    holdTimeRef.current = setInterval(() => {
-      progress += (PROGRESS_INTERVAL / HOLD_DURATION) * 100;
-      if (progress >= 100) {
-        clearInterval(holdTimeRef.current!);
-        setTimeout(() => {
-          setShowSignIn(true);
-        }, 200);
-      }
-      setHoldProgress(Math.min(progress, 100));
-    }, PROGRESS_INTERVAL);
-  };
-
-  const stopHolding = () => {
-    setIsHolding(false);
-    setHoldProgress(0);
-    if (holdTimeRef.current) {
-      clearInterval(holdTimeRef.current);
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (holdTimeRef.current) {
-        clearInterval(holdTimeRef.current);
-      }
-    };
-  }, []);
-
-  const handleGetMemories = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleJoinClick = () => {
     setShowSignIn(true);
   };
 
@@ -97,64 +57,24 @@ const WelcomeScreen: React.FC = () => {
               ))}
             </div>
 
-            {/* Updated Hold to Join Button with cleaner loading display */}
+            {/* Updated Join Button */}
             <div className="max-w-md mx-auto mb-24 transform hover:scale-105 transition-all duration-300">
               <div className="relative">
                 <button
-                  onMouseDown={startHolding}
-                  onMouseUp={stopHolding}
-                  onMouseLeave={stopHolding}
-                  onTouchStart={startHolding}
-                  onTouchEnd={stopHolding}
+                  onClick={handleJoinClick}
                   className="w-full px-8 py-4 rounded-full bg-purple-600 text-white font-semibold text-xl 
                            transition-all duration-300 
                            shadow-[0_0_20px_rgba(168,85,247,0.5)] 
                            hover:shadow-[0_0_30px_rgba(168,85,247,0.8)]
                            relative overflow-hidden"
                 >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    {isHolding ? (
-                      <>
-                        <span className="min-w-[3ch] text-center">
-                          {Math.round(holdProgress)}%
-                        </span>
-                        <span className="text-white/80">
-                          Hold to Continue
-                        </span>
-                      </>
-                    ) : (
-                      'Hold to Join the Revolution'
-                    )}
+                  <span className="relative z-10">
+                    Join the Revolution
                   </span>
-                  
-                  {/* Improved progress bar */}
-                  <div 
-                    className="absolute bottom-0 left-0 h-1.5 bg-gradient-to-r from-white/40 to-white/80 transition-all duration-75"
-                    style={{ 
-                      width: `${holdProgress}%`,
-                      boxShadow: '0 0 15px rgba(255,255,255,0.5)',
-                      opacity: isHolding ? 1 : 0,
-                      transform: `scaleX(${isHolding ? 1 : 0})`,
-                      transformOrigin: 'left'
-                    }}
-                  />
-                  
-                  {/* Glowing edge effect */}
-                  <div 
-                    className="absolute bottom-0 h-1.5 w-4 bg-white blur-sm transition-all duration-75"
-                    style={{ 
-                      left: `${holdProgress}%`,
-                      opacity: isHolding ? 1 : 0,
-                      transform: `translateX(-50%) ${isHolding ? 'scale(1)' : 'scale(0)'}`,
-                    }}
-                  />
                   
                   {/* Background gradient */}
                   <div 
                     className="absolute inset-0 bg-gradient-to-r from-purple-600 to-purple-500 transition-opacity duration-300"
-                    style={{
-                      opacity: isHolding ? 0.9 : 1
-                    }}
                   />
                 </button>
               </div>

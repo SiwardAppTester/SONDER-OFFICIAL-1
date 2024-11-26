@@ -51,6 +51,8 @@ const BusinessCalendar: React.FC = () => {
     genre: '',
     isPublic: true
   });
+  const [isGenreOpen, setIsGenreOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -143,11 +145,16 @@ const BusinessCalendar: React.FC = () => {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!window.confirm('Are you sure you want to delete this event?')) return;
+    setEventToDelete(eventId);
+  };
 
+  const confirmDelete = async () => {
+    if (!eventToDelete) return;
+    
     try {
-      await deleteDoc(doc(db, 'events', eventId));
-      setEvents(prev => prev.filter(event => event.id !== eventId));
+      await deleteDoc(doc(db, 'events', eventToDelete));
+      setEvents(prev => prev.filter(event => event.id !== eventToDelete));
+      setEventToDelete(null);
     } catch (error) {
       console.error('Error deleting event:', error);
       alert('Failed to delete event. Please try again.');
@@ -210,30 +217,30 @@ const BusinessCalendar: React.FC = () => {
       />
 
       <div className="max-w-6xl mx-auto p-4 w-full">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
           {/* Month Navigation */}
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-6">
             <button
               onClick={handlePreviousMonth}
-              className="p-2 hover:bg-gray-100 rounded"
+              className="px-6 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
             >
-              ←
+              Previous
             </button>
-            <h2 className="text-xl font-semibold">
-              {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+            <h2 className="text-xl font-medium">
+              {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' }).toLowerCase()}
             </h2>
             <button
               onClick={handleNextMonth}
-              className="p-2 hover:bg-gray-100 rounded"
+              className="px-6 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
             >
-              →
+              Next
             </button>
           </div>
 
           {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2 mb-6">
+          <div className="grid grid-cols-7 gap-2">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center font-semibold">
+              <div key={day} className="text-center font-medium p-2">
                 {day}
               </div>
             ))}
@@ -248,25 +255,21 @@ const BusinessCalendar: React.FC = () => {
               return (
                 <div
                   key={index}
-                  className={`min-h-[100px] border rounded p-2 ${
+                  className={`min-h-[100px] border rounded-lg p-2 ${
                     day ? 'cursor-pointer hover:bg-gray-50' : ''
-                  } ${selectedDate === date ? 'bg-blue-50' : ''}`}
+                  } ${selectedDate === date ? 'bg-purple-50' : ''}`}
                   onClick={() => day && setSelectedDate(date)}
                 >
                   {day && (
                     <>
-                      <div className="font-semibold">{day}</div>
-                      <div className="text-xs space-y-1">
-                        {dayEvents.map(event => (
-                          <div
-                            key={event.id}
-                            className="bg-blue-100 p-1 rounded truncate"
-                            title={event.title}
-                          >
-                            {event.title}
-                          </div>
-                        ))}
-                      </div>
+                      <div className="font-medium">{day}</div>
+                      {dayEvents.length > 0 && (
+                        <div className="mt-1">
+                          <span className="text-sm text-purple-600">
+                            {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -275,99 +278,170 @@ const BusinessCalendar: React.FC = () => {
           </div>
 
           {/* Add Event Button */}
-          <div className="mb-4">
+          <div className="mt-6 mb-4">
             <button
               onClick={() => setShowAddEvent(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="flex items-center gap-2 px-6 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 text-sm transition-colors"
             >
-              <Plus size={20} />
+              <Plus size={16} />
               Add Event
             </button>
+          </div>
+
+          {/* Event List for Selected Date */}
+          <div className="mt-6">
+            <h3 className="text-xl font-medium mb-4">
+              Events for {selectedDate}
+            </h3>
+            <div className="space-y-3">
+              {events
+                .filter(event => event.date === selectedDate)
+                .map(event => (
+                  <div
+                    key={event.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="text-lg font-medium">{event.title}</h4>
+                        <p className="text-gray-600 mt-1">{event.description}</p>
+                        <div className="mt-2 space-y-1 text-gray-500 text-sm">
+                          <p>Time: {event.startTime || '-'}</p>
+                          <p>Genre: {event.genre}</p>
+                          <p className="text-gray-400">{event.isPublic ? 'Public Event' : 'Private Event'}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteEvent(event.id)}
+                        className="text-red-500 hover:text-red-600 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
 
           {/* Add Event Modal */}
           {showAddEvent && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">Add New Event</h2>
+              <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-medium">Add New Event</h2>
                   <button
                     onClick={() => setShowAddEvent(false)}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-gray-400 hover:text-gray-600"
                   >
-                    <X size={24} />
+                    <X size={20} />
                   </button>
                 </div>
 
                 <form onSubmit={handleAddEvent} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium mb-1">
                       Event Title *
                     </label>
                     <input
                       type="text"
                       value={newEvent.title}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
                       required
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium mb-1">
                         Start Time *
                       </label>
                       <input
                         type="time"
                         value={newEvent.startTime}
                         onChange={(e) => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">
+                      <label className="block text-sm font-medium mb-1">
                         End Time *
                       </label>
                       <input
                         type="time"
                         value={newEvent.endTime}
                         onChange={(e) => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium mb-1">
                       Dance Genre *
                     </label>
-                    <select
-                      value={newEvent.genre}
-                      onChange={(e) => setNewEvent(prev => ({ ...prev, genre: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="">Select a genre</option>
-                      {danceGenres.map((genre) => (
-                        <option key={genre} value={genre}>
-                          {genre}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsGenreOpen(!isGenreOpen)}
+                        className="w-full p-2.5 border border-gray-200 rounded-lg bg-white 
+                                 focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                                 flex justify-between items-center text-left"
+                      >
+                        <span className={newEvent.genre ? "text-gray-900" : "text-gray-500"}>
+                          {newEvent.genre || "Select a genre"}
+                        </span>
+                        <svg 
+                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                            isGenreOpen ? 'transform rotate-180' : ''
+                          }`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth="2" 
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+
+                      {isGenreOpen && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 
+                                      rounded-lg shadow-lg max-h-60 overflow-auto">
+                          {danceGenres.map((genre) => (
+                            <button
+                              key={genre}
+                              type="button"
+                              onClick={() => {
+                                setNewEvent(prev => ({ ...prev, genre }));
+                                setIsGenreOpen(false);
+                              }}
+                              className="w-full px-4 py-2 text-left hover:bg-purple-50 
+                                       transition-colors duration-150 ease-in-out
+                                       text-gray-700 hover:text-purple-700"
+                            >
+                              {genre}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium mb-1">
                       Description *
                     </label>
                     <textarea
                       value={newEvent.description}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
                       rows={3}
                       required
                     />
@@ -378,24 +452,24 @@ const BusinessCalendar: React.FC = () => {
                       type="checkbox"
                       checked={newEvent.isPublic}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, isPublic: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
                     />
-                    <label className="ml-2 text-sm text-gray-700">
+                    <label className="ml-2 text-sm text-gray-600">
                       Show on public calendar
                     </label>
                   </div>
 
-                  <div className="flex gap-2 justify-end mt-6">
+                  <div className="flex gap-3 justify-end mt-6">
                     <button
                       type="button"
                       onClick={() => setShowAddEvent(false)}
-                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                      className="px-6 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                      className="px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
                     >
                       Add Event
                     </button>
@@ -405,40 +479,31 @@ const BusinessCalendar: React.FC = () => {
             </div>
           )}
 
-          {/* Event List for Selected Date */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-4">
-              Events for {selectedDate}
-            </h3>
-            <div className="space-y-4">
-              {events
-                .filter(event => event.date === selectedDate)
-                .map(event => (
-                  <div
-                    key={event.id}
-                    className="bg-white border rounded-lg p-4 shadow-sm"
+          {/* Delete Confirmation Modal */}
+          {eventToDelete && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-6 max-w-[280px] w-full mx-4">
+                <p className="text-lg mb-6">
+                  Are you sure you want to delete this event?
+                </p>
+                
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => setEventToDelete(null)}
+                    className="px-6 py-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold">{event.title}</h4>
-                        <p className="text-gray-600">{event.description}</p>
-                        <div className="text-sm text-gray-500 mt-1 space-y-1">
-                          <p>Time: {event.startTime} - {event.endTime}</p>
-                          <p>Genre: {event.genre}</p>
-                          <p>{event.isPublic ? 'Public Event' : 'Private Event'}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteEvent(event.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
