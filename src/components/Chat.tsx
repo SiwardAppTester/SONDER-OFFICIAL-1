@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { User } from "firebase/auth";
-import { Menu } from "lucide-react";
+import { Menu, Plus, Search, X } from "lucide-react";
 import Sidebar from "./Sidebar";
 import BusinessSidebar from "./BusinessSidebar";
 
@@ -31,6 +31,9 @@ interface ChatUser {
   displayName: string;
   email: string;
   photoURL?: string;
+  lastMessage?: string;
+  timestamp?: any;
+  isGroup?: boolean;
 }
 
 interface UserProfile {
@@ -40,6 +43,47 @@ interface UserProfile {
   followers?: string[];
   following?: string[];
 }
+
+// Add new interface for chat history
+interface ChatHistory {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  lastMessage: string;
+  timestamp: any;
+}
+
+// Add new interfaces at the top
+interface GroupChat {
+  id: string;
+  name: string;
+  photoURL?: string;
+  participants: string[];
+  createdBy: string;
+  createdAt: any;
+  lastMessage?: string;
+  timestamp?: any;
+}
+
+// Update the ChatAvatar component
+const ChatAvatar: React.FC<{ user: ChatUser }> = ({ user }) => {
+  return user.photoURL ? (
+    <img
+      src={user.photoURL}
+      alt={user.displayName}
+      className="w-12 h-12 rounded-full mr-3 object-cover"
+    />
+  ) : (
+    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mr-3 text-gray-600 font-medium">
+      {user.isGroup ? (
+        <div className="text-xl">G</div>
+      ) : (
+        <div className="text-xl">{user.displayName[0]}</div>
+      )}
+    </div>
+  );
+};
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -55,6 +99,13 @@ const Chat: React.FC = () => {
   const [accessibleFestivals, setAccessibleFestivals] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [isBusinessAccount, setIsBusinessAccount] = useState(false);
+  const [existingChats, setExistingChats] = useState<ChatUser[]>([]);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [followersSearchTerm, setFollowersSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<ChatUser[]>([]);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [selectedParticipants, setSelectedParticipants] = useState<ChatUser[]>([]);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -84,45 +135,113 @@ const Chat: React.FC = () => {
     return () => unsubscribe();
   }, [navigate]);
 
-  // Fetch chat users (followers/following)
+  // Modify the fetchExistingChats function
   useEffect(() => {
-    const fetchChatUsers = async () => {
+    const fetchExistingChats = async () => {
       if (!currentUser) return;
 
-      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-      const userData = userDoc.data();
-      
-      if (!userData?.followers && !userData?.following) return;
+      try {
+        // Get all messages where the current user is a participant
+        const messagesQuery = query(
+          collection(db, "messages"),
+          where("participants", "array-contains", currentUser.uid)
+        );
 
-      const userIds = new Set([...(userData.followers || []), ...(userData.following || [])]);
-      const users: ChatUser[] = [];
+        const messagesSnapshot = await getDocs(messagesQuery);
+        const chatUsersMap = new Map<string, { lastMessage: string; timestamp: any }>();
+        const groupChatsMap = new Map<string, { lastMessage: string; timestamp: any }>();
 
-      for (const uid of userIds) {
-        const userDoc = await getDoc(doc(db, "users", uid));
-        const userData = userDoc.data();
-        if (userData) {
-          users.push({
-            uid,
-            displayName: userData.displayName || "Anonymous User",
-            email: userData.email,
-            photoURL: userData.photoURL,
-          });
+        // Get unique users and groups from messages
+        messagesSnapshot.forEach((doc) => {
+          const messageData = doc.data();
+          
+          if (messageData.groupId) {
+            // Handle group messages
+            if (!groupChatsMap.has(messageData.groupId) || 
+                messageData.createdAt?.seconds > groupChatsMap.get(messageData.groupId)?.timestamp?.seconds) {
+              groupChatsMap.set(messageData.groupId, {
+                lastMessage: messageData.text,
+                timestamp: messageData.createdAt
+              });
+            }
+          } else {
+            // Handle direct messages
+            const otherUserId = messageData.senderId === currentUser.uid 
+              ? messageData.receiverId 
+              : messageData.senderId;
+
+            if (!chatUsersMap.has(otherUserId) || 
+                messageData.createdAt?.seconds > chatUsersMap.get(otherUserId)?.timestamp?.seconds) {
+              chatUsersMap.set(otherUserId, {
+                lastMessage: messageData.text,
+                timestamp: messageData.createdAt
+              });
+            }
+          }
+        });
+
+        // Fetch all chats (direct and groups)
+        const allChats: ChatUser[] = [];
+
+        // Fetch user details for direct chats
+        for (const [userId, messageInfo] of chatUsersMap) {
+          const userDoc = await getDoc(doc(db, "users", userId));
+          const userData = userDoc.data();
+          if (userData) {
+            allChats.push({
+              uid: userId,
+              displayName: userData.displayName || "Anonymous User",
+              email: userData.email,
+              photoURL: userData.photoURL,
+              lastMessage: messageInfo.lastMessage,
+              timestamp: messageInfo.timestamp,
+              isGroup: false
+            });
+          }
         }
-      }
 
-      setChatUsers(users);
-
-      // If userId is provided in URL, select that user
-      if (userId) {
-        const selectedUser = users.find(user => user.uid === userId);
-        if (selectedUser) {
-          setSelectedUser(selectedUser);
+        // Fetch group details
+        for (const [groupId, messageInfo] of groupChatsMap) {
+          const groupDoc = await getDoc(doc(db, "groups", groupId));
+          const groupData = groupDoc.data();
+          if (groupData) {
+            allChats.push({
+              uid: groupId,
+              displayName: groupData.name,
+              email: `Group: ${groupData.participants.length} participants`,
+              photoURL: groupData.photoURL,
+              lastMessage: messageInfo.lastMessage,
+              timestamp: messageInfo.timestamp,
+              isGroup: true,
+              participants: groupData.participants
+            });
+          }
         }
+
+        // Sort all chats by most recent message
+        allChats.sort((a, b) => {
+          if (!a.timestamp || !b.timestamp) return 0;
+          return b.timestamp.seconds - a.timestamp.seconds;
+        });
+        
+        console.log("Fetched all chats:", allChats); // Debug log
+        setExistingChats(allChats);
+      } catch (error) {
+        console.error("Error fetching existing chats:", error);
       }
     };
 
-    fetchChatUsers();
-  }, [currentUser, userId]);
+    fetchExistingChats();
+  }, [currentUser]);
+
+  // Remove the separate search effect and modify the search to filter existing chats
+  const filteredChats = searchTerm
+    ? existingChats.filter(
+        (chat) =>
+          chat.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          chat.email.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : existingChats;
 
   // Subscribe to messages
   useEffect(() => {
@@ -170,35 +289,28 @@ const Chat: React.FC = () => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !currentUser || !selectedUser) {
-      console.log("Message validation failed:", {
-        hasMessage: Boolean(newMessage.trim()),
-        hasCurrentUser: Boolean(currentUser),
-        hasSelectedUser: Boolean(selectedUser)
-      });
-      return;
-    }
+    if (!newMessage.trim() || !currentUser || !selectedUser) return;
 
     try {
-      console.log("Attempting to send message:", {
+      const messageData = {
         text: newMessage.trim(),
         senderId: currentUser.uid,
-        receiverId: selectedUser.uid,
-        participants: [currentUser.uid, selectedUser.uid]
-      });
-
-      const messageRef = await addDoc(collection(db, "messages"), {
-        text: newMessage.trim(),
-        senderId: currentUser.uid,
-        receiverId: selectedUser.uid,
-        participants: [currentUser.uid, selectedUser.uid],
+        participants: selectedUser.isGroup 
+          ? selectedUser.participants 
+          : [currentUser.uid, selectedUser.uid],
         createdAt: serverTimestamp(),
-      });
+      };
 
-      console.log("Message sent successfully with ID:", messageRef.id);
+      if (selectedUser.isGroup) {
+        messageData.groupId = selectedUser.uid;
+      } else {
+        messageData.receiverId = selectedUser.uid;
+      }
+
+      await addDoc(collection(db, "messages"), messageData);
       setNewMessage("");
     } catch (error) {
-      console.error("Detailed error sending message:", error);
+      console.error("Error sending message:", error);
       alert("Failed to send message. Please try again.");
     }
   };
@@ -208,11 +320,91 @@ const Chat: React.FC = () => {
     navigate(`/chat/${user.uid}`);
   };
 
-  // Add this function to filter chat users
-  const filteredChatUsers = chatUsers.filter((user) =>
-    user.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const searchFollowers = async (searchTerm: string) => {
+    if (!currentUser || !userProfile) return;
+
+    const followers = userProfile.followers || [];
+    const following = userProfile.following || [];
+    const connections = [...new Set([...followers, ...following])];
+
+    try {
+      const users: ChatUser[] = [];
+      for (const userId of connections) {
+        const userDoc = await getDoc(doc(db, "users", userId));
+        const userData = userDoc.data();
+        if (userData && (
+          userData.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          userData.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        )) {
+          users.push({
+            uid: userId,
+            displayName: userData.displayName || "Anonymous User",
+            email: userData.email,
+            photoURL: userData.photoURL,
+          });
+        }
+      }
+      setSearchResults(users);
+    } catch (error) {
+      console.error("Error searching followers:", error);
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (followersSearchTerm.trim()) {
+        searchFollowers(followersSearchTerm);
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [followersSearchTerm, currentUser, userProfile]);
+
+  const handleCreateGroup = async () => {
+    if (!currentUser || !groupName.trim() || selectedParticipants.length === 0) return;
+
+    try {
+      // Create new group document
+      const groupRef = await addDoc(collection(db, "groups"), {
+        name: groupName.trim(),
+        participants: [currentUser.uid, ...selectedParticipants.map(p => p.uid)],
+        createdBy: currentUser.uid,
+        createdAt: serverTimestamp(),
+      });
+
+      // Create initial group message
+      await addDoc(collection(db, "messages"), {
+        text: `${currentUser.displayName} created group "${groupName}"`,
+        senderId: currentUser.uid,
+        groupId: groupRef.id,
+        participants: [currentUser.uid, ...selectedParticipants.map(p => p.uid)],
+        createdAt: serverTimestamp(),
+        isGroupMessage: true
+      });
+
+      // Create ChatUser object for the group
+      const groupChat: ChatUser = {
+        uid: groupRef.id,
+        displayName: groupName,
+        email: `Group: ${selectedParticipants.length + 1} participants`,
+        isGroup: true,
+        timestamp: serverTimestamp()
+      };
+
+      handleUserSelect(groupChat);
+      setIsSearchModalOpen(false);
+      setIsCreatingGroup(false);
+      setGroupName("");
+      setSelectedParticipants([]);
+      setFollowersSearchTerm("");
+      setSearchResults([]);
+    } catch (error) {
+      console.error("Error creating group:", error);
+      alert("Failed to create group. Please try again.");
+    }
+  };
 
   if (!currentUser) return null;
 
@@ -252,53 +444,191 @@ const Chat: React.FC = () => {
         {/* Users sidebar */}
         <div className="w-1/4 bg-gray-50 border-r overflow-y-auto">
           <div className="p-4">
-            <h2 className="text-xl font-semibold mb-4">Chats</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Chats</h2>
+              <button
+                onClick={() => setIsSearchModalOpen(true)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="New chat"
+              >
+                <Plus size={20} />
+              </button>
+            </div>
             
-            {/* Add search input */}
+            {/* Search input */}
             <div className="mb-4">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search users..."
+                placeholder="Search chats..."
                 className="w-full p-2 border rounded-lg focus:outline-none focus:border-blue-500"
               />
             </div>
 
-            {/* Update the users list to use filteredChatUsers */}
-            {filteredChatUsers.length > 0 ? (
-              filteredChatUsers.map((user) => (
+            {/* Chats list */}
+            {filteredChats.length > 0 ? (
+              filteredChats.map((chat) => (
                 <div
-                  key={user.uid}
-                  onClick={() => handleUserSelect(user)}
+                  key={chat.uid}
+                  onClick={() => handleUserSelect(chat)}
                   className={`flex items-center p-3 cursor-pointer rounded-lg mb-2 ${
-                    selectedUser?.uid === user.uid ? "bg-blue-50" : "hover:bg-gray-100"
+                    selectedUser?.uid === chat.uid ? "bg-blue-50" : "hover:bg-gray-100"
                   }`}
                 >
-                  {user.photoURL ? (
-                    <img
-                      src={user.photoURL}
-                      alt={user.displayName}
-                      className="w-10 h-10 rounded-full mr-3"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3">
-                      {user.displayName[0]}
+                  <ChatAvatar user={chat} />
+                  <div className="flex-1">
+                    <div className="font-medium">{chat.displayName}</div>
+                    <div className="text-sm text-gray-500">
+                      {chat.isGroup ? `Group: ${chat.email}` : chat.email}
+                    </div>
+                    {chat.lastMessage && (
+                      <div className="text-sm text-gray-500 truncate">
+                        {chat.lastMessage}
+                      </div>
+                    )}
+                  </div>
+                  {chat.timestamp && (
+                    <div className="text-xs text-gray-400">
+                      {new Date(chat.timestamp.seconds * 1000).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
                     </div>
                   )}
-                  <div>
-                    <div className="font-medium">{user.displayName}</div>
-                    <div className="text-sm text-gray-500">{user.email}</div>
-                  </div>
                 </div>
               ))
             ) : (
               <div className="text-center text-gray-500 mt-4">
-                {chatUsers.length === 0 ? "No users to chat with" : "No matching users found"}
+                {searchTerm ? "No matching chats found" : "No chats yet"}
               </div>
             )}
           </div>
         </div>
+
+        {/* Updated search modal */}
+        {isSearchModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-96 max-w-[90%] max-h-[90vh] flex flex-col">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  {isCreatingGroup ? "Create Group" : "New Chat"}
+                </h3>
+                <div className="flex items-center gap-2">
+                  {!isCreatingGroup && (
+                    <button
+                      onClick={() => setIsCreatingGroup(true)}
+                      className="text-blue-500 hover:text-blue-600"
+                    >
+                      Create Group
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setIsSearchModalOpen(false);
+                      setIsCreatingGroup(false);
+                      setGroupName("");
+                      setSelectedParticipants([]);
+                      setFollowersSearchTerm("");
+                      setSearchResults([]);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {isCreatingGroup && (
+                <div className="p-4 border-b">
+                  <input
+                    type="text"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="Group name..."
+                    className="w-full p-2 border rounded-lg focus:outline-none focus:border-blue-500 mb-2"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {selectedParticipants.map((participant) => (
+                      <div
+                        key={participant.uid}
+                        className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center gap-1"
+                      >
+                        {participant.displayName}
+                        <button
+                          onClick={() => setSelectedParticipants(prev => 
+                            prev.filter(p => p.uid !== participant.uid)
+                          )}
+                          className="hover:text-blue-900"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="p-4 border-b">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={followersSearchTerm}
+                    onChange={(e) => setFollowersSearchTerm(e.target.value)}
+                    placeholder={isCreatingGroup ? "Add participants..." : "Search people you follow..."}
+                    className="w-full p-2 pl-10 border rounded-lg focus:outline-none focus:border-blue-500"
+                  />
+                  <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+              </div>
+
+              <div className="overflow-y-auto flex-1 p-4">
+                {searchResults.length > 0 ? (
+                  searchResults.map((user) => (
+                    <div
+                      key={user.uid}
+                      onClick={() => {
+                        if (isCreatingGroup) {
+                          if (!selectedParticipants.find(p => p.uid === user.uid)) {
+                            setSelectedParticipants(prev => [...prev, user]);
+                          }
+                        } else {
+                          handleUserSelect(user);
+                          setIsSearchModalOpen(false);
+                          setFollowersSearchTerm("");
+                          setSearchResults([]);
+                        }
+                      }}
+                      className="flex items-center p-3 cursor-pointer rounded-lg mb-2 hover:bg-gray-100"
+                    >
+                      <ChatAvatar user={user} />
+                      <div>
+                        <div className="font-medium">{user.displayName}</div>
+                        <div className="text-sm text-gray-500">{user.email}</div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500">
+                    {followersSearchTerm ? "No users found" : "Type to search users"}
+                  </div>
+                )}
+              </div>
+
+              {isCreatingGroup && selectedParticipants.length > 0 && (
+                <div className="p-4 border-t">
+                  <button
+                    onClick={handleCreateGroup}
+                    disabled={!groupName.trim()}
+                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg disabled:bg-gray-300"
+                  >
+                    Create Group ({selectedParticipants.length + 1} participants)
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Chat area */}
         <div className="flex-1 flex flex-col">
@@ -307,17 +637,7 @@ const Chat: React.FC = () => {
               {/* Chat header */}
               <div className="p-4 border-b bg-white">
                 <div className="flex items-center">
-                  {selectedUser.photoURL ? (
-                    <img
-                      src={selectedUser.photoURL}
-                      alt={selectedUser.displayName}
-                      className="w-10 h-10 rounded-full mr-3"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center mr-3">
-                      {selectedUser.displayName[0]}
-                    </div>
-                  )}
+                  <ChatAvatar user={selectedUser} />
                   <div>
                     <div className="font-medium">{selectedUser.displayName}</div>
                     <div className="text-sm text-gray-500">{selectedUser.email}</div>

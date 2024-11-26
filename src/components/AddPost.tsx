@@ -624,6 +624,11 @@ const AddPost: React.FC = () => {
     }
   };
 
+  // Add a helper function to check if all files are uploaded
+  const areAllFilesUploaded = () => {
+    return mediaFiles.length > 0 && mediaFiles.every(file => file.url);
+  };
+
   return (
     <div className="add-post p-4">
       <div className="w-full">
@@ -866,14 +871,16 @@ const AddPost: React.FC = () => {
                 isUploading || 
                 !selectedFestival || 
                 !festivals.find(f => f.id === selectedFestival)?.categories?.length ||
-                !selectedCategory
+                !selectedCategory ||
+                !areAllFilesUploaded()
               }
               className={`w-full px-6 py-3 rounded-lg ${
                 isUploading || 
                 !selectedFestival || 
                 !festivals.find(f => f.id === selectedFestival)?.categories?.length ||
-                !selectedCategory
-                  ? 'bg-gray-400 cursor-not-allowed' 
+                !selectedCategory ||
+                !areAllFilesUploaded()
+                  ? 'bg-gray-400 cursor-not-allowed hidden'
                   : 'bg-blue-500 hover:bg-blue-600 text-white'
               }`}
             >
@@ -885,7 +892,11 @@ const AddPost: React.FC = () => {
                     ? 'Create a Category First'
                     : !selectedCategory
                       ? 'Select a Category'
-                      : 'Post'}
+                      : !mediaFiles.length
+                        ? 'Add Media'
+                        : !areAllFilesUploaded()
+                          ? 'Waiting for Upload'
+                          : 'Post'}
             </button>
 
             {/* Media Upload and Preview Section */}
