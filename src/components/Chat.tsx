@@ -414,19 +414,19 @@ const Chat: React.FC = () => {
   if (!currentUser) return null;
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="p-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsNavOpen(!isNavOpen)}
-            className="text-gray-700 hover:text-gray-900"
-            aria-label="Toggle navigation menu"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100 pb-4">
+      {/* Navigation */}
+      <div className="flex justify-between items-center p-4">
+        <button
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
+          aria-label="Toggle navigation menu"
+        >
+          <Menu size={28} />
+        </button>
       </div>
 
+      {/* Keep existing Sidebar components */}
       {isBusinessAccount ? (
         <BusinessSidebar
           isNavOpen={isNavOpen}
@@ -445,151 +445,233 @@ const Chat: React.FC = () => {
         />
       )}
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Users sidebar */}
-        <div className="w-1/4 bg-gray-50 border-r overflow-y-auto">
-          <div className="p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Chats</h2>
+      <div className="flex flex-1 overflow-hidden px-4 pb-4 h-[calc(100vh-8rem)]">
+        {/* Users sidebar - updated styling */}
+        <div className="w-1/4 mr-4 h-full">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 h-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Chats</h2>
               <button
                 onClick={() => setIsSearchModalOpen(true)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-all duration-300 transform hover:scale-105"
                 aria-label="New chat"
               >
                 <Plus size={20} />
               </button>
             </div>
-            
-            {/* Search input */}
-            <div className="mb-4">
+
+            {/* Search input - updated styling */}
+            <div className="mb-6">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search chats..."
-                className="w-full p-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full p-3 border rounded-lg focus:outline-none focus:border-purple-500 bg-white/50"
               />
             </div>
 
-            {/* Chats list */}
-            {filteredChats.length > 0 ? (
-              filteredChats.map((chat) => (
-                <div
-                  key={chat.uid}
-                  onClick={() => handleUserSelect(chat)}
-                  className={`flex items-center p-3 cursor-pointer rounded-lg mb-2 ${
-                    selectedUser?.uid === chat.uid ? "bg-blue-50" : "hover:bg-gray-100"
-                  }`}
-                >
-                  <ChatAvatar user={chat} />
-                  <div className="flex-1">
-                    <div className="font-medium">{chat.displayName}</div>
-                    <div className="text-sm text-gray-500">
-                      {chat.isGroup ? `Group: ${chat.email}` : chat.email}
-                    </div>
-                    {chat.lastMessage && (
+            {/* Chats list - updated styling */}
+            <div className="space-y-3">
+              {filteredChats.length > 0 ? (
+                filteredChats.map((chat) => (
+                  <div
+                    key={chat.uid}
+                    onClick={() => handleUserSelect(chat)}
+                    className={`flex items-center p-4 cursor-pointer rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
+                      selectedUser?.uid === chat.uid
+                        ? "bg-purple-100 shadow-md"
+                        : "hover:bg-white/50"
+                    }`}
+                  >
+                    <ChatAvatar user={chat} />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900">{chat.displayName}</div>
                       <div className="text-sm text-gray-500 truncate">
-                        {chat.lastMessage}
+                        {chat.isGroup ? `Group: ${chat.email}` : chat.email}
+                      </div>
+                      {chat.lastMessage && (
+                        <div className="text-sm text-gray-500 truncate">
+                          {chat.lastMessage}
+                        </div>
+                      )}
+                    </div>
+                    {chat.timestamp && (
+                      <div className="text-xs text-gray-400 ml-2">
+                        {new Date(chat.timestamp.seconds * 1000).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </div>
                     )}
                   </div>
-                  {chat.timestamp && (
-                    <div className="text-xs text-gray-400">
-                      {new Date(chat.timestamp.seconds * 1000).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
-                  )}
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-4">
+                  {searchTerm ? "No matching chats found" : "No chats yet"}
                 </div>
-              ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Chat area - updated styling */}
+        <div className="flex-1 h-full">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col h-full">
+            {selectedUser ? (
+              <>
+                {/* Chat header */}
+                <div className="p-6 border-b border-gray-100">
+                  <div className="flex items-center">
+                    <ChatAvatar user={selectedUser} />
+                    <div>
+                      <div className="font-bold text-gray-900">{selectedUser.displayName}</div>
+                      <div className="text-sm text-gray-500">{selectedUser.email}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Messages area */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        message.senderId === currentUser?.uid ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[70%] rounded-2xl px-6 py-3 shadow-sm ${
+                          message.senderId === currentUser?.uid
+                            ? "bg-purple-600 text-white"
+                            : "bg-gray-100 text-gray-900"
+                        }`}
+                      >
+                        <p>{message.text}</p>
+                        <p className="text-xs mt-1 opacity-70">
+                          {message.createdAt?.toDate().toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Message input */}
+                <div className="p-6 border-t border-gray-100">
+                  <form onSubmit={handleSendMessage} className="flex gap-3">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type a message..."
+                      className="flex-1 p-3 border rounded-full focus:outline-none focus:border-purple-500 bg-white/50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMessage.trim()}
+                      className="bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 
+                               transition-all duration-300 transform hover:scale-105 disabled:opacity-50
+                               disabled:hover:scale-100 disabled:hover:bg-purple-600"
+                    >
+                      Send
+                    </button>
+                  </form>
+                </div>
+              </>
             ) : (
-              <div className="text-center text-gray-500 mt-4">
-                {searchTerm ? "No matching chats found" : "No chats yet"}
+              <div className="flex-1 flex items-center justify-center text-gray-500">
+                Select a chat to start messaging
               </div>
             )}
           </div>
         </div>
+      </div>
 
-        {/* Updated search modal */}
-        {isSearchModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg w-96 max-w-[90%] max-h-[90vh] flex flex-col">
-              <div className="p-4 border-b flex justify-between items-center">
-                <h3 className="text-lg font-semibold">
-                  {isCreatingGroup ? "Create Group" : "New Chat"}
-                </h3>
-                <div className="flex items-center gap-2">
-                  {!isCreatingGroup && (
-                    <button
-                      onClick={() => setIsCreatingGroup(true)}
-                      className="text-blue-500 hover:text-blue-600"
-                    >
-                      Create Group
-                    </button>
-                  )}
+      {/* Keep existing search modal with updated styling */}
+      {isSearchModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl w-[480px] max-w-[90%] max-h-[90vh] flex flex-col shadow-xl">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="text-2xl font-bold text-gray-900">
+                {isCreatingGroup ? "Create Group" : "New Chat"}
+              </h3>
+              <div className="flex items-center gap-4">
+                {!isCreatingGroup && (
                   <button
-                    onClick={() => {
-                      setIsSearchModalOpen(false);
-                      setIsCreatingGroup(false);
-                      setGroupName("");
-                      setSelectedParticipants([]);
-                      setFollowersSearchTerm("");
-                      setSearchResults([]);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    onClick={() => setIsCreatingGroup(true)}
+                    className="text-purple-600 hover:text-purple-700 font-semibold transition-colors"
                   >
-                    <X size={20} />
+                    Create Group
                   </button>
-                </div>
+                )}
+                <button
+                  onClick={() => {
+                    setIsSearchModalOpen(false);
+                    setIsCreatingGroup(false);
+                    setGroupName("");
+                    setSelectedParticipants([]);
+                    setFollowersSearchTerm("");
+                    setSearchResults([]);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-all duration-300 transform hover:scale-105"
+                >
+                  <X size={20} />
+                </button>
               </div>
+            </div>
 
-              {isCreatingGroup && (
-                <div className="p-4 border-b">
-                  <input
-                    type="text"
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
-                    placeholder="Group name..."
-                    className="w-full p-2 border rounded-lg focus:outline-none focus:border-blue-500 mb-2"
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    {selectedParticipants.map((participant) => (
-                      <div
-                        key={participant.uid}
-                        className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center gap-1"
+            {/* Group Creation Input */}
+            {isCreatingGroup && (
+              <div className="p-6 border-b border-gray-100">
+                <input
+                  type="text"
+                  value={groupName}
+                  onChange={(e) => setGroupName(e.target.value)}
+                  placeholder="Group name..."
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:border-purple-500 bg-white/50 mb-4"
+                />
+                <div className="flex flex-wrap gap-2">
+                  {selectedParticipants.map((participant) => (
+                    <div
+                      key={participant.uid}
+                      className="bg-purple-100 text-purple-800 px-4 py-2 rounded-full text-sm flex items-center gap-2"
+                    >
+                      {participant.displayName}
+                      <button
+                        onClick={() => setSelectedParticipants(prev => 
+                          prev.filter(p => p.uid !== participant.uid)
+                        )}
+                        className="hover:text-purple-900 transition-colors"
                       >
-                        {participant.displayName}
-                        <button
-                          onClick={() => setSelectedParticipants(prev => 
-                            prev.filter(p => p.uid !== participant.uid)
-                          )}
-                          className="hover:text-blue-900"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              <div className="p-4 border-b">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={followersSearchTerm}
-                    onChange={(e) => setFollowersSearchTerm(e.target.value)}
-                    placeholder={isCreatingGroup ? "Add participants..." : "Search people you follow..."}
-                    className="w-full p-2 pl-10 border rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                  <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
+            
+            {/* Search Input */}
+            <div className="p-6 border-b border-gray-100">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={followersSearchTerm}
+                  onChange={(e) => setFollowersSearchTerm(e.target.value)}
+                  placeholder={isCreatingGroup ? "Add participants..." : "Search people you follow..."}
+                  className="w-full p-3 pl-12 border rounded-lg focus:outline-none focus:border-purple-500 bg-white/50"
+                />
+                <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
 
-              <div className="overflow-y-auto flex-1 p-4">
-                {searchResults.length > 0 ? (
-                  searchResults.map((user) => (
+            {/* Search Results */}
+            <div className="overflow-y-auto flex-1 p-6">
+              {searchResults.length > 0 ? (
+                <div className="space-y-3">
+                  {searchResults.map((user) => (
                     <div
                       key={user.uid}
                       onClick={() => {
@@ -604,105 +686,42 @@ const Chat: React.FC = () => {
                           setSearchResults([]);
                         }
                       }}
-                      className="flex items-center p-3 cursor-pointer rounded-lg mb-2 hover:bg-gray-100"
+                      className="flex items-center p-4 cursor-pointer rounded-xl transition-all duration-300 
+                               transform hover:scale-[1.02] hover:bg-white/50"
                     >
                       <ChatAvatar user={user} />
                       <div>
-                        <div className="font-medium">{user.displayName}</div>
+                        <div className="font-semibold text-gray-900">{user.displayName}</div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center text-gray-500">
-                    {followersSearchTerm ? "No users found" : "Type to search users"}
-                  </div>
-                )}
-              </div>
-
-              {isCreatingGroup && selectedParticipants.length > 0 && (
-                <div className="p-4 border-t">
-                  <button
-                    onClick={handleCreateGroup}
-                    disabled={!groupName.trim()}
-                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg disabled:bg-gray-300"
-                  >
-                    Create Group ({selectedParticipants.length + 1} participants)
-                  </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  {followersSearchTerm ? "No users found" : "Type to search users"}
                 </div>
               )}
             </div>
+
+            {/* Create Group Button */}
+            {isCreatingGroup && selectedParticipants.length > 0 && (
+              <div className="p-6 border-t border-gray-100">
+                <button
+                  onClick={handleCreateGroup}
+                  disabled={!groupName.trim()}
+                  className="w-full bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 
+                           transition-all duration-300 transform hover:scale-105 disabled:opacity-50
+                           disabled:hover:scale-100 disabled:hover:bg-purple-600 shadow-lg
+                           shadow-purple-200"
+                >
+                  Create Group ({selectedParticipants.length + 1} participants)
+                </button>
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Chat area */}
-        <div className="flex-1 flex flex-col">
-          {selectedUser ? (
-            <>
-              {/* Chat header */}
-              <div className="p-4 border-b bg-white">
-                <div className="flex items-center">
-                  <ChatAvatar user={selectedUser} />
-                  <div>
-                    <div className="font-medium">{selectedUser.displayName}</div>
-                    <div className="text-sm text-gray-500">{selectedUser.email}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Messages - adjust padding bottom to account for BottomTabBar */}
-              <div className="flex-1 overflow-y-auto p-4 pb-20 space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.senderId === currentUser.uid ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                        message.senderId === currentUser.uid
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-100"
-                      }`}
-                    >
-                      <p>{message.text}</p>
-                      <p className="text-xs mt-1 opacity-70">
-                        {message.createdAt?.toDate().toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Message input - adjust position to be above BottomTabBar */}
-              <form onSubmit={handleSendMessage} className="p-4 border-t bg-white">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 p-2 border rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newMessage.trim()}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg disabled:bg-gray-300"
-                  >
-                    Send
-                  </button>
-                </div>
-              </form>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-              Select a user to start chatting
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 };
