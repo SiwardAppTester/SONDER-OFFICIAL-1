@@ -630,404 +630,350 @@ const AddPost: React.FC = () => {
   };
 
   return (
-    <div className="add-post p-4">
-      <div className="w-full">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setIsNavOpen(!isNavOpen)}
-              className="text-gray-700 hover:text-gray-900"
-              aria-label="Toggle navigation menu"
-            >
-              <Menu size={24} />
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
+      {/* Navigation */}
+      <div className="flex justify-between items-center p-4">
+        <button
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
+        >
+          <Menu size={28} />
+        </button>
+      </div>
 
-        <BusinessSidebar
-          isNavOpen={isNavOpen}
-          setIsNavOpen={setIsNavOpen}
-          user={auth.currentUser}
-          userProfile={userProfile}
-          accessibleFestivalsCount={festivals.length}
-        />
+      <BusinessSidebar
+        isNavOpen={isNavOpen}
+        setIsNavOpen={setIsNavOpen}
+        user={auth.currentUser}
+        userProfile={userProfile}
+        accessibleFestivalsCount={festivals.length}
+      />
 
-        <form onSubmit={handleSubmit} className="space-y-6 w-full">
-          {/* Festival Section */}
-          <div className="flex justify-end mb-6 pt-6">
-            <div className="flex flex-wrap gap-2 items-center">
-              {festivals.map((festival) => (
-                <button
-                  key={festival.id}
-                  type="button"
-                  onClick={() => handleFestivalSelect(festival.id)}
-                  className={`px-4 py-2 rounded-full transition-colors ${
-                    selectedFestival === festival.id
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {festival.name}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setShowAddFestival(!showAddFestival)}
-                className="px-4 py-2 rounded-full bg-gray-100 text-blue-500 hover:bg-gray-200 flex items-center gap-1"
-              >
-                <Plus size={16} />
-                New Festival
-              </button>
-            </div>
-          </div>
-
-          {/* Add Festival Form */}
-          {showAddFestival && (
-            <div className="mb-6">
-              <div className="p-4 bg-gray-50 rounded-lg max-w-md ml-auto">
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={newFestivalName}
-                    onChange={(e) => setNewFestivalName(e.target.value)}
-                    placeholder="Enter festival name"
-                    className="w-full p-2 border rounded"
-                  />
-                  <input
-                    type="text"
-                    value={newFestivalAccessCode}
-                    onChange={(e) => setNewFestivalAccessCode(e.target.value)}
-                    placeholder="Enter access code"
-                    className="w-full p-2 border rounded"
-                  />
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Combined Festival and Category Selection */}
+        <div className="mb-12">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 
+                        border border-gray-100 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-50/50 to-rose-50/50"></div>
+            <div className="relative space-y-6">
+              {/* Festivals Section */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">Festivals</h2>
                   <button
                     type="button"
-                    onClick={handleAddFestival}
-                    className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    onClick={() => setShowAddFestival(true)}
+                    className="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
                   >
-                    Add Festival
+                    <Plus size={16} />
+                    New Festival
                   </button>
                 </div>
-                
-                {/* Display existing festivals with delete option */}
-                <div className="mt-4 space-y-2">
+                <div className="flex flex-wrap gap-2">
                   {festivals.map((festival) => (
-                    <div
+                    <button
                       key={festival.id}
-                      className="flex justify-between items-center p-2 bg-white rounded shadow"
+                      onClick={() => handleFestivalSelect(festival.id)}
+                      className={`px-4 py-2 rounded-full transition-all transform hover:scale-105 ${
+                        selectedFestival === festival.id
+                          ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                          : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                      }`}
                     >
-                      <div>
-                        <span className="block">{festival.name}</span>
-                        <span className="text-sm text-gray-500">
-                          Access Code: {festival.accessCode}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteFestival(festival.id)}
-                        className="text-red-500 hover:text-red-700 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                      {festival.name}
+                    </button>
                   ))}
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Category Section */}
-          {selectedFestival && (
-            <div className="mb-6">
-              <div className="flex justify-end">
-                <div className="flex flex-wrap gap-2 items-center">
-                  {festivals
-                    .find(f => f.id === selectedFestival)
-                    ?.categories?.map((category) => (
-                      <button
-                        key={category.id}
-                        type="button"
-                        onClick={() => setSelectedCategory(category.id)}
-                        className={`px-4 py-2 rounded-full transition-colors ${
-                          selectedCategory === category.id
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {category.name}
-                      </button>
-                    ))}
-                  <button
-                    type="button"
-                    onClick={() => setShowAddCategory(!showAddCategory)}
-                    className="px-4 py-2 rounded-full bg-gray-100 text-blue-500 hover:bg-gray-200 flex items-center gap-1"
-                  >
-                    <Plus size={16} />
-                    New Category
-                  </button>
-                </div>
+              {/* Clean Purple Divider */}
+              <div className="w-full flex items-center gap-4 py-2">
+                <div className="flex-1 h-[1px] bg-gradient-to-r from-transparent via-purple-300 to-transparent"></div>
               </div>
 
-              {/* Add Category Form */}
-              {showAddCategory && (
-                <div className="mt-4">
-                  <div className="p-4 bg-gray-50 rounded-lg max-w-md ml-auto">
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="Enter category name"
-                        className="w-full p-2 border rounded"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddCategory}
-                        className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                      >
-                        Add Category
-                      </button>
-                    </div>
-                    
-                    {/* Display existing categories with delete option */}
-                    <div className="mt-4 space-y-2">
-                      {festivals
-                        .find(f => f.id === selectedFestival)
-                        ?.categories?.map((category) => (
-                          <div
-                            key={category.id}
-                            className="flex justify-between items-center p-2 bg-white rounded shadow"
-                          >
-                            <div>
-                              <span className="block">{category.name}</span>
-                              <span className="text-sm text-gray-500">
-                                Media Type: {category.mediaType}
-                              </span>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleMediaType(category.id, category.mediaType)}
-                                className="text-blue-500 hover:text-blue-700 text-sm"
-                              >
-                                Toggle Type
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteCategory(category.id)}
-                                className="text-red-500 hover:text-red-700 text-sm"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
+              {/* Categories Section */}
+              {selectedFestival && (
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold text-gray-800">Categories</h2>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddCategory(true)}
+                      className="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
+                    >
+                      <Plus size={16} />
+                      New Category
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {festivals
+                      .find(f => f.id === selectedFestival)
+                      ?.categories?.map((category) => (
+                        <button
+                          key={category.id}
+                          onClick={() => setSelectedCategory(category.id)}
+                          className={`px-4 py-2 rounded-full transition-all transform hover:scale-105 ${
+                            selectedCategory === category.id
+                              ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                              : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                          }`}
+                        >
+                          {category.name}
+                        </button>
+                    ))}
                   </div>
                 </div>
               )}
             </div>
-          )}
+          </div>
+        </div>
 
-          {/* Rest of the form */}
-          <div className="space-y-4">
-            {/* Media Type Toggle Buttons */}
-            {selectedCategory && (
-              <div className="flex justify-center gap-2">
+        {/* Add Festival Modal */}
+        {showAddFestival && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
+              <button
+                onClick={() => setShowAddFestival(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-semibold mb-6">Create New Festival</h2>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  value={newFestivalName}
+                  onChange={(e) => setNewFestivalName(e.target.value)}
+                  placeholder="Enter festival name"
+                  className="w-full p-3 border rounded-lg"
+                />
+                <input
+                  type="text"
+                  value={newFestivalAccessCode}
+                  onChange={(e) => setNewFestivalAccessCode(e.target.value)}
+                  placeholder="Enter access code"
+                  className="w-full p-3 border rounded-lg"
+                />
                 <button
                   type="button"
-                  onClick={() => setActiveCategoryMedia(prev => ({
-                    ...prev,
-                    [selectedCategory]: "image"
-                  }))}
-                  className={`px-4 py-2 rounded ${
-                    activeCategoryMedia[selectedCategory] !== "video"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 hover:bg-gray-300"
-                  }`}
+                  onClick={handleAddFestival}
+                  className="w-full bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
                 >
-                  Images
+                  Create Festival
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveCategoryMedia(prev => ({
-                    ...prev,
-                    [selectedCategory]: "video"
-                  }))}
-                  className={`px-4 py-2 rounded ${
-                    activeCategoryMedia[selectedCategory] === "video"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 hover:bg-gray-300"
-                  }`}
-                >
-                  Videos
-                </button>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={
-                isUploading || 
-                !selectedFestival || 
-                !festivals.find(f => f.id === selectedFestival)?.categories?.length ||
-                !selectedCategory ||
-                !areAllFilesUploaded()
-              }
-              className={`w-full px-6 py-3 rounded-lg ${
-                isUploading || 
-                !selectedFestival || 
-                !festivals.find(f => f.id === selectedFestival)?.categories?.length ||
-                !selectedCategory ||
-                !areAllFilesUploaded()
-                  ? 'bg-gray-400 cursor-not-allowed hidden'
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
-            >
-              {isUploading 
-                ? 'Uploading...' 
-                : !selectedFestival 
-                  ? 'Select a Festival'
-                  : !festivals.find(f => f.id === selectedFestival)?.categories?.length
-                    ? 'Create a Category First'
-                    : !selectedCategory
-                      ? 'Select a Category'
-                      : !mediaFiles.length
-                        ? 'Add Media'
-                        : !areAllFilesUploaded()
-                          ? 'Waiting for Upload'
-                          : 'Post'}
-            </button>
-
-            {/* Media Upload and Preview Section */}
-            <div className="mt-8">
-              <div className="flex flex-col gap-4">
-                {/* File Input Button - Full width, shorter height */}
-                <div className="w-full">
-                  {!selectedFestival || !festivals.find(f => f.id === selectedFestival)?.categories?.length || !selectedCategory ? (
-                    <div className="w-full h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-100">
-                      <span className="text-sm text-gray-500">
-                        {!selectedFestival 
-                          ? "Please select a festival first" 
-                          : !festivals.find(f => f.id === selectedFestival)?.categories?.length
-                            ? "Please create a category in this festival first"
-                            : "Please select a category first"}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="relative w-full h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-blue-500 transition-colors cursor-pointer">
-                      <input
-                        type="file"
-                        onChange={handleMediaChange}
-                        accept={
-                          festivals
-                            .find(f => f.id === selectedFestival)
-                            ?.categories?.find(c => c.id === selectedCategory)
-                            ?.mediaType === "image"
-                              ? "image/*"
-                              : festivals
-                                  .find(f => f.id === selectedFestival)
-                                  ?.categories?.find(c => c.id === selectedCategory)
-                                  ?.mediaType === "video"
-                                ? "video/*"
-                                : "image/*,video/*"
-                        }
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        multiple
-                      />
-                      <Plus size={24} className="text-gray-400 mb-2" />
-                      <span className="text-sm text-gray-500">Add Media</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Uploaded Media Previews - Scrollable container */}
-                {mediaFiles.length > 0 && (
-                  <div className="overflow-x-auto">
-                    <div className="flex gap-4">
-                      {mediaFiles.map((media, index) => (
-                        <div key={index} className="w-[200px] flex-shrink-0">
-                          <div className="relative w-full aspect-[9/16]">
-                            {media.type === 'video' ? (
-                              <video
-                                src={URL.createObjectURL(media.file)}
-                                className="w-full h-full object-cover rounded-lg"
-                                controls
-                              />
-                            ) : (
-                              <img
-                                src={URL.createObjectURL(media.file)}
-                                alt={`Preview ${index + 1}`}
-                                className="w-full h-full object-cover rounded-lg"
-                              />
-                            )}
-                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1">
-                              {media.url ? "Upload complete" : `Uploading: ${media.progress.toFixed(0)}%`}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveMedia(index)}
-                              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
+        )}
 
+        {/* Add Category Modal */}
+        {showAddCategory && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
+              <button
+                onClick={() => setShowAddCategory(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-semibold mb-6">Create New Category</h2>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Enter category name"
+                  className="w-full p-3 border rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCategory}
+                  className="w-full bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
+                >
+                  Create Category
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Media Upload Section */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8">
+          {/* Media Type Toggle Buttons */}
           {selectedCategory && (
-            <div className="mt-8">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                {getFilteredPosts(selectedCategory, activeCategoryMedia[selectedCategory] === "video" ? "video" : "image")
-                  .map(post => (
-                    post.mediaFiles
-                      .filter(media => 
-                        media.type === (activeCategoryMedia[selectedCategory] === "video" ? "video" : "image") && 
-                        media.categoryId === selectedCategory
-                      )
-                      .map((media, mediaIndex) => (
-                        <div key={`${post.id}-${mediaIndex}`} className="relative w-full group">
-                          {media.type === 'video' ? (
-                            <video
-                              src={media.url}
-                              className="w-full aspect-[9/16] object-cover rounded-lg"
-                              controls
-                            />
-                          ) : (
-                            <img
-                              src={media.url}
-                              alt={`Post content ${mediaIndex + 1}`}
-                              className="w-full aspect-[9/16] object-cover rounded-lg"
-                            />
-                          )}
-                          <button
-                            onClick={(e) => handleDeletePostMedia(post.id, media.url, e)}
-                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                            title="Delete media"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                          </button>
-                          {post.text && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
-                              {post.text}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                  ))
-                }
+            <div className="flex justify-center gap-2 mb-6">
+              <button
+                type="button"
+                onClick={() => setActiveCategoryMedia(prev => ({
+                  ...prev,
+                  [selectedCategory]: "image"
+                }))}
+                className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 ${
+                  activeCategoryMedia[selectedCategory] !== "video"
+                    ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                    : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                }`}
+              >
+                Images
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveCategoryMedia(prev => ({
+                  ...prev,
+                  [selectedCategory]: "video"
+                }))}
+                className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 ${
+                  activeCategoryMedia[selectedCategory] === "video"
+                    ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                    : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                }`}
+              >
+                Videos
+              </button>
+            </div>
+          )}
+
+          {/* File Upload Area */}
+          <div className="w-full">
+            {!selectedFestival || !festivals.find(f => f.id === selectedFestival)?.categories?.length || !selectedCategory ? (
+              <div className="w-full h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-50">
+                <span className="text-sm text-gray-500">
+                  {!selectedFestival 
+                    ? "Please select a festival first" 
+                    : !festivals.find(f => f.id === selectedFestival)?.categories?.length
+                      ? "Please create a category in this festival first"
+                      : "Please select a category first"}
+                </span>
+              </div>
+            ) : (
+              <div className="relative w-full h-[100px] border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center hover:border-purple-500 transition-colors cursor-pointer bg-gray-50">
+                <input
+                  type="file"
+                  onChange={handleMediaChange}
+                  accept={
+                    festivals
+                      .find(f => f.id === selectedFestival)
+                      ?.categories?.find(c => c.id === selectedCategory)
+                      ?.mediaType === "image"
+                        ? "image/*"
+                        : festivals
+                            .find(f => f.id === selectedFestival)
+                            ?.categories?.find(c => c.id === selectedCategory)
+                            ?.mediaType === "video"
+                          ? "video/*"
+                          : "image/*,video/*"
+                  }
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  multiple
+                />
+                <Plus size={24} className="text-purple-400 mb-2" />
+                <span className="text-sm text-purple-600">Add Media</span>
+              </div>
+            )}
+          </div>
+
+          {/* Submit Button - Moved here */}
+          {selectedCategory && mediaFiles.length > 0 && (
+            <div className="mt-6">
+              <button
+                type="submit"
+                onClick={handleSubmit}
+                disabled={!areAllFilesUploaded()}
+                className={`w-full px-6 py-3 rounded-full transition-all transform hover:scale-105 ${
+                  !areAllFilesUploaded()
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-200'
+                }`}
+              >
+                {!areAllFilesUploaded() 
+                  ? 'Waiting for Upload to Complete...'
+                  : 'Post Content'}
+              </button>
+            </div>
+          )}
+
+          {/* Media Previews */}
+          {mediaFiles.length > 0 && (
+            <div className="mt-6 overflow-x-auto">
+              <div className="flex gap-4">
+                {mediaFiles.map((media, index) => (
+                  <div key={index} className="w-[200px] flex-shrink-0">
+                    <div className="relative w-full aspect-[9/16]">
+                      {media.type === 'video' ? (
+                        <video
+                          src={URL.createObjectURL(media.file)}
+                          className="w-full h-full object-cover rounded-lg"
+                          controls
+                        />
+                      ) : (
+                        <img
+                          src={URL.createObjectURL(media.file)}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
+                        {media.url ? "Upload complete" : `Uploading: ${media.progress.toFixed(0)}%`}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMedia(index)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
-        </form>
+        </div>
+
+        {/* Content Display Grid */}
+        {selectedCategory && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {getFilteredPosts(selectedCategory, activeCategoryMedia[selectedCategory] === "video" ? "video" : "image")
+              .map(post => (
+                post.mediaFiles
+                  .filter(media => 
+                    media.type === (activeCategoryMedia[selectedCategory] === "video" ? "video" : "image") && 
+                    media.categoryId === selectedCategory
+                  )
+                  .map((media, mediaIndex) => (
+                    <div key={`${post.id}-${mediaIndex}`} className="relative group">
+                      <div className="aspect-[9/16] rounded-2xl overflow-hidden">
+                        {media.type === 'video' ? (
+                          <video
+                            src={media.url}
+                            className="w-full h-full object-cover"
+                            controls
+                          />
+                        ) : (
+                          <img
+                            src={media.url}
+                            alt={`Post content ${mediaIndex + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        <button
+                          onClick={(e) => handleDeletePostMedia(post.id, media.url, e)}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                      {post.text && (
+                        <p className="text-gray-800 mt-2 text-sm text-center">{post.text}</p>
+                      )}
+                    </div>
+                  ))
+              ))
+            }
+          </div>
+        )}
       </div>
     </div>
   );
