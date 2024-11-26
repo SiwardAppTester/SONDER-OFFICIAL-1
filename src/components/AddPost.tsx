@@ -299,7 +299,7 @@ const AddPost: React.FC = () => {
     const user = auth.currentUser;
     if (!user) return;
 
-    const mediaRef = ref(storage, `posts/${user.uid}/${Date.now()}_${type}`);
+    const mediaRef = ref(storage, `posts/${user.uid}/${Date.now()}_${file.name}`);
     const uploadTask = uploadBytesResumable(mediaRef, file);
 
     uploadTask.on('state_changed',
@@ -311,21 +311,27 @@ const AddPost: React.FC = () => {
       },
       (error) => {
         console.error("Error uploading file:", error);
+        alert(`Error uploading file: ${file.name}`);
       },
       async () => {
-        const url = await getDownloadURL(mediaRef);
-        setMediaFiles(prev => prev.map((item, i) => 
-          i === index ? { ...item, url } : item
-        ));
-        
-        // Check if all files are uploaded
-        setMediaFiles(prev => {
-          const allUploaded = prev.every(file => file.url);
-          if (allUploaded) {
-            setIsUploading(false);
-          }
-          return prev;
-        });
+        try {
+          const url = await getDownloadURL(mediaRef);
+          setMediaFiles(prev => prev.map((item, i) => 
+            i === index ? { ...item, url } : item
+          ));
+          
+          // Check if all files are uploaded
+          setMediaFiles(prev => {
+            const allUploaded = prev.every(file => file.url);
+            if (allUploaded) {
+              setIsUploading(false);
+            }
+            return prev;
+          });
+        } catch (error) {
+          console.error("Error getting download URL:", error);
+          alert(`Error getting download URL for file: ${file.name}`);
+        }
       }
     );
   };
@@ -446,11 +452,12 @@ const AddPost: React.FC = () => {
       return;
     }
 
-    // Ensure all media files have the selected category
-    setMediaFiles(prev => prev.map(media => ({
-      ...media,
-      categoryId: selectedCategory
-    })));
+    // Check if all files are uploaded
+    const allFilesUploaded = mediaFiles.every(file => file.url);
+    if (!allFilesUploaded) {
+      alert("Please wait for all files to finish uploading");
+      return;
+    }
 
     try {
       const postData = {
@@ -458,18 +465,17 @@ const AddPost: React.FC = () => {
         text: text.trim(),
         createdAt: serverTimestamp(),
         festivalId: selectedFestival,
-        mediaFiles: mediaFiles
-          .filter(media => media.url) // Only include fully uploaded files
-          .map(media => ({
-            url: media.url,
-            type: media.type,
-            categoryId: selectedCategory
-          }))
+        mediaFiles: mediaFiles.map(media => ({
+          url: media.url,
+          type: media.type,
+          categoryId: selectedCategory
+        }))
       };
 
       await addDoc(collection(db, "posts"), postData);
 
       // Clear the form
+      setText("");
       setMediaFiles([]);
       // Optionally show a success message
       alert("Post created successfully!");
