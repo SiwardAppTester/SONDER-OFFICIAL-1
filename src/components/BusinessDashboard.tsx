@@ -207,14 +207,15 @@ const BusinessDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-4">
+    <div className="min-h-screen bg-pink-50">
+      {/* Header - Positioned like AddPost page */}
+      <div className="flex items-center gap-4 p-4">
         <button
           onClick={() => setIsNavOpen(!isNavOpen)}
-          className="text-gray-700 hover:text-gray-900"
+          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
           aria-label="Toggle navigation menu"
         >
-          <Menu size={24} />
+          <Menu size={28} />
         </button>
       </div>
 
@@ -226,111 +227,89 @@ const BusinessDashboard: React.FC = () => {
         accessibleFestivalsCount={festivals.length}
       />
 
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Business Dashboard</h1>
-          <div className="mt-4 flex gap-4">
-            {['week', 'month', 'year'].map((range) => (
-              <button
-                key={range}
-                onClick={() => setSelectedTimeRange(range as 'week' | 'month' | 'year')}
-                className={`px-4 py-2 rounded-lg ${
-                  selectedTimeRange === range
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {range.charAt(0).toUpperCase() + range.slice(1)}
-              </button>
+      <div className="px-6 pb-6 max-w-7xl mx-auto">
+        {/* Main Content Card */}
+        <div className="bg-white rounded-3xl shadow-lg p-8 mb-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Business Dashboard</h1>
+            
+            {/* Time Range Selector */}
+            <div className="flex gap-4">
+              {['week', 'month', 'year'].map((range) => (
+                <button
+                  key={range}
+                  onClick={() => setSelectedTimeRange(range as 'week' | 'month' | 'year')}
+                  className={`px-6 py-2 rounded-full transition-all ${
+                    selectedTimeRange === range
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {range.charAt(0).toUpperCase() + range.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Stats Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[
+              { label: 'Total Posts', value: stats.totalPosts },
+              { label: 'Total Downloads', value: stats.totalDownloads },
+              { label: 'Image Downloads', value: stats.imageDownloads },
+              { label: 'Video Downloads', value: stats.videoDownloads }
+            ].map((stat, index) => (
+              <div key={index} className="bg-gray-50 p-6 rounded-2xl">
+                <h3 className="text-gray-500 text-sm font-medium">{stat.label}</h3>
+                <p className="mt-2 text-3xl font-semibold text-gray-900">{stat.value}</p>
+              </div>
             ))}
           </div>
-        </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[
-            { label: 'Total Posts', value: stats.totalPosts },
-            { label: 'Total Downloads', value: stats.totalDownloads },
-            { label: 'Image Downloads', value: stats.imageDownloads },
-            { label: 'Video Downloads', value: stats.videoDownloads }
-          ].map((stat, index) => (
-            <div key={index} className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-gray-500 text-sm font-medium">{stat.label}</h3>
-              <p className="mt-2 text-3xl font-semibold text-gray-900">{stat.value}</p>
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Posts Timeline */}
+            <div className="bg-gray-50 p-6 rounded-2xl">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Posts Timeline</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.postsTimeline}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#9333EA" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Posts Timeline */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Posts Timeline</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.postsTimeline}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#0088FE" />
-                </BarChart>
-              </ResponsiveContainer>
+            {/* Media Type Distribution */}
+            <div className="bg-gray-50 p-6 rounded-2xl">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Media Type Distribution</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.mediaTypeDistribution}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#9333EA"
+                      dataKey="value"
+                    >
+                      {stats.mediaTypeDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={['#9333EA', '#A855F7'][index % 2]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-
-          {/* Media Type Distribution */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Media Type Distribution</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.mediaTypeDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {stats.mediaTypeDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Downloads by Festival */}
-        <div className="col-span-1 lg:col-span-2 bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Downloads by Festival</h3>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={Object.entries(stats.downloadsByFestival).map(([festivalId, count]) => ({
-                  festival: festivals.find(f => f.id === festivalId)?.name || 'Unknown Festival',
-                  downloads: count
-                }))}
-                layout="vertical"
-                margin={{ left: 120 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis 
-                  type="category" 
-                  dataKey="festival" 
-                  width={100}
-                />
-                <Tooltip />
-                <Bar dataKey="downloads" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
           </div>
         </div>
       </div>
