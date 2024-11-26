@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { Menu } from 'lucide-react';
 import BusinessSidebar from './BusinessSidebar';
@@ -62,10 +62,130 @@ const BusinessDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (festivals.length > 0) {
-      fetchDashboardStats();
+    if (!auth.currentUser) return;
+
+    // Get date range
+    const now = new Date();
+    let startDate = new Date();
+    switch (selectedTimeRange) {
+      case 'week':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case 'year':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
     }
-  }, [festivals, selectedTimeRange]);
+
+    // Create posts query - Remove the timestamp filter initially to debug
+    const postsQuery = query(
+      collection(db, "posts"),
+      where("userId", "==", auth.currentUser.uid)
+      // Temporarily remove the timestamp filter to see if that's the issue
+      // where("createdAt", ">=", startDate)
+    );
+
+    // Set up real-time listener for posts
+    const unsubscribe = onSnapshot(postsQuery, async (postsSnapshot) => {
+      try {
+        const posts = postsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        console.log('Found posts:', posts.length); // Debug log
+        console.log('Posts data:', posts); // Debug log to see the actual post data
+
+        // Calculate statistics
+        let totalImages = 0;
+        let totalVideos = 0;
+
+        posts.forEach(post => {
+          console.log('Processing post:', post.id); // Debug log
+          console.log('Post mediaFiles:', post.mediaFiles); // Debug log
+          
+          if (post.mediaFiles && Array.isArray(post.mediaFiles)) {
+            post.mediaFiles.forEach(file => {
+              console.log('Processing file:', file); // Debug log
+              if (file.type === 'image') totalImages++;
+              if (file.type === 'video') totalVideos++;
+            });
+          }
+        });
+
+        console.log('Total Images:', totalImages); // Debug log
+        console.log('Total Videos:', totalVideos); // Debug log
+
+        const newStats: DashboardStats = {
+          totalPosts: posts.length,
+          totalImages: totalImages,
+          totalVideos: totalVideos,
+          totalDownloads: 0, // We'll update these after fetching downloads
+          imageDownloads: 0,
+          videoDownloads: 0,
+          downloadsByFestival: {},
+          downloadsByCategory: {},
+          postsTimeline: [],
+          mediaTypeDistribution: []
+        };
+
+        // Fetch downloads
+        const downloadsQuery = query(
+          collection(db, "downloads"),
+          where("downloadedAt", ">=", startDate)
+        );
+        const downloadsSnapshot = await getDocs(downloadsQuery);
+        const downloads = downloadsSnapshot.docs.map(doc => doc.data());
+
+        // Update download statistics
+        newStats.totalDownloads = downloads.length;
+        newStats.imageDownloads = downloads.filter(d => d.mediaType === 'image').length;
+        newStats.videoDownloads = downloads.filter(d => d.mediaType === 'video').length;
+
+        // Calculate downloads by festival and category
+        downloads.forEach(download => {
+          const post = posts.find(p => p.id === download.postId);
+          if (post) {
+            newStats.downloadsByFestival[post.festivalId] = (newStats.downloadsByFestival[post.festivalId] || 0) + 1;
+            if (post.categoryId) {
+              newStats.downloadsByCategory[post.categoryId] = (newStats.downloadsByCategory[post.categoryId] || 0) + 1;
+            }
+          }
+        });
+
+        // Calculate posts timeline
+        const timeline = new Map();
+        posts.forEach(post => {
+          if (post.createdAt) {
+            const date = post.createdAt.toDate ? 
+              post.createdAt.toDate().toLocaleDateString() : 
+              new Date(post.createdAt).toLocaleDateString();
+            timeline.set(date, (timeline.get(date) || 0) + 1);
+          }
+        });
+        
+        newStats.postsTimeline = Array.from(timeline.entries()).map(([date, count]) => ({
+          date,
+          count
+        }));
+
+        // Update media type distribution
+        newStats.mediaTypeDistribution = [
+          { name: 'Images', value: totalImages },
+          { name: 'Videos', value: totalVideos }
+        ];
+
+        setStats(newStats);
+      } catch (error) {
+        console.error('Error processing dashboard stats:', error);
+        console.error('Error details:', error);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [selectedTimeRange]);
 
   const fetchUserProfile = async () => {
     const user = auth.currentUser;
@@ -84,94 +204,6 @@ const BusinessDashboard: React.FC = () => {
       ...doc.data()
     }));
     setFestivals(festivalsData);
-  };
-
-  const fetchDashboardStats = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    try {
-      // Get date range
-      const now = new Date();
-      let startDate = new Date();
-      switch (selectedTimeRange) {
-        case 'week':
-          startDate.setDate(now.getDate() - 7);
-          break;
-        case 'month':
-          startDate.setMonth(now.getMonth() - 1);
-          break;
-        case 'year':
-          startDate.setFullYear(now.getFullYear() - 1);
-          break;
-      }
-
-      // Fetch posts
-      const postsQuery = query(
-        collection(db, "posts"),
-        where("userId", "==", user.uid),
-        where("createdAt", ">=", startDate)
-      );
-      const postsSnapshot = await getDocs(postsQuery);
-      const posts = postsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      // Fetch downloads
-      const downloadsQuery = query(
-        collection(db, "downloads"),
-        where("downloadedAt", ">=", startDate)
-      );
-      const downloadsSnapshot = await getDocs(downloadsQuery);
-      const downloads = downloadsSnapshot.docs.map(doc => doc.data());
-
-      // Calculate statistics
-      const stats: DashboardStats = {
-        totalPosts: posts.length,
-        totalImages: posts.reduce((acc, post) => acc + post.mediaFiles.filter(m => m.type === 'image').length, 0),
-        totalVideos: posts.reduce((acc, post) => acc + post.mediaFiles.filter(m => m.type === 'video').length, 0),
-        totalDownloads: downloads.length,
-        imageDownloads: downloads.filter(d => d.mediaType === 'image').length,
-        videoDownloads: downloads.filter(d => d.mediaType === 'video').length,
-        downloadsByFestival: {},
-        downloadsByCategory: {},
-        postsTimeline: [],
-        mediaTypeDistribution: []
-      };
-
-      // Calculate downloads by festival and category
-      downloads.forEach(download => {
-        const post = posts.find(p => p.id === download.postId);
-        if (post) {
-          stats.downloadsByFestival[post.festivalId] = (stats.downloadsByFestival[post.festivalId] || 0) + 1;
-          if (post.categoryId) {
-            stats.downloadsByCategory[post.categoryId] = (stats.downloadsByCategory[post.categoryId] || 0) + 1;
-          }
-        }
-      });
-
-      // Calculate posts timeline
-      const timeline = new Map();
-      posts.forEach(post => {
-        const date = new Date(post.createdAt.toDate()).toLocaleDateString();
-        timeline.set(date, (timeline.get(date) || 0) + 1);
-      });
-      stats.postsTimeline = Array.from(timeline.entries()).map(([date, count]) => ({
-        date,
-        count
-      }));
-
-      // Calculate media type distribution
-      stats.mediaTypeDistribution = [
-        { name: 'Images', value: stats.totalImages },
-        { name: 'Videos', value: stats.totalVideos }
-      ];
-
-      setStats(stats);
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-    }
   };
 
   return (

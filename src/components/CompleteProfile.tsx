@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, query, collection, where, getDocs } from "firebase/firestore";
 import { db, auth } from "../firebase";
 
 const musicGenres = [
@@ -32,10 +32,29 @@ const CompleteProfile: React.FC = () => {
     }
 
     try {
+      // Add this validation before the username existence check
+      const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+      if (!usernameRegex.test(username)) {
+        setError("Username must be 3-20 characters long and can only contain letters, numbers, and underscores");
+        return;
+      }
+
+      // Check if username already exists
+      const usernameQuery = query(
+        collection(db, "users"),
+        where("username", "==", username.toLowerCase())
+      );
+      const querySnapshot = await getDocs(usernameQuery);
+      
+      if (!querySnapshot.empty) {
+        setError("Username already taken. Please choose another one.");
+        return;
+      }
+
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
         fullName,
-        username,
+        username: username.toLowerCase(), // Store username in lowercase for consistent querying
         dateOfBirth,
         favoriteGenre,
         isProfileComplete: true

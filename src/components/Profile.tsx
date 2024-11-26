@@ -13,6 +13,8 @@ interface UserProfile {
   followers?: string[];
   following?: string[];
   accessibleFestivals?: string[];
+  fullName?: string;
+  username?: string;
 }
 
 const Profile: React.FC = () => {
@@ -132,18 +134,18 @@ const Profile: React.FC = () => {
               {profileUser.photoURL ? (
                 <img
                   src={profileUser.photoURL}
-                  alt={profileUser.displayName}
+                  alt={profileUser.fullName || profileUser.displayName}
                   className="w-24 h-24 rounded-full mb-4"
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-4">
-                  {profileUser.displayName?.[0] || profileUser.email[0]}
+                  {profileUser.fullName?.[0] || profileUser.username?.[0] || '?'}
                 </div>
               )}
               <h1 className="text-2xl font-bold mb-1">
-                {profileUser.displayName || 'Anonymous User'}
+                {profileUser.fullName || 'Anonymous User'}
               </h1>
-              <p className="text-gray-600">{profileUser.email}</p>
+              <p className="text-gray-600">@{profileUser.username || 'anonymous'}</p>
               
               {/* Add follow button if not viewing own profile */}
               {currentUser && currentUser.uid !== userId && (
