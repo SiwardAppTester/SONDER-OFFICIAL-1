@@ -4,7 +4,7 @@ import { ref, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
 import { useNavigate, Link } from "react-router-dom";
-import { Menu, MessageCircle, User, Home as HomeIcon, Search as SearchIcon } from "lucide-react";
+import { Menu, KeyRound, User, Sparkles, Search as SearchIcon, Star, Package } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import Sidebar from "./Sidebar";
 
@@ -243,15 +243,21 @@ const Home: React.FC = () => {
         >
           <Menu size={28} />
         </button>
-        <button
-          onClick={() => {
-            setShowFestivalList(true);
-            setShowAccessInput(false);
-          }}
-          className="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition-colors"
-        >
-          All Festivals
-        </button>
+        
+        {/* Only show Sparkles button when viewing festival content */}
+        {selectedFestival && (
+          <button
+            onClick={() => {
+              setSelectedFestival("");
+              setShowFestivalList(true);
+              setShowAccessInput(false);
+            }}
+            className="text-purple-600 hover:text-purple-700 transition-colors duration-300 p-2 rounded-full hover:bg-purple-50"
+            aria-label="Return to festivals"
+          >
+            <Sparkles size={28} />
+          </button>
+        )}
       </div>
 
       <Sidebar
@@ -263,103 +269,129 @@ const Home: React.FC = () => {
         className="z-50"
       />
 
-      {showAccessInput ? (
-        <div className="max-w-md mx-auto mt-20 px-4">
-          <div className="bg-white rounded-2xl p-8 shadow-lg">
-            <h2 className="text-xl font-semibold mb-6 text-center">
-              Enter Festival Access Code
-            </h2>
-            <form onSubmit={handleAccessCodeSubmit}>
-              <input
-                type="text"
-                value={generalAccessCode}
-                onChange={(e) => setGeneralAccessCode(e.target.value)}
-                placeholder="Enter access code"
-                className="w-full p-3 border rounded-lg mb-4"
-              />
-              {generalAccessError && (
-                <p className="text-red-500 text-sm mb-4">{generalAccessError}</p>
-              )}
-              <button
-                type="submit"
-                className="w-full bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-colors"
-              >
-                Hold to Join the Revolution
-              </button>
-            </form>
-          </div>
-          <p className="text-center text-gray-600 mt-8">
-            Experience the moment. Cherish forever.
-          </p>
-        </div>
-      ) : showFestivalList ? (
-        <div className="max-w-4xl mx-auto px-4 mt-12 relative">
-          {/* Animated background elements */}
-          <div className="fixed inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -top-20 -left-20 animate-pulse"></div>
-            <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -bottom-20 -right-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+      {!selectedFestival ? (
+        <div className="max-w-5xl mx-auto px-4 mt-8 md:mt-16">
+          {/* Header Section */}
+          <div className="text-center mb-12 relative z-10">
+            <h1 className="text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 mb-4">
+              Your Festivals
+            </h1>
+            <p className="text-xl text-gray-600 font-light">
+              Access or select a festival to view content
+            </p>
           </div>
 
-          <div className="text-center mb-16 relative z-10">
-            <h1 className="text-6xl font-bold text-gray-900 mb-4">Your Festivals</h1>
-            <p className="text-xl text-gray-600">Select a festival to view content</p>
-          </div>
-
-          <div className="grid gap-6 relative z-10">
-            {festivals
-              .filter(festival => accessibleFestivals.has(festival.id))
-              .map((festival) => (
-                <div
-                  key={festival.id}
-                  className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-xl 
-                           transform hover:scale-[1.02] transition-all duration-300
-                           border border-gray-100"
+          <div className="grid md:grid-cols-2 gap-6 relative z-10">
+            {/* Access New Festival Card */}
+            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.05)] 
+                          transform transition-all duration-300 hover:shadow-[0_4px_25px_rgba(0,0,0,0.07)]">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <KeyRound className="text-purple-500" size={24} />
+                Access New Festival
+              </h2>
+              <form onSubmit={handleAccessCodeSubmit} className="space-y-5">
+                <div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={generalAccessCode}
+                      onChange={(e) => setGeneralAccessCode(e.target.value)}
+                      placeholder="Enter access code"
+                      className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl
+                               text-gray-800 placeholder-gray-400
+                               focus:outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-100
+                               transition-all duration-300"
+                    />
+                  </div>
+                  {generalAccessError && (
+                    <p className="mt-2 text-red-500 text-sm flex items-center gap-1">
+                      <span className="inline-block w-1 h-1 bg-red-500 rounded-full"></span>
+                      {generalAccessError}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-purple-600 text-white px-8 py-4 rounded-xl
+                           font-medium text-lg
+                           hover:bg-purple-700 active:bg-purple-800
+                           transform transition-all duration-300
+                           hover:shadow-[0_4px_20px_rgba(168,85,247,0.3)]
+                           focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                 >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{festival.name}</h3>
-                      <p className="text-gray-500">
-                        {festival.categories?.length || 0} Categories Available
-                      </p>
-                    </div>
+                  Join Festival
+                </button>
+              </form>
+            </div>
+
+            {/* Your Accessible Festivals Card */}
+            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.05)]
+                          transform transition-all duration-300 hover:shadow-[0_4px_25px_rgba(0,0,0,0.07)]">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <Star className="text-purple-500" size={24} />
+                Your Accessible Festivals
+              </h2>
+              <div className="space-y-3">
+                {festivals
+                  .filter(festival => accessibleFestivals.has(festival.id))
+                  .map((festival) => (
                     <button
+                      key={festival.id}
                       onClick={() => {
                         setSelectedFestival(festival.id);
                         setShowFestivalList(false);
                         setIsNavOpen(false);
                       }}
-                      className="bg-purple-600 text-white px-8 py-3 rounded-full 
-                               hover:bg-purple-700 transition-all duration-300
-                               transform hover:scale-105 hover:shadow-lg
-                               shadow-[0_0_20px_rgba(168,85,247,0.3)]
-                               hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]"
+                      className="w-full text-left p-5 rounded-xl bg-gray-50
+                               border-2 border-transparent
+                               hover:border-purple-200 hover:bg-purple-50
+                               transition-all duration-300 group"
                     >
-                      View Content
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-700 
+                                     transition-colors mb-1">
+                            {festival.name}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-block w-2 h-2 bg-purple-500 rounded-full"></span>
+                            <p className="text-sm text-gray-500">
+                              {festival.categories?.length || 0} Categories Available
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-purple-600 opacity-0 group-hover:opacity-100 
+                                     transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
+                          View Content →
+                        </span>
+                      </div>
                     </button>
+                  ))}
+                
+                {festivals.filter(festival => accessibleFestivals.has(festival.id)).length === 0 && (
+                  <div className="text-center py-8 px-4 bg-gray-50 rounded-xl">
+                    <div className="mb-3 text-gray-400">
+                      <Package size={32} className="mx-auto" />
+                    </div>
+                    <p className="text-gray-600">
+                      No festivals accessed yet
+                    </p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Enter an access code to join your first festival
+                    </p>
                   </div>
-                </div>
-              ))}
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="mt-12 relative z-10">
-            <button
-              onClick={() => {
-                setShowAccessInput(true);
-                setIsNavOpen(false);
-              }}
-              className="w-full px-8 py-4 rounded-full bg-purple-600 text-white text-xl 
-                       font-semibold transition-all duration-300 
-                       shadow-[0_0_20px_rgba(168,85,247,0.3)]
-                       hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]
-                       hover:bg-purple-700 transform hover:scale-[1.02]
-                       relative overflow-hidden group"
-            >
-              <span className="relative z-10">Access Another Festival</span>
-              <div 
-                className="absolute inset-0 bg-gradient-to-r from-purple-600 to-purple-500 
-                         transition-opacity duration-300 opacity-0 group-hover:opacity-100"
-              />
-            </button>
+          {/* Background Decorative Elements */}
+          <div className="fixed inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute w-[500px] h-[500px] bg-purple-100 rounded-full 
+                          blur-3xl opacity-20 -top-40 -left-40 animate-pulse"></div>
+            <div className="absolute w-[500px] h-[500px] bg-rose-100 rounded-full 
+                          blur-3xl opacity-20 -bottom-40 -right-40 animate-pulse"
+                 style={{ animationDelay: '1s' }}></div>
           </div>
         </div>
       ) : (

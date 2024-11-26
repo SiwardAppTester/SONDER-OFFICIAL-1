@@ -54,6 +54,11 @@ interface UserProfile {
   following?: string[];
 }
 
+interface Toast {
+  message: string;
+  type: 'success' | 'error';
+}
+
 const AddPost: React.FC = () => {
   const [text, setText] = useState("");
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
@@ -71,6 +76,7 @@ const AddPost: React.FC = () => {
   const navigate = useNavigate();
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
 
   useEffect(() => {
     fetchFestivals();
@@ -410,6 +416,11 @@ const AddPost: React.FC = () => {
     setMediaFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000); // Hide after 3 seconds
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const auth = getAuth();
@@ -477,8 +488,9 @@ const AddPost: React.FC = () => {
       // Clear the form
       setText("");
       setMediaFiles([]);
-      // Optionally show a success message
-      alert("Post created successfully!");
+      
+      // Show styled toast instead of alert
+      showToast("Content posted successfully! ✨", "success");
       
       // Refresh the category posts to show the new content
       if (selectedCategory) {
@@ -487,7 +499,7 @@ const AddPost: React.FC = () => {
 
     } catch (error) {
       console.error("Error creating post:", error);
-      alert("Failed to create post. Please try again.");
+      showToast("Failed to create post. Please try again.", "error");
     }
   };
 
@@ -975,6 +987,19 @@ const AddPost: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Add this toast component near the end of the JSX, but before the closing div */}
+      {toast && (
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+          <div className={`px-6 py-3 rounded-full shadow-lg ${
+            toast.type === 'success' 
+              ? 'bg-purple-600 text-white shadow-purple-200' 
+              : 'bg-red-500 text-white shadow-red-200'
+          } transition-all transform animate-fade-in-up`}>
+            <p className="text-center">{toast.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
