@@ -332,8 +332,23 @@ const AddPost: React.FC = () => {
 
   const handleMediaChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    categoryId?: string,
   ) => {
+    if (!selectedFestival) {
+      alert("Please select a festival first");
+      return;
+    }
+
+    const festival = festivals.find(f => f.id === selectedFestival);
+    if (!festival?.categories?.length) {
+      alert("Please create a category in this festival first");
+      return;
+    }
+
+    if (!selectedCategory) {
+      alert("Please select a category before uploading media");
+      return;
+    }
+
     if (e.target.files) {
       setIsUploading(true);
       const newFiles = Array.from(e.target.files)
@@ -341,11 +356,14 @@ const AddPost: React.FC = () => {
           const isImage = file.type.startsWith('image/');
           const isVideo = file.type.startsWith('video/');
           
-          // If category is selected, filter based on active media type
-          if (selectedCategory) {
-            const activeType = activeCategoryMedia[selectedCategory];
-            if (activeType === "image") return isImage;
-            if (activeType === "video") return isVideo;
+          // Filter based on category's media type
+          const category = festivals
+            .find(f => f.id === selectedFestival)
+            ?.categories?.find(c => c.id === selectedCategory);
+          
+          if (category) {
+            if (category.mediaType === "image") return isImage;
+            if (category.mediaType === "video") return isVideo;
           }
           
           return isImage || isVideo;
@@ -354,7 +372,7 @@ const AddPost: React.FC = () => {
           file,
           type: file.type.startsWith('image/') ? 'image' : 'video' as "image" | "video",
           progress: 0,
-          categoryId: selectedCategory || undefined
+          categoryId: selectedCategory
         }));
 
       if (newFiles.length === 0) {
@@ -380,41 +398,30 @@ const AddPost: React.FC = () => {
     const auth = getAuth();
     const user = auth.currentUser;
 
-    // Check if a festival is selected
     if (!selectedFestival) {
-      alert("Please select a festival before posting");
+      alert("Please select a festival first");
       return;
     }
 
-    // Check if user exists
+    const festival = festivals.find(f => f.id === selectedFestival);
+    if (!festival?.categories?.length) {
+      alert("Please create a category in this festival first");
+      return;
+    }
+
+    if (!selectedCategory) {
+      alert("Please select a category before posting");
+      return;
+    }
+
     if (!user) {
       alert("You must be logged in to post");
       return;
     }
 
-    // Check if there's media content
     if (mediaFiles.length === 0) {
       alert("Please add some media content to your post");
       return;
-    }
-
-    // Add media type validation
-    if (selectedCategory) {
-      const festival = festivals.find(f => f.id === selectedFestival);
-      const category = festival?.categories?.find(c => c.id === selectedCategory);
-      
-      if (category && category.mediaType !== "both") {
-        const hasInvalidMedia = mediaFiles.some(file => {
-          if (category.mediaType === "image" && file.type === "video") return true;
-          if (category.mediaType === "video" && file.type === "image") return true;
-          return false;
-        });
-
-        if (hasInvalidMedia) {
-          alert(`This category only accepts ${category.mediaType}s`);
-          return;
-        }
-      }
     }
 
     try {
@@ -735,14 +742,30 @@ const AddPost: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isUploading}
+              disabled={
+                isUploading || 
+                !selectedFestival || 
+                !festivals.find(f => f.id === selectedFestival)?.categories?.length ||
+                !selectedCategory
+              }
               className={`w-full px-6 py-3 rounded-lg ${
-                isUploading 
+                isUploading || 
+                !selectedFestival || 
+                !festivals.find(f => f.id === selectedFestival)?.categories?.length ||
+                !selectedCategory
                   ? 'bg-gray-400 cursor-not-allowed' 
                   : 'bg-blue-500 hover:bg-blue-600 text-white'
               }`}
             >
-              {isUploading ? 'Uploading...' : 'Post'}
+              {isUploading 
+                ? 'Uploading...' 
+                : !selectedFestival 
+                  ? 'Select a Festival'
+                  : !festivals.find(f => f.id === selectedFestival)?.categories?.length
+                    ? 'Create a Category First'
+                    : !selectedCategory
+                      ? 'Select a Category'
+                      : 'Post'}
             </button>
 
             {/* Media Upload and Preview Section */}
@@ -750,31 +773,41 @@ const AddPost: React.FC = () => {
               <div className="flex flex-col gap-4">
                 {/* File Input Button - Full width, shorter height */}
                 <div className="w-full">
-                  <div className="relative w-full h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-blue-500 transition-colors cursor-pointer">
-                    <input
-                      type="file"
-                      onChange={handleMediaChange}
-                      accept={
-                        selectedCategory
-                          ? festivals
-                              .find(f => f.id === selectedFestival)
-                              ?.categories?.find(c => c.id === selectedCategory)
-                              ?.mediaType === "image"
-                            ? "image/*"
-                            : festivals
-                                .find(f => f.id === selectedFestival)
-                                ?.categories?.find(c => c.id === selectedCategory)
-                                ?.mediaType === "video"
-                              ? "video/*"
-                              : "image/*,video/*"
-                          : "image/*,video/*"
-                      }
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      multiple
-                    />
-                    <Plus size={24} className="text-gray-400 mb-2" />
-                    <span className="text-sm text-gray-500">Add Media</span>
-                  </div>
+                  {!selectedFestival || !festivals.find(f => f.id === selectedFestival)?.categories?.length || !selectedCategory ? (
+                    <div className="w-full h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center bg-gray-100">
+                      <span className="text-sm text-gray-500">
+                        {!selectedFestival 
+                          ? "Please select a festival first" 
+                          : !festivals.find(f => f.id === selectedFestival)?.categories?.length
+                            ? "Please create a category in this festival first"
+                            : "Please select a category first"}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="relative w-full h-[100px] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-blue-500 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        onChange={handleMediaChange}
+                        accept={
+                          festivals
+                            .find(f => f.id === selectedFestival)
+                            ?.categories?.find(c => c.id === selectedCategory)
+                            ?.mediaType === "image"
+                              ? "image/*"
+                              : festivals
+                                  .find(f => f.id === selectedFestival)
+                                  ?.categories?.find(c => c.id === selectedCategory)
+                                  ?.mediaType === "video"
+                                ? "video/*"
+                                : "image/*,video/*"
+                        }
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        multiple
+                      />
+                      <Plus size={24} className="text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-500">Add Media</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Uploaded Media Previews - Scrollable container */}
