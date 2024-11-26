@@ -364,6 +364,24 @@ const Home: React.FC = () => {
         </div>
       ) : (
         <div className="max-w-6xl mx-auto px-4">
+          {/* Festival Name Display */}
+          <div className="mb-12">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 
+                          border border-gray-100 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-50/50 to-rose-50/50"></div>
+              <div className="relative">
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 text-center">
+                  {festivals.find(f => f.id === selectedFestival)?.name}
+                </h1>
+                <div className="mt-2 text-center">
+                  <span className="text-gray-500 text-sm">
+                    View and filter your festival content below
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Filters Section */}
           <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
             <div className="space-y-6">
