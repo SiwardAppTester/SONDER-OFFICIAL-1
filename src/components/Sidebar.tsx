@@ -258,8 +258,8 @@ const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </div>
 
-          {/* Enhanced Stats Grid */}
-          <div className="grid grid-cols-3 gap-3 text-center mb-6 stats-grid">
+          {/* Enhanced Stats Grid - Smaller Version */}
+          <div className="grid grid-cols-3 gap-2 text-center mb-4 stats-grid px-4">
             {[
               { label: 'Followers', count: userProfile?.followers?.length || 0, type: 'followers' as const },
               { label: 'Following', count: userProfile?.following?.length || 0, type: 'following' as const },
@@ -267,21 +267,23 @@ const Sidebar: React.FC<SidebarProps> = ({
             ].map(({ label, count, type }) => (
               <div 
                 key={type}
-                className={`bg-white/80 backdrop-blur-sm p-3 rounded-xl cursor-pointer
+                className={`bg-white/80 backdrop-blur-sm p-2 rounded-lg cursor-pointer
                   transition-all duration-300 border border-transparent
                   ${openDropdown === type 
-                    ? 'shadow-lg shadow-purple-500/30 scale-105 border-purple-200' 
-                    : 'hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20'}
+                    ? 'shadow-md shadow-purple-500/20 scale-105 border-purple-200' 
+                    : 'hover:scale-105 hover:shadow-md hover:shadow-purple-500/10'}
                   transform`}
                 onClick={() => toggleDropdown(type)}
               >
-                <div className="font-semibold flex items-center justify-center gap-1.5 text-gray-800">
-                  {count}
-                  {openDropdown === type 
-                    ? <ChevronUp size={14} className="text-purple-500" /> 
-                    : <ChevronDown size={14} className="text-purple-500" />}
+                <div className="flex flex-col items-center">
+                  <span className="text-base font-bold text-gray-800">{count}</span>
+                  <span className="text-xs text-gray-600 font-medium">{label}</span>
+                  <div className="mt-0.5">
+                    {openDropdown === type 
+                      ? <ChevronUp size={12} className="text-purple-500" /> 
+                      : <ChevronDown size={12} className="text-purple-500" />}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600 font-medium">{label}</div>
               </div>
             ))}
           </div>
