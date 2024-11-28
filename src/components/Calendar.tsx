@@ -142,8 +142,8 @@ const Calendar: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
-      {/* Navigation - reduced top padding */}
-      <div className="flex justify-between items-center p-2">
+      {/* Navigation - adjusted for mobile */}
+      <div className="flex justify-between items-center p-2 md:p-4">
         <button
           onClick={() => setIsNavOpen(!isNavOpen)}
           className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
@@ -162,10 +162,10 @@ const Calendar: React.FC = () => {
         accessibleFestivalsCount={accessibleFestivals.size}
       />
 
-      {/* Main Content - adjusted max width and padding */}
-      <div className="max-w-4xl mx-auto px-4 mt-2">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-4 mb-6">
-          {/* Genre Filter - reduced margin */}
+      {/* Main Content - adjusted for intermediate desktop size */}
+      <div className="max-w-4xl lg:max-w-6xl mx-auto px-2 md:px-4 lg:px-6 mt-2">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-3 md:p-4 lg:p-5 mb-6">
+          {/* Genre Filter - adjusted for mobile */}
           <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-medium text-gray-700">Filter by Genre</h3>
@@ -178,12 +178,12 @@ const Calendar: React.FC = () => {
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 md:gap-2">
               {danceGenres.map(genre => (
                 <button
                   key={genre}
                   onClick={() => toggleGenre(genre)}
-                  className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 ${
+                  className={`px-3 md:px-6 py-1.5 md:py-2.5 rounded-full text-sm md:text-base transition-all transform hover:scale-105 ${
                     selectedGenres.has(genre)
                       ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
                       : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
@@ -195,29 +195,29 @@ const Calendar: React.FC = () => {
             </div>
           </div>
 
-          {/* Month Navigation - reduced margin */}
-          <div className="flex justify-between items-center mb-4">
+          {/* Month Navigation - slightly reduced from previous */}
+          <div className="flex justify-between items-center mb-4 lg:mb-5">
             <button
               onClick={handlePreviousMonth}
-              className="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition-colors"
+              className="bg-purple-600 text-white px-3 md:px-6 py-1.5 md:py-2 lg:py-2.5 text-sm md:text-base lg:text-lg rounded-full hover:bg-purple-700 transition-colors"
             >
               Previous
             </button>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-lg md:text-2xl lg:text-2xl font-bold text-gray-900">
               {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
             </h2>
             <button
               onClick={handleNextMonth}
-              className="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition-colors"
+              className="bg-purple-600 text-white px-3 md:px-6 py-1.5 md:py-2 lg:py-2.5 text-sm md:text-base lg:text-lg rounded-full hover:bg-purple-700 transition-colors"
             >
               Next
             </button>
           </div>
 
-          {/* Calendar Grid - adjusted cell height */}
-          <div className="grid grid-cols-7 gap-1">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center font-semibold text-gray-700 py-1 text-sm">
+          {/* Calendar Grid - adjusted cell size */}
+          <div className="grid grid-cols-7 gap-1 lg:gap-1.5">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+              <div key={day} className="text-center font-semibold text-gray-700 py-1 lg:py-1.5 text-xs md:text-sm lg:text-base">
                 {day}
               </div>
             ))}
@@ -232,7 +232,7 @@ const Calendar: React.FC = () => {
               return (
                 <div
                   key={index}
-                  className={`min-h-[80px] border rounded-xl p-2 transition-all duration-300 
+                  className={`min-h-[60px] md:min-h-[80px] lg:min-h-[100px] border rounded-xl p-1.5 md:p-2 lg:p-2.5 transition-all duration-300 
                     ${day ? 'cursor-pointer hover:shadow-lg transform hover:scale-[1.02]' : ''}
                     ${selectedDate === date ? 'bg-purple-50 border-purple-200' : 'bg-white/60'}
                     ${!day ? 'bg-gray-50/30' : ''}`}
@@ -240,11 +240,11 @@ const Calendar: React.FC = () => {
                 >
                   {day && (
                     <>
-                      <div className="font-semibold text-gray-900 text-sm">{day}</div>
+                      <div className="font-semibold text-gray-900 text-xs md:text-sm lg:text-base">{day}</div>
                       {dayEvents.length > 0 && (
                         <div className="mt-1">
-                          <span className="inline-flex items-center justify-center bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                            {dayEvents.length} {dayEvents.length === 1 ? 'event' : 'events'}
+                          <span className="inline-flex items-center justify-center bg-purple-100 text-purple-800 text-[10px] md:text-xs lg:text-sm font-medium px-1.5 md:px-2 lg:px-2.5 py-0.5 rounded-full">
+                            {dayEvents.length}
                           </span>
                         </div>
                       )}
@@ -257,19 +257,19 @@ const Calendar: React.FC = () => {
         </div>
       </div>
 
-      {/* Event Modal */}
+      {/* Event Modal - adjusted for mobile */}
       {showEventModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl border border-gray-100">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-0">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 w-full max-w-lg mx-2 md:mx-4 shadow-2xl border border-gray-100">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900">
                 Events for {new Date(selectedDate).toLocaleDateString('default', { 
                   day: 'numeric',
                   month: 'long',
                   year: 'numeric'
                 })}
                 {selectedGenres.size > 0 && (
-                  <span className="text-sm font-normal text-gray-600 block mt-1">
+                  <span className="text-xs md:text-sm font-normal text-gray-600 block mt-1">
                     Filtered by: {Array.from(selectedGenres).join(", ")}
                   </span>
                 )}
@@ -278,24 +278,24 @@ const Calendar: React.FC = () => {
                 onClick={() => setShowEventModal(false)}
                 className="text-purple-600 hover:text-purple-700 transition-colors"
               >
-                <X size={24} />
+                <X size={20} className="md:w-6 md:h-6" />
               </button>
             </div>
 
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="space-y-3 max-h-[60vh] md:max-h-[70vh] overflow-y-auto pr-2">
               {filterEventsByGenre(events.filter(event => event.date === selectedDate))
                 .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
                 .map(event => (
                   <div
                     key={event.id}
-                    className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl 
+                    className="bg-white rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl 
                              transform hover:scale-[1.02] transition-all duration-300
                              border border-gray-100"
                   >
-                    <div className="flex justify-between items-start">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{event.title}</h3>
+                    <div className="flex justify-between items-start flex-wrap gap-2">
+                      <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">{event.title}</h3>
                       {(event.startTime || event.endTime) && (
-                        <span className="bg-purple-100 text-purple-800 px-4 py-1 rounded-full text-sm font-medium">
+                        <span className="bg-purple-100 text-purple-800 px-3 md:px-4 py-1 rounded-full text-xs md:text-sm font-medium">
                           {event.startTime && event.endTime 
                             ? `${event.startTime} - ${event.endTime}`
                             : event.startTime || event.endTime}
@@ -303,9 +303,9 @@ const Calendar: React.FC = () => {
                       )}
                     </div>
 
-                    <p className="text-gray-600 text-lg mb-3">{event.description}</p>
+                    <p className="text-gray-600 text-base md:text-lg mb-3">{event.description}</p>
 
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3">
+                    <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-500 mb-3">
                       {event.createdBy && (
                         <div className="flex items-center gap-1">
                           <span className="font-medium">Organizer:</span>
@@ -320,19 +320,19 @@ const Calendar: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 md:gap-2">
                       {event.festivalId && (
-                        <span className="bg-purple-100 text-purple-800 px-4 py-1.5 rounded-full text-sm font-medium">
+                        <span className="bg-purple-100 text-purple-800 px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium">
                           Festival Event
                         </span>
                       )}
                       {event.isBusinessEvent && (
-                        <span className="bg-indigo-100 text-indigo-800 px-4 py-1.5 rounded-full text-sm font-medium">
+                        <span className="bg-indigo-100 text-indigo-800 px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium">
                           Business Event
                         </span>
                       )}
                       {event.isPublic !== undefined && (
-                        <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+                        <span className={`px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium ${
                           event.isPublic 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-red-100 text-red-800'
@@ -345,11 +345,11 @@ const Calendar: React.FC = () => {
                 ))}
 
               {filterEventsByGenre(events.filter(event => event.date === selectedDate)).length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 text-lg">
+                <div className="text-center py-6 md:py-8">
+                  <p className="text-gray-500 text-base md:text-lg">
                     No events scheduled for this day
                     {selectedGenres.size > 0 && (
-                      <span className="block mt-2 text-sm">
+                      <span className="block mt-2 text-xs md:text-sm">
                         Filtered by: {Array.from(selectedGenres).join(", ")}
                       </span>
                     )}

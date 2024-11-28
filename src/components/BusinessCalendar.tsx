@@ -216,31 +216,31 @@ const BusinessCalendar: React.FC = () => {
         accessibleFestivalsCount={0}
       />
 
-      <div className="max-w-6xl mx-auto p-4 w-full">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          {/* Month Navigation */}
-          <div className="flex justify-between items-center mb-6">
+      <div className="max-w-6xl mx-auto p-2 md:p-4 w-full">
+        <div className="bg-white rounded-lg shadow-lg p-3 md:p-6">
+          {/* Month Navigation - make buttons and text smaller on mobile */}
+          <div className="flex justify-between items-center mb-4 md:mb-6">
             <button
               onClick={handlePreviousMonth}
-              className="px-6 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
+              className="px-3 md:px-6 py-1.5 md:py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 text-sm md:text-base"
             >
               Previous
             </button>
-            <h2 className="text-xl font-medium">
+            <h2 className="text-lg md:text-xl font-medium">
               {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' }).toLowerCase()}
             </h2>
             <button
               onClick={handleNextMonth}
-              className="px-6 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600"
+              className="px-3 md:px-6 py-1.5 md:py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 text-sm md:text-base"
             >
               Next
             </button>
           </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2">
+          {/* Calendar Grid - adjust spacing and text sizes */}
+          <div className="grid grid-cols-7 gap-1 md:gap-2">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center font-medium p-2">
+              <div key={day} className="text-center font-medium p-1 md:p-2 text-xs md:text-base">
                 {day}
               </div>
             ))}
@@ -255,17 +255,17 @@ const BusinessCalendar: React.FC = () => {
               return (
                 <div
                   key={index}
-                  className={`min-h-[100px] border rounded-lg p-2 ${
+                  className={`min-h-[60px] md:min-h-[100px] border rounded-lg p-1 md:p-2 ${
                     day ? 'cursor-pointer hover:bg-gray-50' : ''
                   } ${selectedDate === date ? 'bg-purple-50' : ''}`}
                   onClick={() => day && setSelectedDate(date)}
                 >
                   {day && (
                     <>
-                      <div className="font-medium">{day}</div>
+                      <div className="font-medium text-sm md:text-base">{day}</div>
                       {dayEvents.length > 0 && (
-                        <div className="mt-1">
-                          <span className="text-sm text-purple-600">
+                        <div className="mt-0.5 md:mt-1">
+                          <span className="text-xs md:text-sm text-purple-600">
                             {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''}
                           </span>
                         </div>
@@ -277,35 +277,35 @@ const BusinessCalendar: React.FC = () => {
             })}
           </div>
 
-          {/* Add Event Button */}
-          <div className="mt-6 mb-4">
+          {/* Add Event Button - adjust spacing */}
+          <div className="mt-4 md:mt-6 mb-2 md:mb-4">
             <button
               onClick={() => setShowAddEvent(true)}
-              className="flex items-center gap-2 px-6 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 text-sm transition-colors"
+              className="flex items-center gap-2 px-4 md:px-6 py-1.5 md:py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 text-xs md:text-sm transition-colors"
             >
-              <Plus size={16} />
+              <Plus size={14} className="md:w-4 md:h-4" />
               Add Event
             </button>
           </div>
 
-          {/* Event List for Selected Date */}
-          <div className="mt-6">
-            <h3 className="text-xl font-medium mb-4">
+          {/* Event List - adjust spacing and text sizes */}
+          <div className="mt-4 md:mt-6">
+            <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">
               Events for {selectedDate}
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               {events
                 .filter(event => event.date === selectedDate)
                 .map(event => (
                   <div
                     key={event.id}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+                    className="bg-white border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-sm transition-shadow"
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="text-lg font-medium">{event.title}</h4>
-                        <p className="text-gray-600 mt-1">{event.description}</p>
-                        <div className="mt-2 space-y-1 text-gray-500 text-sm">
+                        <h4 className="text-base md:text-lg font-medium">{event.title}</h4>
+                        <p className="text-gray-600 mt-1 text-sm md:text-base">{event.description}</p>
+                        <div className="mt-2 space-y-0.5 md:space-y-1 text-gray-500 text-xs md:text-sm">
                           <p>Time: {event.startTime || '-'}</p>
                           <p>Genre: {event.genre}</p>
                           <p className="text-gray-400">{event.isPublic ? 'Public Event' : 'Private Event'}</p>
@@ -313,7 +313,7 @@ const BusinessCalendar: React.FC = () => {
                       </div>
                       <button
                         onClick={() => handleDeleteEvent(event.id)}
-                        className="text-red-500 hover:text-red-600 text-sm"
+                        className="text-red-500 hover:text-red-600 text-xs md:text-sm"
                       >
                         Delete
                       </button>
@@ -323,10 +323,10 @@ const BusinessCalendar: React.FC = () => {
             </div>
           </div>
 
-          {/* Add Event Modal */}
+          {/* Add Event Modal - adjust for mobile */}
           {showAddEvent && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full mx-2 md:mx-4 max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-medium">Add New Event</h2>
                   <button
@@ -479,10 +479,10 @@ const BusinessCalendar: React.FC = () => {
             </div>
           )}
 
-          {/* Delete Confirmation Modal */}
+          {/* Delete Confirmation Modal - adjust for mobile */}
           {eventToDelete && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-2xl p-6 max-w-[280px] w-full mx-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl p-4 md:p-6 max-w-[280px] w-full mx-2 md:mx-4">
                 <p className="text-lg mb-6">
                   Are you sure you want to delete this event?
                 </p>

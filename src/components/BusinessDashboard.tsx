@@ -208,14 +208,14 @@ const BusinessDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-pink-50">
-      {/* Header - Positioned like AddPost page */}
-      <div className="flex items-center gap-4 p-4">
+      {/* Header - Adjusted padding for mobile */}
+      <div className="flex items-center gap-4 p-3 md:p-4">
         <button
           onClick={() => setIsNavOpen(!isNavOpen)}
           className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
           aria-label="Toggle navigation menu"
         >
-          <Menu size={28} />
+          <Menu size={24} className="md:w-7 md:h-7" />
         </button>
       </div>
 
@@ -227,19 +227,20 @@ const BusinessDashboard: React.FC = () => {
         accessibleFestivalsCount={festivals.length}
       />
 
-      <div className="px-6 pb-6 max-w-7xl mx-auto">
-        {/* Main Content Card */}
-        <div className="bg-white rounded-3xl shadow-lg p-8 mb-8">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Business Dashboard</h1>
+      {/* Adjusted padding for mobile */}
+      <div className="px-3 md:px-6 pb-4 md:pb-6 max-w-7xl mx-auto">
+        {/* Main Content Card - Adjusted padding for mobile */}
+        <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-4 md:p-8 mb-4 md:mb-8">
+          <div className="mb-4 md:mb-6">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">Business Dashboard</h1>
             
-            {/* Time Range Selector */}
-            <div className="flex gap-4">
+            {/* Time Range Selector - Made scrollable on mobile */}
+            <div className="flex gap-2 md:gap-4 overflow-x-auto pb-2 -mb-2 md:pb-0 md:mb-0 hide-scrollbar">
               {['week', 'month', 'year'].map((range) => (
                 <button
                   key={range}
                   onClick={() => setSelectedTimeRange(range as 'week' | 'month' | 'year')}
-                  className={`px-6 py-2 rounded-full transition-all ${
+                  className={`px-4 md:px-6 py-2 rounded-full transition-all whitespace-nowrap flex-shrink-0 ${
                     selectedTimeRange === range
                       ? 'bg-purple-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -251,32 +252,38 @@ const BusinessDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Stats Overview - Adjusted grid for mobile */}
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-8">
             {[
               { label: 'Total Posts', value: stats.totalPosts },
               { label: 'Total Downloads', value: stats.totalDownloads },
               { label: 'Image Downloads', value: stats.imageDownloads },
               { label: 'Video Downloads', value: stats.videoDownloads }
             ].map((stat, index) => (
-              <div key={index} className="bg-gray-50 p-6 rounded-2xl">
-                <h3 className="text-gray-500 text-sm font-medium">{stat.label}</h3>
-                <p className="mt-2 text-3xl font-semibold text-gray-900">{stat.value}</p>
+              <div key={index} className="bg-gray-50 p-3 md:p-6 rounded-xl md:rounded-2xl">
+                <h3 className="text-gray-500 text-xs md:text-sm font-medium">{stat.label}</h3>
+                <p className="mt-1 md:mt-2 text-xl md:text-3xl font-semibold text-gray-900">{stat.value}</p>
               </div>
             ))}
           </div>
 
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Charts Section - Stack on mobile */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Posts Timeline */}
-            <div className="bg-gray-50 p-6 rounded-2xl">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Posts Timeline</h3>
-              <div className="h-80">
+            <div className="bg-gray-50 p-4 md:p-6 rounded-xl md:rounded-2xl">
+              <h3 className="text-base md:text-lg font-medium text-gray-900 mb-3 md:mb-4">Posts Timeline</h3>
+              <div className="h-60 md:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.postsTimeline}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: window.innerWidth < 768 ? 10 : 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis tick={{ fontSize: window.innerWidth < 768 ? 10 : 12 }} />
                     <Tooltip />
                     <Bar dataKey="count" fill="#9333EA" />
                   </BarChart>
@@ -285,9 +292,9 @@ const BusinessDashboard: React.FC = () => {
             </div>
 
             {/* Media Type Distribution */}
-            <div className="bg-gray-50 p-6 rounded-2xl">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Media Type Distribution</h3>
-              <div className="h-80">
+            <div className="bg-gray-50 p-4 md:p-6 rounded-xl md:rounded-2xl">
+              <h3 className="text-base md:text-lg font-medium text-gray-900 mb-3 md:mb-4">Media Type Distribution</h3>
+              <div className="h-60 md:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -296,7 +303,7 @@ const BusinessDashboard: React.FC = () => {
                       cy="50%"
                       labelLine={false}
                       label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      outerRadius={window.innerWidth < 768 ? 60 : 80}
                       fill="#9333EA"
                       dataKey="value"
                     >
@@ -305,7 +312,7 @@ const BusinessDashboard: React.FC = () => {
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: window.innerWidth < 768 ? '12px' : '14px' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>

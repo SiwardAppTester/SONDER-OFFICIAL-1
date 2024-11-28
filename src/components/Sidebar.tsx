@@ -186,11 +186,24 @@ const Sidebar: React.FC<SidebarProps> = ({
     setIsNavOpen(false);
   };
 
+  // Add useEffect to control body scroll
+  useEffect(() => {
+    if (isNavOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isNavOpen]);
+
   return (
     <>
       <div className={`fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      } overflow-y-auto overflow-x-hidden`}>
         {/* Close button - slightly smaller and more elegant */}
         <div className="p-3 flex justify-end">
           <button
