@@ -273,11 +273,9 @@ const Home: React.FC = () => {
       <Sidebar
         isNavOpen={isNavOpen}
         setIsNavOpen={setIsNavOpen}
-        user={user}
+        user={auth.currentUser}
         userProfile={userProfile}
-        accessibleFestivalsCount={userProfile?.accessibleFestivals?.length || 0}
         setSelectedFestival={setSelectedFestival}
-        className="z-50"
       />
 
       {!selectedFestival ? (

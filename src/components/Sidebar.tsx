@@ -6,7 +6,7 @@ import { signOut, updateProfile } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { doc, updateDoc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 
 interface Festival {
@@ -35,7 +35,6 @@ interface SidebarProps {
   setIsNavOpen: (isOpen: boolean) => void;
   user: FirebaseUser | null;
   userProfile: UserProfile | null;
-  accessibleFestivalsCount: number;
   setSelectedFestival: (festivalId: string) => void;
 }
 
@@ -44,7 +43,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   setIsNavOpen,
   user,
   userProfile,
-  accessibleFestivalsCount,
   setSelectedFestival,
 }) => {
   const navigate = useNavigate();
@@ -54,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [festivalDetails, setFestivalDetails] = useState<Festival[]>([]);
   const [followersDetails, setFollowersDetails] = useState<UserDetails[]>([]);
   const [followingDetails, setFollowingDetails] = useState<UserDetails[]>([]);
+  const [accessibleFestivalsCount, setAccessibleFestivalsCount] = useState(0);
 
   useEffect(() => {
     setLocalPhotoURL(userProfile?.photoURL);
@@ -76,33 +75,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  useEffect(() => {
-    const fetchFestivalDetails = async () => {
-      if (!userProfile?.accessibleFestivals?.length) return;
-      
-      try {
-        const festivals = await Promise.all(
-          userProfile.accessibleFestivals.map(async (festivalId) => {
-            const festivalDoc = await getDoc(doc(db, "festivals", festivalId));
-            if (festivalDoc.exists()) {
-              return {
-                id: festivalDoc.id,
-                name: festivalDoc.data().name || 'Unnamed Festival'
-              };
-            }
-            return null;
-          })
-        );
-        
-        setFestivalDetails(festivals.filter((f): f is Festival => f !== null));
-      } catch (error) {
-        console.error("Error fetching festival details:", error);
-      }
-    };
-
-    fetchFestivalDetails();
-  }, [userProfile?.accessibleFestivals]);
 
   useEffect(() => {
     const fetchUserDetails = async (userIds: string[], setDetails: (users: UserDetails[]) => void) => {
@@ -138,6 +110,44 @@ const Sidebar: React.FC<SidebarProps> = ({
       fetchUserDetails(userProfile.following, setFollowingDetails);
     }
   }, [userProfile?.followers, userProfile?.following]);
+
+  useEffect(() => {
+    const fetchFestivalsCount = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        // Get user's document to check accessibleFestivals
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const accessibleFestivals = userData.accessibleFestivals || [];
+          setAccessibleFestivalsCount(accessibleFestivals.length);
+          
+          // Also update festival details for the dropdown
+          if (accessibleFestivals.length > 0) {
+            const festivals = await Promise.all(
+              accessibleFestivals.map(async (festivalId) => {
+                const festivalDoc = await getDoc(doc(db, "festivals", festivalId));
+                if (festivalDoc.exists()) {
+                  return {
+                    id: festivalDoc.id,
+                    name: festivalDoc.data().name || 'Unnamed Festival'
+                  };
+                }
+                return null;
+              })
+            );
+            
+            setFestivalDetails(festivals.filter((f): f is Festival => f !== null));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching festivals count:", error);
+      }
+    };
+
+    fetchFestivalsCount();
+  }, [user?.uid]);
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

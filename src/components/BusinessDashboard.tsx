@@ -224,7 +224,6 @@ const BusinessDashboard: React.FC = () => {
         setIsNavOpen={setIsNavOpen}
         user={auth.currentUser}
         userProfile={userProfile}
-        accessibleFestivalsCount={festivals.length}
       />
 
       {/* Adjusted padding for mobile */}
