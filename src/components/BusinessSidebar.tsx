@@ -63,9 +63,14 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.stats-grid')) {
-        setOpenDropdown(null);
+      const isToggleButton = target.closest('.stats-grid-item');
+      const isInsideSidebar = target.closest('.business-sidebar');
+      
+      if (isInsideSidebar || target.closest('.dropdown-content') || isToggleButton) {
+        return;
       }
+      
+      setOpenDropdown(null);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -210,7 +215,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
 
   return (
     <>
-      <div className={`fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+      <div className={`business-sidebar fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
       } overflow-y-auto overflow-x-hidden`}>
         {/* Close button */}
@@ -292,7 +297,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
             ].map(({ label, count, type }) => (
               <div 
                 key={type}
-                className={`bg-white/80 backdrop-blur-sm p-2 rounded-lg cursor-pointer
+                className={`stats-grid-item bg-white/80 backdrop-blur-sm p-2 rounded-lg cursor-pointer
                   transition-all duration-300 border border-transparent
                   ${openDropdown === type 
                     ? 'shadow-md shadow-purple-500/20 scale-105 border-purple-200' 
@@ -316,9 +321,8 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
           {/* Enhanced Dropdown Content */}
           {openDropdown && (
             <div 
-              className="h-28 border border-purple-100 bg-white/40 backdrop-blur-sm 
+              className="dropdown-content h-28 border border-purple-100 bg-white/40 backdrop-blur-sm 
                         rounded-xl mb-4 shadow-inner overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
             >
               <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 
                             scrollbar-track-transparent py-2">

@@ -36,6 +36,7 @@ interface SidebarProps {
   user: FirebaseUser | null;
   userProfile: UserProfile | null;
   accessibleFestivalsCount: number;
+  setSelectedFestival: (festivalId: string) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -44,6 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   user,
   userProfile,
   accessibleFestivalsCount,
+  setSelectedFestival,
 }) => {
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -60,9 +62,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest('.stats-grid')) {
-        setOpenDropdown(null);
+      const isToggleButton = target.closest('.stats-grid-item');
+      
+      if (target.closest('.dropdown-content') || isToggleButton) {
+        return;
       }
+      
+      setOpenDropdown(null);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -280,7 +286,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             ].map(({ label, count, type }) => (
               <div 
                 key={type}
-                className={`bg-white/80 backdrop-blur-sm p-2 rounded-lg cursor-pointer
+                className={`stats-grid-item bg-white/80 backdrop-blur-sm p-2 rounded-lg cursor-pointer
                   transition-all duration-300 border border-transparent
                   ${openDropdown === type 
                     ? 'shadow-md shadow-purple-500/20 scale-105 border-purple-200' 
@@ -304,9 +310,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           {/* Enhanced Dropdown Content */}
           {openDropdown && (
             <div 
-              className="h-28 border border-purple-100 bg-white/40 backdrop-blur-sm 
+              className="dropdown-content h-28 border border-purple-100 bg-white/40 backdrop-blur-sm 
                         rounded-xl mb-4 shadow-inner overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
             >
               <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 
                             scrollbar-track-transparent py-2">
@@ -383,13 +388,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {openDropdown === 'festivals' && festivalDetails.length > 0 && (
                   <div className="h-full overflow-y-auto py-1 px-2">
                     {festivalDetails.map((festival) => (
-                      <Link
+                      <div
                         key={festival.id}
-                        to={`/festival/${festival.id}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpenDropdown(null);
                           setIsNavOpen(false);
+                          setSelectedFestival(festival.id);
                         }}
                         className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
                                   transition-all duration-300 group
@@ -399,7 +404,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <div className="flex items-center gap-2">
                           <span>{festival.name}</span>
                         </div>
-                      </Link>
+                      </div>
                     ))}
                   </div>
                 )}

@@ -3,7 +3,7 @@ import { collection, query, orderBy, onSnapshot, where, getDocs, doc, getDoc, up
 import { ref, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Menu, KeyRound, User, Sparkles, Search as SearchIcon, Star, Package } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import Sidebar from "./Sidebar";
@@ -45,6 +45,7 @@ interface UserProfile {
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [festivals, setFestivals] = useState<Festival[]>([]);
@@ -129,6 +130,15 @@ const Home: React.FC = () => {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const festivalId = location.state?.selectedFestivalId;
+    if (festivalId) {
+      setSelectedFestival(festivalId);
+      setShowFestivalList(false);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleDownload = (url: string, mediaType: string, postId: string) => {
     try {
@@ -266,6 +276,7 @@ const Home: React.FC = () => {
         user={user}
         userProfile={userProfile}
         accessibleFestivalsCount={userProfile?.accessibleFestivals?.length || 0}
+        setSelectedFestival={setSelectedFestival}
         className="z-50"
       />
 
