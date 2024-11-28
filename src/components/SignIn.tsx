@@ -223,7 +223,7 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
           {/* Google Sign In Button */}
           <button
             onClick={handleGoogleSignIn}
-            className="w-full bg-white text-gray-700 font-semibold py-3 px-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-3"
+            className="w-full bg-white text-gray-700 font-semibold py-3 px-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-3 mb-3"
           >
             <img
               src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -232,6 +232,18 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
             />
             Sign in with Google
           </button>
+
+          {/* Apple Sign In Button */}
+          <button
+            onClick={() => console.log('Apple sign in - to be implemented')}
+            className="w-full bg-black text-white font-semibold py-3 px-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-3"
+          >
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.2 0-.83.37-1.54.32-2.44-.06-3.16-1.34-4.95-6.42-2.91-10.41.75-1.45 1.9-2.23 3.33-2.26 1.19-.02 1.96.74 2.93.77 1.02-.23 2-.95 3.08-.84 1.21.13 2.19.63 2.84 1.6-2.41 1.52-1.87 4.67.57 5.77-.55 1.65-1.28 3.28-2.12 5.03zm-3.14-17.01c-.92.11-2.03.89-2.5 2.06 1.04.11 2.07-.73 2.5-2.06z"/>
+            </svg>
+            Sign in with Apple
+          </button>
+
         </div>
 
         {/* Footer */}
