@@ -297,19 +297,26 @@ const Chat: React.FC = () => {
     if (!newMessage.trim() || !currentUser || !selectedUser) return;
 
     try {
-      const messageData = {
+      const messageData: any = {
         text: newMessage.trim(),
         senderId: currentUser.uid,
-        participants: selectedUser.isGroup 
-          ? selectedUser.participants 
-          : [currentUser.uid, selectedUser.uid],
         createdAt: serverTimestamp(),
       };
 
+      // Handle group messages
       if (selectedUser.isGroup) {
         messageData.groupId = selectedUser.uid;
+        // Make sure we have the participants array
+        const groupDoc = await getDoc(doc(db, "groups", selectedUser.uid));
+        const groupData = groupDoc.data();
+        if (!groupData) {
+          throw new Error("Group not found");
+        }
+        messageData.participants = groupData.participants;
       } else {
+        // Handle direct messages
         messageData.receiverId = selectedUser.uid;
+        messageData.participants = [currentUser.uid, selectedUser.uid];
       }
 
       await addDoc(collection(db, "messages"), messageData);
@@ -445,9 +452,10 @@ const Chat: React.FC = () => {
         />
       )}
 
-      <div className="flex flex-1 overflow-hidden px-4 pb-4 h-[calc(100vh-8rem)]">
-        {/* Users sidebar - updated styling */}
-        <div className="w-1/4 mr-4 h-full">
+      {/* Update the main content area */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden px-4 pb-4 h-[calc(100vh-8rem)] space-y-4 md:space-y-0">
+        {/* Users sidebar - updated for mobile */}
+        <div className={`w-full md:w-1/4 md:mr-4 h-full ${selectedUser ? 'hidden md:block' : 'block'}`}>
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 h-full">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Chats</h2>
@@ -460,7 +468,7 @@ const Chat: React.FC = () => {
               </button>
             </div>
 
-            {/* Search input - updated styling */}
+            {/* Search input - keep existing styling */}
             <div className="mb-6">
               <input
                 type="text"
@@ -471,7 +479,7 @@ const Chat: React.FC = () => {
               />
             </div>
 
-            {/* Chats list - updated styling */}
+            {/* Chats list - keep existing styling */}
             <div className="space-y-3">
               {filteredChats.length > 0 ? (
                 filteredChats.map((chat) => (
@@ -515,14 +523,20 @@ const Chat: React.FC = () => {
           </div>
         </div>
 
-        {/* Chat area - updated styling */}
-        <div className="flex-1 h-full">
+        {/* Chat area - updated for mobile */}
+        <div className={`flex-1 h-full ${selectedUser ? 'block' : 'hidden md:block'}`}>
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col h-full">
             {selectedUser ? (
               <>
-                {/* Chat header */}
-                <div className="p-6 border-b border-gray-100">
+                {/* Chat header - updated for mobile */}
+                <div className="p-4 md:p-6 border-b border-gray-100">
                   <div className="flex items-center">
+                    <button
+                      onClick={() => setSelectedUser(null)}
+                      className="mr-2 p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors md:hidden"
+                    >
+                      <X size={20} />
+                    </button>
                     <ChatAvatar user={selectedUser} />
                     <div>
                       <div className="font-bold text-gray-900">{selectedUser.displayName}</div>
@@ -531,8 +545,8 @@ const Chat: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Messages area */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* Messages area - keep existing code but update padding for mobile */}
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
                   {messages.map((message) => (
                     <div
                       key={message.id}
@@ -557,8 +571,8 @@ const Chat: React.FC = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message input */}
-                <div className="p-6 border-t border-gray-100">
+                {/* Message input - update padding for mobile */}
+                <div className="p-4 md:p-6 border-t border-gray-100">
                   <form onSubmit={handleSendMessage} className="flex gap-3">
                     <input
                       type="text"
@@ -570,7 +584,7 @@ const Chat: React.FC = () => {
                     <button
                       type="submit"
                       disabled={!newMessage.trim()}
-                      className="bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 
+                      className="bg-purple-600 text-white px-6 md:px-8 py-3 rounded-full hover:bg-purple-700 
                                transition-all duration-300 transform hover:scale-105 disabled:opacity-50
                                disabled:hover:scale-100 disabled:hover:bg-purple-600"
                     >
@@ -588,10 +602,10 @@ const Chat: React.FC = () => {
         </div>
       </div>
 
-      {/* Keep existing search modal with updated styling */}
+      {/* Keep existing search modal code but update for mobile */}
       {isSearchModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl w-[480px] max-w-[90%] max-h-[90vh] flex flex-col shadow-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl w-full md:w-[480px] max-h-[90vh] flex flex-col shadow-xl">
             {/* Modal Header */}
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <h3 className="text-2xl font-bold text-gray-900">
