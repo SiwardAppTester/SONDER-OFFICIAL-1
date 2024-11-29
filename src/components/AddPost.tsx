@@ -683,17 +683,30 @@ const AddPost: React.FC = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {festivals.map((festival) => (
-                    <button
-                      key={festival.id}
-                      onClick={() => handleFestivalSelect(festival.id)}
-                      className={`px-4 py-2 rounded-full transition-all transform hover:scale-105 ${
-                        selectedFestival === festival.id
-                          ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                          : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-                      }`}
-                    >
-                      {festival.name}
-                    </button>
+                    <div key={festival.id} className="relative group">
+                      <button
+                        onClick={() => handleFestivalSelect(festival.id)}
+                        className={`px-4 py-2 rounded-full transition-all transform hover:scale-105 ${
+                          selectedFestival === festival.id
+                            ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                        }`}
+                      >
+                        {festival.name}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFestival(festival.id);
+                        }}
+                        className="absolute -top-1 -right-1 bg-white text-gray-400 hover:text-red-500 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 border border-gray-200 shadow-sm"
+                        aria-label="Delete festival"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -721,17 +734,30 @@ const AddPost: React.FC = () => {
                     {festivals
                       .find(f => f.id === selectedFestival)
                       ?.categories?.map((category) => (
-                        <button
-                          key={category.id}
-                          onClick={() => setSelectedCategory(category.id)}
-                          className={`px-4 py-2 rounded-full transition-all transform hover:scale-105 ${
-                            selectedCategory === category.id
-                              ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                              : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-                          }`}
-                        >
-                          {category.name}
-                        </button>
+                        <div key={category.id} className="relative group">
+                          <button
+                            onClick={() => setSelectedCategory(category.id)}
+                            className={`px-4 py-2 rounded-full transition-all transform hover:scale-105 ${
+                              selectedCategory === category.id
+                                ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
+                                : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                            }`}
+                          >
+                            {category.name}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCategory(category.id);
+                            }}
+                            className="absolute -top-1 -right-1 bg-white text-gray-400 hover:text-red-500 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 border border-gray-200 shadow-sm"
+                            aria-label="Delete category"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
                     ))}
                   </div>
                 </div>
