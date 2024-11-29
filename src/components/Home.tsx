@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, where, getDocs, doc, getDoc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
@@ -140,35 +140,39 @@ const Home: React.FC = () => {
     }
   }, [location.state]);
 
-  const handleDownload = (url: string, mediaType: string, postId: string) => {
+  const handleDownload = async (url: string, mediaType: string, postId: string, festivalId: string, categoryId?: string, mediaIndex?: number) => {
     try {
-      // Fetch the file first
-      fetch(url)
-        .then(response => response.blob())
-        .then(blob => {
-          // Create a blob URL
-          const blobUrl = window.URL.createObjectURL(blob);
-          
-          // Create an anchor element
-          const link = document.createElement('a');
-          
-          // Set the href to the blob URL
-          link.href = blobUrl;
-          
-          // Set download attribute with filename
-          const extension = mediaType === 'image' ? 'jpg' : 'mp4';
-          link.download = `post_${postId}.${extension}`;
-          
-          // Append to document, click, and cleanup
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          
-          // Cleanup blob URL
-          window.URL.revokeObjectURL(blobUrl);
-        });
+      // Create download record with media index
+      await addDoc(collection(db, "downloads"), {
+        postId,
+        mediaType,
+        mediaIndex,
+        downloadedAt: serverTimestamp(),
+        userId: auth.currentUser?.uid,
+        festivalId,
+        categoryId,
+        url
+      });
+
+      // Fetch the file
+      const response = await fetch(url);
+      const blob = await response.blob();
+      
+      // Create download link
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `post_${postId}.${mediaType === 'image' ? 'jpg' : 'mp4'}`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup
+      window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Error initiating download:', error);
+      console.error('Error handling download:', error);
     }
   };
 
@@ -490,9 +494,9 @@ const Home: React.FC = () => {
           )}
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredPosts.flatMap((post) => 
-              post.mediaFiles.map((media, index) => (
-                <div key={`${post.id}-${index}`} className="relative group">
+            {filteredPosts.flatMap((post, postIndex) => 
+              post.mediaFiles.map((media, mediaIndex) => (
+                <div key={`${post.id}-${mediaIndex}`} className="relative group">
                   {media.type === 'video' ? (
                     <div className="aspect-[9/16] rounded-2xl overflow-hidden">
                       <video
@@ -505,7 +509,7 @@ const Home: React.FC = () => {
                         }}
                       />
                       <button
-                        onClick={() => handleDownload(media.url, 'video', post.id)}
+                        onClick={() => handleDownload(media.url, media.type, post.id, post.festivalId, media.categoryId, mediaIndex)}
                         className="absolute bottom-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         Download
@@ -515,7 +519,7 @@ const Home: React.FC = () => {
                     <div className="aspect-[9/16] rounded-2xl overflow-hidden">
                       <img
                         src={media.url}
-                        alt={`Post content ${index + 1}`}
+                        alt={`Post content ${mediaIndex + 1}`}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           console.error("Image failed to load:", media.url);
@@ -523,7 +527,7 @@ const Home: React.FC = () => {
                         }}
                       />
                       <button
-                        onClick={() => handleDownload(media.url, 'image', post.id)}
+                        onClick={() => handleDownload(media.url, media.type, post.id, post.festivalId, media.categoryId, mediaIndex)}
                         className="absolute bottom-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         Download

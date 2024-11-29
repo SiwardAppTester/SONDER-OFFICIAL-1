@@ -1,321 +1,381 @@
-import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import React from 'react';
 import { db, auth } from '../firebase';
+import { useState, useEffect } from 'react';
+import { collection, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
 import { Menu } from 'lucide-react';
 import BusinessSidebar from './BusinessSidebar';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
 
-interface DashboardStats {
-  totalPosts: number;
-  totalImages: number;
-  totalVideos: number;
+interface Download {
+  postId: string;
+  mediaType: 'image' | 'video';
+  mediaIndex?: number;
+  downloadedAt: any;
+  userId: string;
+  festivalId: string;
+  categoryId?: string;
+}
+
+interface DownloadMetrics {
   totalDownloads: number;
   imageDownloads: number;
   videoDownloads: number;
-  downloadsByFestival: Record<string, number>;
-  downloadsByCategory: Record<string, number>;
-  postsTimeline: {
-    date: string;
-    count: number;
-  }[];
-  mediaTypeDistribution: {
-    name: string;
-    value: number;
-  }[];
+  downloadsByFestival: Record<string, {
+    total: number;
+    images: number;
+    videos: number;
+  }>;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+interface DetailedDownloadMetrics extends DownloadMetrics {
+  downloadsByMedia: Record<string, {
+    postId: string;
+    mediaType: 'image' | 'video';
+    downloadCount: number;
+    festivalId: string;
+    downloadedAt: any;
+    categoryId?: string;
+    categoryName?: string;
+    url?: string;
+    uniqueDownloads?: Set<string>;
+  }>;
+}
+
+// Add new interface for Festival
+interface Festival {
+  id: string;
+  name: string;
+  accessCode: string;
+}
+
+interface Post {
+  id: string;
+  mediaFiles: {
+    url: string;
+    type: "image" | "video";
+    categoryId?: string;
+  }[];
+  festivalId: string;
+}
 
 const BusinessDashboard: React.FC = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalPosts: 0,
-    totalImages: 0,
-    totalVideos: 0,
+  const [downloadMetrics, setDownloadMetrics] = useState<DetailedDownloadMetrics>({
     totalDownloads: 0,
     imageDownloads: 0,
     videoDownloads: 0,
     downloadsByFestival: {},
-    downloadsByCategory: {},
-    postsTimeline: [],
-    mediaTypeDistribution: []
+    downloadsByMedia: {}
   });
-  const [festivals, setFestivals] = useState<any[]>([]);
-  const [selectedTimeRange, setSelectedTimeRange] = useState<'week' | 'month' | 'year'>('week');
+  const [festivals, setFestivals] = useState<Record<string, string>>({});  // Map of festivalId to festivalName
+  const [categories, setCategories] = useState<Record<string, string>>({});  // Map of categoryId to categoryName
 
+  // Modify the useEffect for fetching posts and initializing metrics
   useEffect(() => {
-    fetchUserProfile();
-    fetchFestivals();
-  }, []);
-
-  useEffect(() => {
-    if (!auth.currentUser) return;
-
-    // Get date range
-    const now = new Date();
-    let startDate = new Date();
-    switch (selectedTimeRange) {
-      case 'week':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        startDate.setMonth(now.getMonth() - 1);
-        break;
-      case 'year':
-        startDate.setFullYear(now.getFullYear() - 1);
-        break;
-    }
-
-    // Create posts query - Remove the timestamp filter initially to debug
-    const postsQuery = query(
-      collection(db, "posts"),
-      where("userId", "==", auth.currentUser.uid)
-      // Temporarily remove the timestamp filter to see if that's the issue
-      // where("createdAt", ">=", startDate)
-    );
-
-    // Set up real-time listener for posts
-    const unsubscribe = onSnapshot(postsQuery, async (postsSnapshot) => {
+    const fetchPostsAndInitializeMetrics = async () => {
       try {
-        const posts = postsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        // Fetch festivals
+        const festivalsSnapshot = await getDocs(collection(db, "festivals"));
+        const validFestivalIds = new Set(festivalsSnapshot.docs.map(doc => doc.id));
+        
+        if (validFestivalIds.size === 0) {
+          setDownloadMetrics({
+            totalDownloads: 0,
+            imageDownloads: 0,
+            videoDownloads: 0,
+            downloadsByFestival: {},
+            downloadsByMedia: {}
+          });
+          return;
+        }
 
-        console.log('Found posts:', posts.length); // Debug log
-        console.log('Posts data:', posts); // Debug log to see the actual post data
-
-        // Calculate statistics
-        let totalImages = 0;
-        let totalVideos = 0;
-
-        posts.forEach(post => {
-          console.log('Processing post:', post.id); // Debug log
-          console.log('Post mediaFiles:', post.mediaFiles); // Debug log
-          
-          if (post.mediaFiles && Array.isArray(post.mediaFiles)) {
-            post.mediaFiles.forEach(file => {
-              console.log('Processing file:', file); // Debug log
-              if (file.type === 'image') totalImages++;
-              if (file.type === 'video') totalVideos++;
-            });
-          }
-        });
-
-        console.log('Total Images:', totalImages); // Debug log
-        console.log('Total Videos:', totalVideos); // Debug log
-
-        const newStats: DashboardStats = {
-          totalPosts: posts.length,
-          totalImages: totalImages,
-          totalVideos: totalVideos,
-          totalDownloads: 0, // We'll update these after fetching downloads
+        // Initialize metrics
+        const initialMetrics: DetailedDownloadMetrics = {
+          totalDownloads: 0,
           imageDownloads: 0,
           videoDownloads: 0,
           downloadsByFestival: {},
-          downloadsByCategory: {},
-          postsTimeline: [],
-          mediaTypeDistribution: []
+          downloadsByMedia: {}
         };
 
-        // Fetch downloads
-        const downloadsQuery = query(
-          collection(db, "downloads"),
-          where("downloadedAt", ">=", startDate)
-        );
-        const downloadsSnapshot = await getDocs(downloadsQuery);
-        const downloads = downloadsSnapshot.docs.map(doc => doc.data());
+        // First, fetch and process all posts to create media entries
+        const postsSnapshot = await getDocs(query(collection(db, "posts"), orderBy("createdAt", "desc")));
+        
+        // Process all posts first to create empty entries
+        postsSnapshot.docs.forEach((doc) => {
+          const postData = doc.data();
+          const post = { 
+            id: doc.id, 
+            ...postData,
+            mediaFiles: Array.isArray(postData.mediaFiles) ? postData.mediaFiles : []
+          } as Post;
+          
+          if (!validFestivalIds.has(post.festivalId)) return;
 
-        // Update download statistics
-        newStats.totalDownloads = downloads.length;
-        newStats.imageDownloads = downloads.filter(d => d.mediaType === 'image').length;
-        newStats.videoDownloads = downloads.filter(d => d.mediaType === 'video').length;
-
-        // Calculate downloads by festival and category
-        downloads.forEach(download => {
-          const post = posts.find(p => p.id === download.postId);
-          if (post) {
-            newStats.downloadsByFestival[post.festivalId] = (newStats.downloadsByFestival[post.festivalId] || 0) + 1;
-            if (post.categoryId) {
-              newStats.downloadsByCategory[post.categoryId] = (newStats.downloadsByCategory[post.categoryId] || 0) + 1;
-            }
+          // Initialize festival metrics
+          if (!initialMetrics.downloadsByFestival[post.festivalId]) {
+            initialMetrics.downloadsByFestival[post.festivalId] = {
+              total: 0,
+              images: 0,
+              videos: 0
+            };
           }
+
+          // Create entries for each media file, even if it has no downloads
+          post.mediaFiles.forEach((media, index) => {
+            if (!media.type || !media.url) return;
+            
+            // Create a unique key for each media file
+            const mediaKey = `${post.id}-${index}`;
+            
+            // Initialize media metrics with zero downloads
+            initialMetrics.downloadsByMedia[mediaKey] = {
+              postId: post.id,
+              mediaType: media.type as 'image' | 'video',
+              downloadCount: 0,
+              festivalId: post.festivalId,
+              downloadedAt: null,
+              categoryId: media.categoryId,
+              url: media.url
+            };
+          });
         });
 
-        // Calculate posts timeline
-        const timeline = new Map();
-        posts.forEach(post => {
-          if (post.createdAt) {
-            const date = post.createdAt.toDate ? 
-              post.createdAt.toDate().toLocaleDateString() : 
-              new Date(post.createdAt).toLocaleDateString();
-            timeline.set(date, (timeline.get(date) || 0) + 1);
+        // Set initial empty metrics before setting up the listener
+        setDownloadMetrics(initialMetrics);
+
+        // Set up real-time listener for all downloads
+        const unsubscribe = onSnapshot(
+          collection(db, 'downloads'),
+          (snapshot) => {
+            // Process all documents, not just changes
+            const allDownloads = snapshot.docs;
+            
+            setDownloadMetrics(prev => {
+              const updated = {
+                totalDownloads: 0,
+                imageDownloads: 0,
+                videoDownloads: 0,
+                downloadsByFestival: {},
+                downloadsByMedia: { ...prev.downloadsByMedia }
+              };
+
+              // Reset all download counts to 0
+              Object.values(updated.downloadsByMedia).forEach(media => {
+                media.downloadCount = 0;
+                media.uniqueDownloads = new Set();
+              });
+
+              // Process all downloads
+              allDownloads.forEach((doc) => {
+                const download = doc.data() as Download;
+                if (!validFestivalIds.has(download.festivalId)) return;
+
+                const mediaKey = `${download.postId}-${download.mediaIndex}`;
+                const mediaMetrics = updated.downloadsByMedia[mediaKey];
+                
+                if (!mediaMetrics) return;
+
+                // Initialize festival metrics if needed
+                if (!updated.downloadsByFestival[mediaMetrics.festivalId]) {
+                  updated.downloadsByFestival[mediaMetrics.festivalId] = {
+                    total: 0,
+                    images: 0,
+                    videos: 0
+                  };
+                }
+
+                // Create a unique key using document ID
+                const uniqueKey = `${download.userId}-${doc.id}`;
+                
+                if (!mediaMetrics.uniqueDownloads?.has(uniqueKey)) {
+                  mediaMetrics.uniqueDownloads?.add(uniqueKey);
+                  mediaMetrics.downloadCount += 1;
+                  mediaMetrics.downloadedAt = download.downloadedAt;
+
+                  // Update festival metrics
+                  const festivalMetrics = updated.downloadsByFestival[mediaMetrics.festivalId];
+                  festivalMetrics.total += 1;
+                  if (mediaMetrics.mediaType === 'image') {
+                    festivalMetrics.images += 1;
+                    updated.imageDownloads += 1;
+                  } else {
+                    festivalMetrics.videos += 1;
+                    updated.videoDownloads += 1;
+                  }
+                  updated.totalDownloads += 1;
+                }
+              });
+
+              return updated;
+            });
+          }
+        );
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error("Error fetching posts and initializing metrics:", error);
+      }
+    };
+
+    fetchPostsAndInitializeMetrics();
+  }, []);
+
+  // Add new useEffect to fetch festival names
+  useEffect(() => {
+    const fetchFestivals = async () => {
+      try {
+        const festivalsSnapshot = await getDocs(collection(db, "festivals"));
+        const festivalsMap: Record<string, string> = {};
+        
+        festivalsSnapshot.docs.forEach((doc) => {
+          const festivalData = doc.data();
+          festivalsMap[doc.id] = festivalData.name || festivalData.festivalName || 'Unnamed Festival';
+        });
+        
+        setFestivals(festivalsMap);
+      } catch (error) {
+        console.error("Error fetching festivals:", error);
+      }
+    };
+
+    fetchFestivals();
+  }, []);
+
+  // Add new useEffect to fetch category names
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const festivalsSnapshot = await getDocs(collection(db, "festivals"));
+        const categoriesMap: Record<string, string> = {};
+        
+        festivalsSnapshot.docs.forEach((doc) => {
+          const festivalData = doc.data();
+          if (festivalData.categories) {
+            festivalData.categories.forEach((category: { id: string; name: string }) => {
+              categoriesMap[category.id] = category.name;
+            });
           }
         });
         
-        newStats.postsTimeline = Array.from(timeline.entries()).map(([date, count]) => ({
-          date,
-          count
-        }));
-
-        // Update media type distribution
-        newStats.mediaTypeDistribution = [
-          { name: 'Images', value: totalImages },
-          { name: 'Videos', value: totalVideos }
-        ];
-
-        setStats(newStats);
+        setCategories(categoriesMap);
       } catch (error) {
-        console.error('Error processing dashboard stats:', error);
-        console.error('Error details:', error);
+        console.error("Error fetching categories:", error);
       }
-    });
+    };
 
-    return () => unsubscribe();
-  }, [selectedTimeRange]);
+    fetchCategories();
+  }, []);
 
-  const fetchUserProfile = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (userDoc.exists()) {
-      setUserProfile(userDoc.data());
-    }
-  };
-
-  const fetchFestivals = async () => {
-    const festivalsSnapshot = await getDocs(collection(db, "festivals"));
-    const festivalsData = festivalsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    setFestivals(festivalsData);
-  };
+  // Sort media items by download count, but include all items even with zero downloads
+  const sortedMediaItems = Object.entries(downloadMetrics.downloadsByMedia)
+    .sort(([, a], [, b]) => b.downloadCount - a.downloadCount);
 
   return (
-    <div className="min-h-screen bg-pink-50">
-      {/* Header - Adjusted padding for mobile */}
-      <div className="flex items-center gap-4 p-3 md:p-4">
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
+      {/* Navigation */}
+      <div className="flex justify-between items-center p-4">
         <button
           onClick={() => setIsNavOpen(!isNavOpen)}
           className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
           aria-label="Toggle navigation menu"
         >
-          <Menu size={24} className="md:w-7 md:h-7" />
+          <Menu size={28} />
         </button>
       </div>
 
+      {/* Sidebar */}
       <BusinessSidebar
         isNavOpen={isNavOpen}
         setIsNavOpen={setIsNavOpen}
         user={auth.currentUser}
         userProfile={userProfile}
+        accessibleFestivalsCount={0}
       />
 
-      {/* Adjusted padding for mobile */}
-      <div className="px-3 md:px-6 pb-4 md:pb-6 max-w-7xl mx-auto">
-        {/* Main Content Card - Adjusted padding for mobile */}
-        <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg p-4 md:p-8 mb-4 md:mb-8">
-          <div className="mb-4 md:mb-6">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 md:mb-4">Business Dashboard</h1>
-            
-            {/* Time Range Selector - Made scrollable on mobile */}
-            <div className="flex gap-2 md:gap-4 overflow-x-auto pb-2 -mb-2 md:pb-0 md:mb-0 hide-scrollbar">
-              {['week', 'month', 'year'].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setSelectedTimeRange(range as 'week' | 'month' | 'year')}
-                  className={`px-4 md:px-6 py-2 rounded-full transition-all whitespace-nowrap flex-shrink-0 ${
-                    selectedTimeRange === range
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {range.charAt(0).toUpperCase() + range.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Stats Overview - Adjusted grid for mobile */}
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-8">
-            {[
-              { label: 'Total Posts', value: stats.totalPosts },
-              { label: 'Total Downloads', value: stats.totalDownloads },
-              { label: 'Image Downloads', value: stats.imageDownloads },
-              { label: 'Video Downloads', value: stats.videoDownloads }
-            ].map((stat, index) => (
-              <div key={index} className="bg-gray-50 p-3 md:p-6 rounded-xl md:rounded-2xl">
-                <h3 className="text-gray-500 text-xs md:text-sm font-medium">{stat.label}</h3>
-                <p className="mt-1 md:mt-2 text-xl md:text-3xl font-semibold text-gray-900">{stat.value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Charts Section - Stack on mobile */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-            {/* Posts Timeline */}
-            <div className="bg-gray-50 p-4 md:p-6 rounded-xl md:rounded-2xl">
-              <h3 className="text-base md:text-lg font-medium text-gray-900 mb-3 md:mb-4">Posts Timeline</h3>
-              <div className="h-60 md:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={stats.postsTimeline}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fontSize: window.innerWidth < 768 ? 10 : 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis tick={{ fontSize: window.innerWidth < 768 ? 10 : 12 }} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#9333EA" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Media Type Distribution */}
-            <div className="bg-gray-50 p-4 md:p-6 rounded-xl md:rounded-2xl">
-              <h3 className="text-base md:text-lg font-medium text-gray-900 mb-3 md:mb-4">Media Type Distribution</h3>
-              <div className="h-60 md:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stats.mediaTypeDistribution}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={window.innerWidth < 768 ? 60 : 80}
-                      fill="#9333EA"
-                      dataKey="value"
-                    >
-                      {stats.mediaTypeDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#9333EA', '#A855F7'][index % 2]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend wrapperStyle={{ fontSize: window.innerWidth < 768 ? '12px' : '14px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">Download Analytics</h1>
+        
+        {/* Detailed Media Downloads */}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Downloads by Media</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Preview
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Media Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Festival
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Downloads
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Last Downloaded
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sortedMediaItems.map(([key, item]) => (
+                  <tr key={key} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                        {item.mediaType === 'video' ? (
+                          <video
+                            src={item.url}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLVideoElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <img
+                            src={item.url}
+                            alt="Media preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        item.mediaType === 'image' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {item.mediaType}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {categories[item.categoryId || ''] || 'Uncategorized'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {festivals[item.festivalId] || 'Loading...'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {Math.round(item.downloadCount)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {item.downloadedAt?.toDate().toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
