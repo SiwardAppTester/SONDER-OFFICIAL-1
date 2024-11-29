@@ -74,6 +74,9 @@ const Calendar: React.FC = () => {
   const [isGenreFilterOpen, setIsGenreFilterOpen] = useState(false);
   const [isArtistFilterOpen, setIsArtistFilterOpen] = useState(false);
   const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
+  const [genreSearch, setGenreSearch] = useState('');
+  const [artistSearch, setArtistSearch] = useState('');
+  const [locationSearch, setLocationSearch] = useState('');
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -196,6 +199,19 @@ const Calendar: React.FC = () => {
     });
   };
 
+  const filteredGenres = danceGenres.filter(genre => 
+    genre.toLowerCase().includes(genreSearch.toLowerCase())
+  );
+
+  const filteredArtists = topDanceArtists.filter(artist => 
+    artist.toLowerCase().includes(artistSearch.toLowerCase())
+  );
+
+  const filteredLocations = euCapitals.filter(({ city, country }) => 
+    city.toLowerCase().includes(locationSearch.toLowerCase()) || 
+    country.toLowerCase().includes(locationSearch.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
       {/* Navigation - adjusted for mobile */}
@@ -251,18 +267,36 @@ const Calendar: React.FC = () => {
               
               {isGenreFilterOpen && (
                 <div className="p-2">
-                  <div className="flex justify-end mb-1">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={genreSearch}
+                        onChange={(e) => setGenreSearch(e.target.value)}
+                        placeholder="Search genres..."
+                        className="w-full px-2 py-1 text-xs rounded-md border border-gray-200 
+                                 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                      {genreSearch && (
+                        <button
+                          onClick={() => setGenreSearch('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
                     {selectedGenres.size > 0 && (
                       <button
                         onClick={() => setSelectedGenres(new Set())}
-                        className="text-purple-600 hover:text-purple-700 text-xs"
+                        className="text-purple-600 hover:text-purple-700 text-xs whitespace-nowrap"
                       >
                         Clear
                       </button>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {danceGenres.map(genre => (
+                    {filteredGenres.map(genre => (
                       <button
                         key={genre}
                         onClick={() => toggleGenre(genre)}
@@ -275,6 +309,9 @@ const Calendar: React.FC = () => {
                         {genre}
                       </button>
                     ))}
+                    {filteredGenres.length === 0 && (
+                      <p className="text-xs text-gray-500 py-1">No matching genres found</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -308,18 +345,36 @@ const Calendar: React.FC = () => {
 
               {isArtistFilterOpen && (
                 <div className="p-2">
-                  <div className="flex justify-end mb-1">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={artistSearch}
+                        onChange={(e) => setArtistSearch(e.target.value)}
+                        placeholder="Search artists..."
+                        className="w-full px-2 py-1 text-xs rounded-md border border-gray-200 
+                                 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                      {artistSearch && (
+                        <button
+                          onClick={() => setArtistSearch('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
                     {selectedArtists.size > 0 && (
                       <button
                         onClick={() => setSelectedArtists(new Set())}
-                        className="text-purple-600 hover:text-purple-700 text-xs"
+                        className="text-purple-600 hover:text-purple-700 text-xs whitespace-nowrap"
                       >
                         Clear
                       </button>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {topDanceArtists.map(artist => (
+                    {filteredArtists.map(artist => (
                       <button
                         key={artist}
                         onClick={() => toggleArtist(artist)}
@@ -332,6 +387,9 @@ const Calendar: React.FC = () => {
                         {artist}
                       </button>
                     ))}
+                    {filteredArtists.length === 0 && (
+                      <p className="text-xs text-gray-500 py-1">No matching artists found</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -365,18 +423,36 @@ const Calendar: React.FC = () => {
 
               {isLocationFilterOpen && (
                 <div className="p-2">
-                  <div className="flex justify-end mb-1">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={locationSearch}
+                        onChange={(e) => setLocationSearch(e.target.value)}
+                        placeholder="Search locations..."
+                        className="w-full px-2 py-1 text-xs rounded-md border border-gray-200 
+                                 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                      {locationSearch && (
+                        <button
+                          onClick={() => setLocationSearch('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
                     {selectedLocations.size > 0 && (
                       <button
                         onClick={() => setSelectedLocations(new Set())}
-                        className="text-purple-600 hover:text-purple-700 text-xs"
+                        className="text-purple-600 hover:text-purple-700 text-xs whitespace-nowrap"
                       >
                         Clear
                       </button>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {euCapitals.map(({ city }) => (
+                    {filteredLocations.map(({ city }) => (
                       <button
                         key={city}
                         onClick={() => toggleLocation(city)}
@@ -389,6 +465,9 @@ const Calendar: React.FC = () => {
                         {city}
                       </button>
                     ))}
+                    {filteredLocations.length === 0 && (
+                      <p className="text-xs text-gray-500 py-1">No matching locations found</p>
+                    )}
                   </div>
                 </div>
               )}
