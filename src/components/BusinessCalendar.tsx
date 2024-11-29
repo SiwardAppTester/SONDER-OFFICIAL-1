@@ -17,6 +17,9 @@ interface Event {
   createdBy: string;
   isBusinessEvent: boolean;
   isPublic: boolean;
+  city: string;
+  country: string;
+  artists: string[];
 }
 
 interface UserProfile {
@@ -33,6 +36,57 @@ const danceGenres = [
   "Garage", "Breakbeat", "Hardstyle", "Ambient", "Other"
 ];
 
+const euCapitals = [
+  { city: "Amsterdam", country: "Netherlands" },
+  { city: "Athens", country: "Greece" },
+  { city: "Berlin", country: "Germany" },
+  { city: "Bratislava", country: "Slovakia" },
+  { city: "Brussels", country: "Belgium" },
+  { city: "Bucharest", country: "Romania" },
+  { city: "Budapest", country: "Hungary" },
+  { city: "Copenhagen", country: "Denmark" },
+  { city: "Dublin", country: "Ireland" },
+  { city: "Helsinki", country: "Finland" },
+  { city: "Lisbon", country: "Portugal" },
+  { city: "Ljubljana", country: "Slovenia" },
+  { city: "Luxembourg City", country: "Luxembourg" },
+  { city: "Madrid", country: "Spain" },
+  { city: "Paris", country: "France" },
+  { city: "Prague", country: "Czech Republic" },
+  { city: "Riga", country: "Latvia" },
+  { city: "Rome", country: "Italy" },
+  { city: "Stockholm", country: "Sweden" },
+  { city: "Tallinn", country: "Estonia" },
+  { city: "Valletta", country: "Malta" },
+  { city: "Vienna", country: "Austria" },
+  { city: "Vilnius", country: "Lithuania" },
+  { city: "Warsaw", country: "Poland" },
+  { city: "Zagreb", country: "Croatia" }
+];
+
+const topDanceArtists = [
+  "David Guetta",
+  "Calvin Harris",
+  "Martin Garrix",
+  "Tiësto",
+  "Skrillex",
+  "Diplo",
+  "Marshmello",
+  "The Chainsmokers",
+  "Kygo",
+  "Zedd",
+  "Avicii",
+  "Swedish House Mafia",
+  "Daft Punk",
+  "Deadmau5",
+  "Disclosure",
+  "Flume",
+  "Odesza",
+  "Above & Beyond",
+  "Illenium",
+  "Carl Cox"
+];
+
 const BusinessCalendar: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -46,13 +100,21 @@ const BusinessCalendar: React.FC = () => {
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
+    date: selectedDate,
     startTime: '',
     endTime: '',
     genre: '',
-    isPublic: true
+    isPublic: true,
+    city: '',
+    country: '',
+    artists: [] as string[]
   });
   const [isGenreOpen, setIsGenreOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [locationSearch, setLocationSearch] = useState('');
+  const [isArtistOpen, setIsArtistOpen] = useState(false);
+  const [artistSearch, setArtistSearch] = useState('');
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -101,7 +163,8 @@ const BusinessCalendar: React.FC = () => {
     if (!currentUser || !userProfile) return;
 
     if (!newEvent.title.trim() || !newEvent.description.trim() || 
-        !newEvent.startTime || !newEvent.endTime || !newEvent.genre) {
+        !newEvent.startTime || !newEvent.endTime || !newEvent.genre || 
+        !newEvent.date || !newEvent.city || !newEvent.country) {
       alert('Please fill in all required fields');
       return;
     }
@@ -115,7 +178,7 @@ const BusinessCalendar: React.FC = () => {
       const eventData = {
         title: newEvent.title,
         description: newEvent.description,
-        date: selectedDate,
+        date: newEvent.date,
         startTime: newEvent.startTime,
         endTime: newEvent.endTime,
         genre: newEvent.genre,
@@ -123,7 +186,10 @@ const BusinessCalendar: React.FC = () => {
         createdBy: userProfile.displayName || userProfile.email,
         isBusinessEvent: true,
         isPublic: newEvent.isPublic,
-        createdAt: new Date()
+        createdAt: new Date(),
+        city: newEvent.city,
+        country: newEvent.country,
+        artists: newEvent.artists,
       };
 
       await addDoc(collection(db, 'events'), eventData);
@@ -131,10 +197,14 @@ const BusinessCalendar: React.FC = () => {
       setNewEvent({
         title: '',
         description: '',
+        date: selectedDate,
         startTime: '',
         endTime: '',
         genre: '',
-        isPublic: true
+        isPublic: true,
+        city: '',
+        country: '',
+        artists: []
       });
       setShowAddEvent(false);
       fetchBusinessEvents();
@@ -193,6 +263,19 @@ const BusinessCalendar: React.FC = () => {
   const formatDate = (year: number, month: number, day: number) => {
     return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   };
+
+  const filteredLocations = locationSearch
+    ? euCapitals.filter(
+        location => 
+          location.city.toLowerCase().includes(locationSearch.toLowerCase()) ||
+          location.country.toLowerCase().includes(locationSearch.toLowerCase())
+      )
+    : euCapitals;
+
+  const filteredArtists = artistSearch
+    ? topDanceArtists.filter(artist => 
+        artist.toLowerCase().includes(artistSearch.toLowerCase()))
+    : topDanceArtists;
 
   return (
     <div className="flex flex-col h-screen">
@@ -308,6 +391,10 @@ const BusinessCalendar: React.FC = () => {
                         <div className="mt-2 space-y-0.5 md:space-y-1 text-gray-500 text-xs md:text-sm">
                           <p>Time: {event.startTime || '-'}</p>
                           <p>Genre: {event.genre}</p>
+                          <p>Location: {event.city}, {event.country}</p>
+                          {event.artists && event.artists.length > 0 && (
+                            <p>Artists: {event.artists.join(', ')}</p>
+                          )}
                           <p className="text-gray-400">{event.isPublic ? 'Public Event' : 'Private Event'}</p>
                         </div>
                       </div>
@@ -326,72 +413,85 @@ const BusinessCalendar: React.FC = () => {
           {/* Add Event Modal - adjust for mobile */}
           {showAddEvent && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl p-4 md:p-6 max-w-md w-full mx-2 md:mx-4 max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-medium">Add New Event</h2>
+              <div className="bg-white rounded-xl p-5 w-full max-w-lg mx-auto max-h-[85vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4 border-b pb-3">
+                  <h2 className="text-lg font-semibold text-gray-800">Add New Event</h2>
                   <button
                     onClick={() => setShowAddEvent(false)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <X size={20} />
+                    <X size={18} />
                   </button>
                 </div>
 
                 <form onSubmit={handleAddEvent} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
+                  {/* Title Input */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">
                       Event Title *
                     </label>
                     <input
                       type="text"
                       value={newEvent.title}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                      placeholder="Enter event title"
                       required
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Start Time *
+                  {/* Date and Time Section */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-gray-700">
+                        Date *
                       </label>
                       <input
-                        type="time"
-                        value={newEvent.startTime}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
-                        className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        type="date"
+                        value={newEvent.date}
+                        onChange={(e) => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
                         required
                       />
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        End Time *
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-gray-700">
+                        Time *
                       </label>
-                      <input
-                        type="time"
-                        value={newEvent.endTime}
-                        onChange={(e) => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                        className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
-                        required
-                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="time"
+                          value={newEvent.startTime}
+                          onChange={(e) => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
+                          className="w-full px-2 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                          required
+                        />
+                        <span className="text-gray-400 flex items-center">-</span>
+                        <input
+                          type="time"
+                          value={newEvent.endTime}
+                          onChange={(e) => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
+                          className="w-full px-2 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Dance Genre *
+                  {/* Genre Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Genre *
                     </label>
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setIsGenreOpen(!isGenreOpen)}
-                        className="w-full p-2.5 border border-gray-200 rounded-lg bg-white 
-                                 focus:ring-2 focus:ring-purple-500 focus:border-transparent
-                                 flex justify-between items-center text-left"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white 
+                                 focus:ring-1 focus:ring-purple-500 focus:border-transparent
+                                 flex justify-between items-center text-sm"
                       >
-                        <span className={newEvent.genre ? "text-gray-900" : "text-gray-500"}>
+                        <span className={newEvent.genre ? "text-gray-900" : "text-gray-400"}>
                           {newEvent.genre || "Select a genre"}
                         </span>
                         <svg 
@@ -402,18 +502,12 @@ const BusinessCalendar: React.FC = () => {
                           stroke="currentColor" 
                           viewBox="0 0 24 24"
                         >
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth="2" 
-                            d="M19 9l-7 7-7-7"
-                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                       </button>
-
                       {isGenreOpen && (
                         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 
-                                      rounded-lg shadow-lg max-h-60 overflow-auto">
+                                      rounded-lg shadow-lg max-h-48 overflow-auto">
                           {danceGenres.map((genre) => (
                             <button
                               key={genre}
@@ -422,7 +516,7 @@ const BusinessCalendar: React.FC = () => {
                                 setNewEvent(prev => ({ ...prev, genre }));
                                 setIsGenreOpen(false);
                               }}
-                              className="w-full px-4 py-2 text-left hover:bg-purple-50 
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 
                                        transition-colors duration-150 ease-in-out
                                        text-gray-700 hover:text-purple-700"
                             >
@@ -434,42 +528,208 @@ const BusinessCalendar: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
+                  {/* Location Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Location *
+                    </label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsLocationOpen(!isLocationOpen)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white 
+                                 focus:ring-1 focus:ring-purple-500 focus:border-transparent
+                                 flex justify-between items-center text-sm"
+                      >
+                        <span className={newEvent.city ? "text-gray-900" : "text-gray-400"}>
+                          {newEvent.city ? `${newEvent.city}, ${newEvent.country}` : "Select a location"}
+                        </span>
+                        <svg 
+                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                            isLocationOpen ? 'transform rotate-180' : ''
+                          }`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </button>
+                      {isLocationOpen && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 
+                                      rounded-lg shadow-lg max-h-48 overflow-auto">
+                          <div className="sticky top-0 bg-white border-b p-2">
+                            <input
+                              type="text"
+                              placeholder="Search locations..."
+                              value={locationSearch}
+                              onChange={(e) => setLocationSearch(e.target.value)}
+                              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm
+                                       focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                          {filteredLocations.map((location) => (
+                            <button
+                              key={`${location.city}-${location.country}`}
+                              type="button"
+                              onClick={() => {
+                                setNewEvent(prev => ({ 
+                                  ...prev, 
+                                  city: location.city,
+                                  country: location.country 
+                                }));
+                                setIsLocationOpen(false);
+                                setLocationSearch('');
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 
+                                       transition-colors duration-150 ease-in-out
+                                       text-gray-700 hover:text-purple-700"
+                            >
+                              {location.city}, {location.country}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Artists Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">
+                      Artists
+                    </label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsArtistOpen(!isArtistOpen)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white 
+                                 focus:ring-1 focus:ring-purple-500 focus:border-transparent
+                                 flex justify-between items-center text-sm min-h-[40px]"
+                      >
+                        <div className="flex flex-wrap gap-1.5 pr-6">
+                          {newEvent.artists.length > 0 ? (
+                            newEvent.artists.map((artist) => (
+                              <span
+                                key={artist}
+                                className="inline-flex items-center px-2 py-0.5 bg-purple-50 
+                                         text-purple-700 rounded-full text-xs font-medium"
+                              >
+                                {artist}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setNewEvent(prev => ({
+                                      ...prev,
+                                      artists: prev.artists.filter(a => a !== artist)
+                                    }));
+                                  }}
+                                  className="ml-1 hover:text-purple-900"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-gray-400">Select artists</span>
+                          )}
+                        </div>
+                        <svg 
+                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 absolute right-3 ${
+                            isArtistOpen ? 'transform rotate-180' : ''
+                          }`}
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </button>
+                      {isArtistOpen && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 
+                                      rounded-lg shadow-lg max-h-48 overflow-auto">
+                          <div className="sticky top-0 bg-white border-b p-2">
+                            <input
+                              type="text"
+                              placeholder="Search artists..."
+                              value={artistSearch}
+                              onChange={(e) => setArtistSearch(e.target.value)}
+                              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm
+                                       focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                          {filteredArtists.map((artist) => (
+                            <button
+                              key={artist}
+                              type="button"
+                              onClick={() => {
+                                if (!newEvent.artists.includes(artist)) {
+                                  setNewEvent(prev => ({
+                                    ...prev,
+                                    artists: [...prev.artists, artist]
+                                  }));
+                                }
+                                setArtistSearch('');
+                              }}
+                              className={`w-full px-3 py-2 text-left text-sm hover:bg-purple-50 
+                                       transition-colors duration-150 ease-in-out
+                                       text-gray-700 hover:text-purple-700 ${
+                                         newEvent.artists.includes(artist) ? 'bg-purple-50' : ''
+                                       }`}
+                            >
+                              {artist}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">
                       Description *
                     </label>
                     <textarea
                       value={newEvent.description}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
-                      className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm
+                               focus:outline-none focus:ring-1 focus:ring-purple-500"
                       rows={3}
+                      placeholder="Enter event description"
                       required
                     />
                   </div>
 
-                  <div className="flex items-center">
+                  {/* Public/Private Toggle */}
+                  <div className="flex items-center space-x-2 pt-2">
                     <input
                       type="checkbox"
                       checked={newEvent.isPublic}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, isPublic: e.target.checked }))}
-                      className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      className="w-4 h-4 rounded border-gray-300 text-purple-600 
+                               focus:ring-purple-500 cursor-pointer"
                     />
-                    <label className="ml-2 text-sm text-gray-600">
+                    <label className="text-sm text-gray-600 cursor-pointer">
                       Show on public calendar
                     </label>
                   </div>
 
-                  <div className="flex gap-3 justify-end mt-6">
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 justify-end pt-4 border-t">
                     <button
                       type="button"
                       onClick={() => setShowAddEvent(false)}
-                      className="px-6 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                      className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 
+                               transition-colors text-sm font-medium"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                      className="px-4 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 
+                               transition-colors text-sm font-medium"
                     >
                       Add Event
                     </button>
