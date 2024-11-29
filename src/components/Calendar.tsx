@@ -18,6 +18,9 @@ interface Event {
   createdBy?: string;
   isBusinessEvent?: boolean;
   isPublic?: boolean;
+  artists?: string[];
+  city?: string;
+  country?: string;
 }
 
 interface UserProfile {
@@ -34,6 +37,26 @@ const danceGenres = [
   "Garage", "Breakbeat", "Hardstyle", "Ambient", "Other"
 ];
 
+const topDanceArtists = [
+  "David Guetta", "Calvin Harris", "Martin Garrix", "Tiësto", "Skrillex",
+  "Diplo", "Marshmello", "The Chainsmokers", "Kygo", "Zedd",
+  "Avicii", "Swedish House Mafia", "Daft Punk", "Deadmau5", "Disclosure",
+  "Flume", "Odesza", "Above & Beyond", "Illenium", "Carl Cox"
+];
+
+const euCapitals = [
+  { city: "Amsterdam", country: "Netherlands" },
+  { city: "Berlin", country: "Germany" },
+  { city: "London", country: "United Kingdom" },
+  { city: "Paris", country: "France" },
+  { city: "Barcelona", country: "Spain" },
+  { city: "Rome", country: "Italy" },
+  { city: "Vienna", country: "Austria" },
+  { city: "Prague", country: "Czech Republic" },
+  { city: "Stockholm", country: "Sweden" },
+  { city: "Dublin", country: "Ireland" }
+];
+
 const Calendar: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -46,6 +69,11 @@ const Calendar: React.FC = () => {
   const [accessibleFestivals, setAccessibleFestivals] = useState<Set<string>>(new Set());
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedGenres, setSelectedGenres] = useState<Set<string>>(new Set());
+  const [selectedArtists, setSelectedArtists] = useState<Set<string>>(new Set());
+  const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
+  const [isGenreFilterOpen, setIsGenreFilterOpen] = useState(false);
+  const [isArtistFilterOpen, setIsArtistFilterOpen] = useState(false);
+  const [isLocationFilterOpen, setIsLocationFilterOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -135,9 +163,37 @@ const Calendar: React.FC = () => {
     });
   };
 
-  const filterEventsByGenre = (events: Event[]) => {
-    if (selectedGenres.size === 0) return events;
-    return events.filter(event => event.genre && selectedGenres.has(event.genre));
+  const toggleArtist = (artist: string) => {
+    setSelectedArtists(prev => {
+      const newArtists = new Set(prev);
+      if (newArtists.has(artist)) {
+        newArtists.delete(artist);
+      } else {
+        newArtists.add(artist);
+      }
+      return newArtists;
+    });
+  };
+
+  const toggleLocation = (location: string) => {
+    setSelectedLocations(prev => {
+      const newLocations = new Set(prev);
+      if (newLocations.has(location)) {
+        newLocations.delete(location);
+      } else {
+        newLocations.add(location);
+      }
+      return newLocations;
+    });
+  };
+
+  const filterEvents = (events: Event[]) => {
+    return events.filter(event => {
+      const matchesGenre = selectedGenres.size === 0 || (event.genre && selectedGenres.has(event.genre));
+      const matchesArtist = selectedArtists.size === 0 || (event.artists && event.artists.some(artist => selectedArtists.has(artist)));
+      const matchesLocation = selectedLocations.size === 0 || (event.city && selectedLocations.has(event.city));
+      return matchesGenre && matchesArtist && matchesLocation;
+    });
   };
 
   return (
@@ -165,33 +221,177 @@ const Calendar: React.FC = () => {
       {/* Main Content - adjusted for intermediate desktop size */}
       <div className="max-w-4xl lg:max-w-6xl mx-auto px-2 md:px-4 lg:px-6 mt-2">
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-3 md:p-4 lg:p-5 mb-6">
-          {/* Genre Filter - adjusted for mobile */}
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-medium text-gray-700">Filter by Genre</h3>
-              {selectedGenres.size > 0 && (
-                <button
-                  onClick={() => setSelectedGenres(new Set())}
-                  className="text-purple-600 hover:text-purple-700 text-sm"
+          {/* Filters Section */}
+          <div className="space-y-2 mb-4">
+            {/* Genre Filter */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setIsGenreFilterOpen(!isGenreFilterOpen)}
+                className="w-full px-3 py-2 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-gray-700">Filter by Genre</h3>
+                  {selectedGenres.size > 0 && (
+                    <span className="bg-purple-100 text-purple-800 text-xs px-1.5 py-0.5 rounded-full">
+                      {selectedGenres.size}
+                    </span>
+                  )}
+                </div>
+                <svg 
+                  className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+                    isGenreFilterOpen ? 'transform rotate-180' : ''
+                  }`}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
                 >
-                  Clear Filters
-                </button>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {isGenreFilterOpen && (
+                <div className="p-2">
+                  <div className="flex justify-end mb-1">
+                    {selectedGenres.size > 0 && (
+                      <button
+                        onClick={() => setSelectedGenres(new Set())}
+                        className="text-purple-600 hover:text-purple-700 text-xs"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {danceGenres.map(genre => (
+                      <button
+                        key={genre}
+                        onClick={() => toggleGenre(genre)}
+                        className={`px-2 py-1 rounded-full text-xs transition-all transform hover:scale-105 ${
+                          selectedGenres.has(genre)
+                            ? "bg-purple-600 text-white shadow-sm shadow-purple-200"
+                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                        }`}
+                      >
+                        {genre}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-            <div className="flex flex-wrap gap-1.5 md:gap-2">
-              {danceGenres.map(genre => (
-                <button
-                  key={genre}
-                  onClick={() => toggleGenre(genre)}
-                  className={`px-3 md:px-6 py-1.5 md:py-2.5 rounded-full text-sm md:text-base transition-all transform hover:scale-105 ${
-                    selectedGenres.has(genre)
-                      ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                      : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+
+            {/* Artist Filter */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setIsArtistFilterOpen(!isArtistFilterOpen)}
+                className="w-full px-3 py-2 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-gray-700">Filter by Artist</h3>
+                  {selectedArtists.size > 0 && (
+                    <span className="bg-purple-100 text-purple-800 text-xs px-1.5 py-0.5 rounded-full">
+                      {selectedArtists.size}
+                    </span>
+                  )}
+                </div>
+                <svg 
+                  className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+                    isArtistFilterOpen ? 'transform rotate-180' : ''
                   }`}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
                 >
-                  {genre}
-                </button>
-              ))}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isArtistFilterOpen && (
+                <div className="p-2">
+                  <div className="flex justify-end mb-1">
+                    {selectedArtists.size > 0 && (
+                      <button
+                        onClick={() => setSelectedArtists(new Set())}
+                        className="text-purple-600 hover:text-purple-700 text-xs"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {topDanceArtists.map(artist => (
+                      <button
+                        key={artist}
+                        onClick={() => toggleArtist(artist)}
+                        className={`px-2 py-1 rounded-full text-xs transition-all transform hover:scale-105 ${
+                          selectedArtists.has(artist)
+                            ? "bg-purple-600 text-white shadow-sm shadow-purple-200"
+                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                        }`}
+                      >
+                        {artist}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Location Filter */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setIsLocationFilterOpen(!isLocationFilterOpen)}
+                className="w-full px-3 py-2 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-gray-700">Filter by Location</h3>
+                  {selectedLocations.size > 0 && (
+                    <span className="bg-purple-100 text-purple-800 text-xs px-1.5 py-0.5 rounded-full">
+                      {selectedLocations.size}
+                    </span>
+                  )}
+                </div>
+                <svg 
+                  className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
+                    isLocationFilterOpen ? 'transform rotate-180' : ''
+                  }`}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isLocationFilterOpen && (
+                <div className="p-2">
+                  <div className="flex justify-end mb-1">
+                    {selectedLocations.size > 0 && (
+                      <button
+                        onClick={() => setSelectedLocations(new Set())}
+                        className="text-purple-600 hover:text-purple-700 text-xs"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {euCapitals.map(({ city }) => (
+                      <button
+                        key={city}
+                        onClick={() => toggleLocation(city)}
+                        className={`px-2 py-1 rounded-full text-xs transition-all transform hover:scale-105 ${
+                          selectedLocations.has(city)
+                            ? "bg-purple-600 text-white shadow-sm shadow-purple-200"
+                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                        }`}
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -227,7 +427,7 @@ const Calendar: React.FC = () => {
                 currentMonth.getMonth(),
                 day
               ) : '';
-              const dayEvents = filterEventsByGenre(events.filter(event => event.date === date));
+              const dayEvents = filterEvents(events.filter(event => event.date === date));
 
               return (
                 <div
@@ -283,7 +483,7 @@ const Calendar: React.FC = () => {
             </div>
 
             <div className="space-y-3 max-h-[60vh] md:max-h-[70vh] overflow-y-auto pr-2">
-              {filterEventsByGenre(events.filter(event => event.date === selectedDate))
+              {filterEvents(events.filter(event => event.date === selectedDate))
                 .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
                 .map(event => (
                   <div
@@ -305,34 +505,73 @@ const Calendar: React.FC = () => {
 
                     <p className="text-gray-600 text-base md:text-lg mb-3">{event.description}</p>
 
-                    <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-gray-500 mb-3">
-                      {event.createdBy && (
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">Organizer:</span>
-                          <span className="text-purple-600">{event.createdBy}</span>
+                    {/* Event Details Section */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {/* Location */}
+                      {event.city && (
+                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
+                          <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="text-xs text-gray-600">
+                            {event.city}{event.country ? `, ${event.country}` : ''}
+                          </span>
                         </div>
                       )}
+
+                      {/* Artists */}
+                      {event.artists && event.artists.length > 0 && (
+                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
+                          <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="text-xs text-gray-600">
+                            {event.artists.join(', ')}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Genre */}
                       {event.genre && (
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">Genre:</span>
-                          <span className="text-purple-600">{event.genre}</span>
+                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
+                          <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                          </svg>
+                          <span className="text-xs text-gray-600">{event.genre}</span>
+                        </div>
+                      )}
+
+                      {/* Organizer */}
+                      {event.createdBy && (
+                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
+                          <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          <span className="text-xs text-gray-600">{event.createdBy}</span>
                         </div>
                       )}
                     </div>
 
+                    {/* Event Type Tags */}
                     <div className="flex flex-wrap gap-1.5 md:gap-2">
                       {event.festivalId && (
-                        <span className="bg-purple-100 text-purple-800 px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium">
+                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
                           Festival Event
                         </span>
                       )}
                       {event.isBusinessEvent && (
-                        <span className="bg-indigo-100 text-indigo-800 px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium">
+                        <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
                           Business Event
                         </span>
                       )}
                       {event.isPublic !== undefined && (
-                        <span className={`px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-medium ${
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           event.isPublic 
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-red-100 text-red-800'
@@ -344,7 +583,7 @@ const Calendar: React.FC = () => {
                   </div>
                 ))}
 
-              {filterEventsByGenre(events.filter(event => event.date === selectedDate)).length === 0 && (
+              {filterEvents(events.filter(event => event.date === selectedDate)).length === 0 && (
                 <div className="text-center py-6 md:py-8">
                   <p className="text-gray-500 text-base md:text-lg">
                     No events scheduled for this day
