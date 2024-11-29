@@ -133,6 +133,17 @@ const AddPost: React.FC = () => {
     }
 
     try {
+      // Check if access code already exists
+      const festivalsSnapshot = await getDocs(collection(db, "festivals"));
+      const accessCodeExists = festivalsSnapshot.docs.some(
+        doc => doc.data().accessCode === newFestivalAccessCode.trim()
+      );
+
+      if (accessCodeExists) {
+        alert("This access code is already in use. Please choose a different one.");
+        return;
+      }
+
       const docRef = await addDoc(collection(db, "festivals"), {
         name: newFestivalName.trim(),
         accessCode: newFestivalAccessCode.trim(),
