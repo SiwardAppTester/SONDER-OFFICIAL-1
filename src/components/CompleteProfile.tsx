@@ -17,12 +17,21 @@ const CompleteProfile: React.FC = () => {
   const [favoriteGenre, setFavoriteGenre] = useState("");
   const [error, setError] = useState("");
   const [isGenreOpen, setIsGenreOpen] = useState(false);
+  const [gender, setGender] = useState("");
+  const [isGenderOpen, setIsGenderOpen] = useState(false);
+
+  const genderOptions = [
+    "Male",
+    "Female",
+    "Non-binary",
+    "Prefer not to say"
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!fullName || !username || !dateOfBirth || !favoriteGenre) {
+    if (!fullName || !username || !dateOfBirth || !favoriteGenre || !gender) {
       setError("Please fill in all fields");
       return;
     }
@@ -59,6 +68,7 @@ const CompleteProfile: React.FC = () => {
         username: username.toLowerCase(), // Store username in lowercase for consistent querying
         dateOfBirth,
         favoriteGenre,
+        gender,
         isProfileComplete: true
       });
 
@@ -170,6 +180,50 @@ const CompleteProfile: React.FC = () => {
                                  text-gray-700 hover:text-purple-700 text-base md:text-lg"
                       >
                         {genre}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Gender
+              </label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsGenderOpen(!isGenderOpen)}
+                  className="w-full p-2.5 md:p-3 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm 
+                           focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200
+                           flex justify-between items-center text-left text-base md:text-lg"
+                >
+                  <span className={gender ? "text-gray-900" : "text-gray-500"}>
+                    {gender || "Select gender"}
+                  </span>
+                  <ChevronDownIcon 
+                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
+                      isGenderOpen ? 'transform rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                {isGenderOpen && (
+                  <div className="absolute z-20 w-full mt-1 bg-white/95 backdrop-blur-sm border 
+                                border-gray-200 rounded-lg shadow-lg">
+                    {genderOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => {
+                          setGender(option);
+                          setIsGenderOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-purple-50 transition-colors
+                                 duration-150 ease-in-out focus:outline-none focus:bg-purple-50
+                                 text-gray-700 hover:text-purple-700"
+                      >
+                        {option}
                       </button>
                     ))}
                   </div>

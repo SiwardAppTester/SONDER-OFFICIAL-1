@@ -21,6 +21,7 @@ interface UserProfile {
   followers?: string[];
   following?: string[];
   accessibleFestivals?: string[];
+  username?: string;
 }
 
 interface UserDetails {
@@ -283,7 +284,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               />
             </div>
             <span className="text-gray-800 font-semibold text-lg">
-              {userProfile?.displayName || user?.email}
+              @{userProfile?.username || user?.email?.split('@')[0] || 'anonymous'}
             </span>
           </div>
 

@@ -283,9 +283,6 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
             <span className="text-gray-800 font-semibold text-lg">
               {userProfile?.displayName || 'Business Account'}
             </span>
-            <span className="text-sm text-gray-600">
-              {user?.email}
-            </span>
           </div>
 
           {/* Stats Grid */}
