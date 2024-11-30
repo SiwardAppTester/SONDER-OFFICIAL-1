@@ -6,7 +6,7 @@ import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } 
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
 import BusinessSidebar from "./BusinessSidebar";
-import { Menu, Plus } from "lucide-react";
+import { Menu, Plus, Share } from "lucide-react";
 
 interface MediaFile {
   file: File;
@@ -652,6 +652,35 @@ const AddPost: React.FC = () => {
     return mediaFiles.length > 0 && mediaFiles.every(file => file.url);
   };
 
+  const handleInstagramShare = async (media: MediaFile) => {
+    try {
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // For mobile devices
+        const file = media.url ? await fetch(media.url).then(r => r.blob()) : media.file;
+        const shareData = {
+          files: [file],
+          title: 'Share to Instagram',
+        };
+
+        if ('share' in navigator && navigator.canShare(shareData)) {
+          try {
+            await navigator.share(shareData);
+          } catch (error) {
+            console.error('Error sharing:', error);
+            showToast("Please try sharing directly to Instagram", "error");
+          }
+        } else {
+          showToast("Sharing is not supported on this device", "error");
+        }
+      } else {
+        showToast("Instagram sharing is only available on mobile devices", "error");
+      }
+    } catch (error) {
+      console.error("Error sharing to Instagram:", error);
+      showToast("Failed to share to Instagram. Please try manually.", "error");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
       {/* Navigation */}
@@ -964,6 +993,14 @@ const AddPost: React.FC = () => {
                       <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
                         {media.url ? "Upload complete" : `Uploading: ${media.progress.toFixed(0)}%`}
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleInstagramShare(media)}
+                        className="absolute top-2 left-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white p-2 rounded-full hover:from-purple-700 hover:to-pink-600 transition-all"
+                        title="Share to Instagram"
+                      >
+                        <Share size={16} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleRemoveMedia(index)}

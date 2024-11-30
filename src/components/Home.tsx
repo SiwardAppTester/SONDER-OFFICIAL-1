@@ -4,7 +4,7 @@ import { ref, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { Menu, KeyRound, User, Sparkles, Search as SearchIcon, Star, Package } from "lucide-react";
+import { Menu, KeyRound, User, Sparkles, Search as SearchIcon, Star, Package, Download, Share } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import Sidebar from "./Sidebar";
 
@@ -227,6 +227,40 @@ const Home: React.FC = () => {
       }
     } else {
       setGeneralAccessError("Invalid access code");
+    }
+  };
+
+  const handleInstagramShare = async (url: string, type: string) => {
+    try {
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // For mobile devices
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const file = new File([blob], `share.${type === 'video' ? 'mp4' : 'jpg'}`, { 
+          type: type === 'video' ? 'video/mp4' : 'image/jpeg' 
+        });
+
+        const shareData = {
+          files: [file],
+          title: 'Share to Instagram',
+        };
+
+        if ('share' in navigator && navigator.canShare(shareData)) {
+          try {
+            await navigator.share(shareData);
+          } catch (error) {
+            console.error('Error sharing:', error);
+            alert("Please try sharing directly to Instagram");
+          }
+        } else {
+          alert("Sharing is not supported on this device");
+        }
+      } else {
+        alert("Instagram sharing is only available on mobile devices");
+      }
+    } catch (error) {
+      console.error("Error sharing to Instagram:", error);
+      alert("Failed to share to Instagram. Please try manually.");
     }
   };
 
@@ -508,12 +542,20 @@ const Home: React.FC = () => {
                           (e.target as HTMLVideoElement).style.display = 'none';
                         }}
                       />
-                      <button
-                        onClick={() => handleDownload(media.url, media.type, post.id, post.festivalId, media.categoryId, mediaIndex)}
-                        className="absolute bottom-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        Download
-                      </button>
+                      <div className="absolute bottom-2 right-2 flex gap-2">
+                        <button
+                          onClick={() => handleInstagramShare(media.url, media.type)}
+                          className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity hover:from-purple-700 hover:to-pink-600"
+                        >
+                          <Share className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDownload(media.url, media.type, post.id, post.festivalId, media.categoryId, mediaIndex)}
+                          className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="aspect-[9/16] rounded-2xl overflow-hidden">
@@ -526,12 +568,20 @@ const Home: React.FC = () => {
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
                       />
-                      <button
-                        onClick={() => handleDownload(media.url, media.type, post.id, post.festivalId, media.categoryId, mediaIndex)}
-                        className="absolute bottom-2 right-2 bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        Download
-                      </button>
+                      <div className="absolute bottom-2 right-2 flex gap-2">
+                        <button
+                          onClick={() => handleInstagramShare(media.url, media.type)}
+                          className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity hover:from-purple-700 hover:to-pink-600"
+                        >
+                          <Share className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDownload(media.url, media.type, post.id, post.festivalId, media.categoryId, mediaIndex)}
+                          className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
                   {post.text && (
