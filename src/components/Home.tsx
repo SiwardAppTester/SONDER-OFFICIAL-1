@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, onSnapshot, where, getDocs, doc, getDoc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, where, getDocs, doc, getDoc, updateDoc, addDoc, serverTimestamp, arrayUnion, arrayRemove } from "firebase/firestore";
 import { ref, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
@@ -25,6 +25,7 @@ interface Festival {
   id: string;
   name: string;
   accessCode: string;
+  categoryAccessCodes?: AccessCode[];
   categories?: Category[];
 }
 
@@ -41,6 +42,12 @@ interface UserProfile {
   followers?: string[];
   following?: string[];
   accessibleFestivals?: string[];
+}
+
+interface AccessCode {
+  code: string;
+  categoryIds: string[];
+  createdAt: any;
 }
 
 const Home: React.FC = () => {
@@ -60,6 +67,7 @@ const Home: React.FC = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [accessibleCategories, setAccessibleCategories] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     const postsQuery = query(
@@ -140,6 +148,26 @@ const Home: React.FC = () => {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    const loadAccessibleCategories = async () => {
+      if (!user) return;
+      
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      
+      if (userData?.accessibleFestivals) {
+        const categoriesMap: Record<string, string[]> = {};
+        userData.accessibleFestivals.forEach((access: { festivalId: string; categoryIds: string[] }) => {
+          categoriesMap[access.festivalId] = access.categoryIds;
+        });
+        setAccessibleCategories(categoriesMap);
+      }
+    };
+
+    loadAccessibleCategories();
+  }, [user]);
+
   const handleDownload = async (url: string, mediaType: string, postId: string, festivalId: string, categoryId?: string, mediaIndex?: number) => {
     try {
       // Create download record with media index
@@ -205,18 +233,78 @@ const Home: React.FC = () => {
     e.preventDefault();
     if (!user) return;
     
-    const festival = festivals.find(f => f.accessCode === generalAccessCode);
+    const festival = festivals.find(f => {
+      // Check main festival access code
+      if (f.accessCode === generalAccessCode) return true;
+      
+      // Check category-specific access codes
+      return f.categoryAccessCodes?.some(ac => ac.code === generalAccessCode);
+    });
     
     if (festival) {
       try {
-        const newAccessibleFestivals = new Set(accessibleFestivals).add(festival.id);
+        let accessibleCategories: string[] = [];
         
+        // If it's the main festival access code, include all categories
+        if (festival.accessCode === generalAccessCode) {
+          accessibleCategories = festival.categories?.map(c => c.id) || [];
+        } else {
+          // Find the matching category access code
+          const matchingAccessCode = festival.categoryAccessCodes?.find(
+            ac => ac.code === generalAccessCode
+          );
+          if (!matchingAccessCode) {
+            throw new Error("Access code not found");
+          }
+          // Only include the categories specified in the access code
+          accessibleCategories = matchingAccessCode.categoryIds;
+        }
+
         const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, {
-          accessibleFestivals: Array.from(newAccessibleFestivals)
-        });
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data();
         
-        setAccessibleFestivals(newAccessibleFestivals);
+        // Get existing festival access if it exists
+        const existingAccess = userData?.accessibleFestivals?.find(
+          (af: { festivalId: string }) => af.festivalId === festival.id
+        );
+
+        if (existingAccess) {
+          // Remove existing access
+          await updateDoc(userRef, {
+            accessibleFestivals: arrayRemove(existingAccess)
+          });
+
+          // Combine existing and new categories without duplicates
+          const combinedCategories = Array.from(new Set([
+            ...existingAccess.categoryIds,
+            ...accessibleCategories
+          ]));
+
+          // Add updated access
+          await updateDoc(userRef, {
+            accessibleFestivals: arrayUnion({
+              festivalId: festival.id,
+              categoryIds: combinedCategories
+            })
+          });
+        } else {
+          // Add new festival access
+          await updateDoc(userRef, {
+            accessibleFestivals: arrayUnion({
+              festivalId: festival.id,
+              categoryIds: accessibleCategories
+            })
+          });
+        }
+        
+        // Update local state
+        setAccessibleFestivals(prev => new Set([...prev, festival.id]));
+        setAccessibleCategories(prev => ({
+          ...prev,
+          [festival.id]: accessibleCategories
+        }));
+        
         setSelectedFestival(festival.id);
         setShowAccessInput(false);
         setShowFestivalList(false);
@@ -265,20 +353,31 @@ const Home: React.FC = () => {
   };
 
   const filteredPosts = posts.filter(post => {
+    // First check if user has access to this festival
     if (!accessibleFestivals.has(post.festivalId)) return false;
-    
-    if (selectedFestival && post.festivalId !== selectedFestival) return false;
-    
-    if (selectedCategory || selectedMediaType !== "all") {
-      return post.mediaFiles.some(media => {
-        if (selectedCategory && media.categoryId !== selectedCategory) return false;
-        if (selectedMediaType !== "all" && media.type !== selectedMediaType) return false;
-        return true;
-      });
-    }
-    
-    return true;
-  });
+
+    // Get user's accessible categories for this festival
+    const userAccessibleCategories = accessibleCategories[post.festivalId] || [];
+
+    // Filter media files based on category access
+    const hasAccessibleMedia = post.mediaFiles.some(media => {
+      // If media has no category, treat it as accessible
+      if (!media.categoryId) return true;
+      
+      // Check if user has access to this media's category
+      return userAccessibleCategories.includes(media.categoryId);
+    });
+
+    return hasAccessibleMedia;
+  }).map(post => ({
+    ...post,
+    // Filter out media files that user doesn't have access to
+    mediaFiles: post.mediaFiles.filter(media => {
+      if (!media.categoryId) return true;
+      const userAccessibleCategories = accessibleCategories[post.festivalId] || [];
+      return userAccessibleCategories.includes(media.categoryId);
+    })
+  }));
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">

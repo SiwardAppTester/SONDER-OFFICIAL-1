@@ -26,10 +26,17 @@ interface Category {
   };
 }
 
+interface AccessCode {
+  code: string;
+  categoryIds: string[];
+  createdAt: any;
+}
+
 interface Festival {
   id: string;
   name: string;
   accessCode: string;
+  categoryAccessCodes?: AccessCode[];
   categories?: Category[];
 }
 
@@ -77,6 +84,9 @@ const AddPost: React.FC = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [showAddAccessCode, setShowAddAccessCode] = useState(false);
+  const [newAccessCode, setNewAccessCode] = useState("");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchFestivals();
@@ -114,6 +124,7 @@ const AddPost: React.FC = () => {
         id: doc.id,
         name: doc.data().name,
         accessCode: doc.data().accessCode,
+        categoryAccessCodes: doc.data().categoryAccessCodes,
         categories: doc.data().categories
       }));
       setFestivals(festivalsData);
@@ -148,6 +159,7 @@ const AddPost: React.FC = () => {
         name: newFestivalName.trim(),
         accessCode: newFestivalAccessCode.trim(),
         createdAt: serverTimestamp(),
+        categoryAccessCodes: [],
         categories: []
       });
       
@@ -155,6 +167,7 @@ const AddPost: React.FC = () => {
         id: docRef.id, 
         name: newFestivalName.trim(),
         accessCode: newFestivalAccessCode.trim(),
+        categoryAccessCodes: [],
         categories: []
       };
       
@@ -681,6 +694,70 @@ const AddPost: React.FC = () => {
     }
   };
 
+  const handleAddAccessCode = async () => {
+    if (!selectedFestival) {
+      alert("Please select a festival first");
+      return;
+    }
+    if (!newAccessCode.trim()) {
+      alert("Please enter an access code");
+      return;
+    }
+    if (selectedCategoryIds.length === 0) {
+      alert("Please select at least one category");
+      return;
+    }
+
+    try {
+      // Check if access code already exists
+      const festivalsSnapshot = await getDocs(collection(db, "festivals"));
+      const accessCodeExists = festivalsSnapshot.docs.some(doc => {
+        const festival = doc.data();
+        return festival.categoryAccessCodes?.some(
+          (ac: AccessCode) => ac.code === newAccessCode.trim()
+        ) || festival.accessCode === newAccessCode.trim();
+      });
+
+      if (accessCodeExists) {
+        alert("This access code is already in use. Please choose a different one.");
+        return;
+      }
+
+      const festivalRef = doc(db, "festivals", selectedFestival);
+      const newCategoryAccessCode: AccessCode = {
+        code: newAccessCode.trim(),
+        categoryIds: selectedCategoryIds,
+        createdAt: new Date().toISOString()
+      };
+
+      await updateDoc(festivalRef, {
+        categoryAccessCodes: arrayUnion(newCategoryAccessCode)
+      });
+
+      // Update local state
+      setFestivals(prev => prev.map(festival => 
+        festival.id === selectedFestival
+          ? {
+              ...festival,
+              categoryAccessCodes: [
+                ...(festival.categoryAccessCodes || []),
+                newCategoryAccessCode
+              ]
+            }
+          : festival
+      ));
+
+      setNewAccessCode("");
+      setSelectedCategoryIds([]);
+      setShowAddAccessCode(false);
+      showToast("Access code created successfully! ✨", "success");
+
+    } catch (error) {
+      console.error("Error adding access code:", error);
+      showToast("Failed to create access code. Please try again.", "error");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
       {/* Navigation */}
@@ -707,19 +784,32 @@ const AddPost: React.FC = () => {
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 
                         border border-gray-100 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-50/50 to-rose-50/50"></div>
-            <div className="relative space-y-6">
+            <div className="relative">
               {/* Festivals Section */}
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-semibold text-gray-800">Festivals</h2>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddFestival(true)}
-                    className="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
-                  >
-                    <Plus size={16} />
-                    New Festival
-                  </button>
+                  <div className="flex gap-2">
+                    {/* Add Access Code button - Only show when a festival is selected */}
+                    {selectedFestival && (
+                      <button
+                        onClick={() => setShowAddAccessCode(true)}
+                        className="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
+                      >
+                        <Plus size={16} />
+                        New Access Code
+                      </button>
+                    )}
+                    {/* Existing New Festival button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowAddFestival(true)}
+                      className="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
+                    >
+                      <Plus size={16} />
+                      New Festival
+                    </button>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {festivals.map((festival) => (
@@ -1058,6 +1148,67 @@ const AddPost: React.FC = () => {
                   ))
               ))
             }
+          </div>
+        )}
+
+        {/* Access Code Modal */}
+        {showAddAccessCode && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
+              <button
+                onClick={() => setShowAddAccessCode(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-semibold mb-6">Create Category Access Code</h2>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  value={newAccessCode}
+                  onChange={(e) => setNewAccessCode(e.target.value)}
+                  placeholder="Enter access code"
+                  className="w-full p-3 border rounded-lg"
+                />
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Select Categories for Access:
+                  </label>
+                  <div className="space-y-2">
+                    {festivals
+                      .find(f => f.id === selectedFestival)
+                      ?.categories?.map(category => (
+                        <label key={category.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedCategoryIds.includes(category.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCategoryIds(prev => [...prev, category.id]);
+                              } else {
+                                setSelectedCategoryIds(prev => 
+                                  prev.filter(id => id !== category.id)
+                                );
+                              }
+                            }}
+                            className="rounded text-purple-600 focus:ring-purple-500"
+                          />
+                          <span>{category.name}</span>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddAccessCode}
+                  className="w-full bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
+                >
+                  Create Access Code
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

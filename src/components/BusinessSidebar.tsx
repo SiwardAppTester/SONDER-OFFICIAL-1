@@ -426,6 +426,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
           <div className="space-y-2">
             {[
               { to: "/add-post", icon: Plus, label: "Create Post" },
+              { to: "/discover", icon: SearchIcon, label: "Discover" },
               { to: "/business-dashboard", icon: HomeIcon, label: "Dashboard" },
               { to: "/chat", icon: MessageCircle, label: "Messages" },
               { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" }
