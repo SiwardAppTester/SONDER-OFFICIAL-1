@@ -28,6 +28,7 @@ interface Category {
 
 interface AccessCode {
   code: string;
+  name: string;
   categoryIds: string[];
   createdAt: any;
 }
@@ -35,7 +36,7 @@ interface AccessCode {
 interface Festival {
   id: string;
   name: string;
-  accessCode: string;
+  description: string;
   categoryAccessCodes?: AccessCode[];
   categories?: Category[];
 }
@@ -73,7 +74,7 @@ const AddPost: React.FC = () => {
   const [festivals, setFestivals] = useState<Festival[]>([]);
   const [selectedFestival, setSelectedFestival] = useState<string>("");
   const [newFestivalName, setNewFestivalName] = useState("");
-  const [newFestivalAccessCode, setNewFestivalAccessCode] = useState("");
+  const [newFestivalDescription, setNewFestivalDescription] = useState("");
   const [showAddFestival, setShowAddFestival] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -88,6 +89,7 @@ const AddPost: React.FC = () => {
   const [newAccessCode, setNewAccessCode] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [showManageAccessCodes, setShowManageAccessCodes] = useState(false);
+  const [newAccessCodeName, setNewAccessCodeName] = useState("");
 
   useEffect(() => {
     fetchFestivals();
@@ -124,7 +126,7 @@ const AddPost: React.FC = () => {
       const festivalsData = festivalsSnapshot.docs.map(doc => ({
         id: doc.id,
         name: doc.data().name,
-        accessCode: doc.data().accessCode,
+        description: doc.data().description,
         categoryAccessCodes: doc.data().categoryAccessCodes,
         categories: doc.data().categories
       }));
@@ -139,26 +141,11 @@ const AddPost: React.FC = () => {
       alert("Please enter a festival name");
       return;
     }
-    if (!newFestivalAccessCode.trim()) {
-      alert("Please enter an access code");
-      return;
-    }
 
     try {
-      // Check if access code already exists
-      const festivalsSnapshot = await getDocs(collection(db, "festivals"));
-      const accessCodeExists = festivalsSnapshot.docs.some(
-        doc => doc.data().accessCode === newFestivalAccessCode.trim()
-      );
-
-      if (accessCodeExists) {
-        alert("This access code is already in use. Please choose a different one.");
-        return;
-      }
-
       const docRef = await addDoc(collection(db, "festivals"), {
         name: newFestivalName.trim(),
-        accessCode: newFestivalAccessCode.trim(),
+        description: newFestivalDescription.trim(),
         createdAt: serverTimestamp(),
         categoryAccessCodes: [],
         categories: []
@@ -167,7 +154,7 @@ const AddPost: React.FC = () => {
       const newFestival = { 
         id: docRef.id, 
         name: newFestivalName.trim(),
-        accessCode: newFestivalAccessCode.trim(),
+        description: newFestivalDescription.trim(),
         categoryAccessCodes: [],
         categories: []
       };
@@ -175,7 +162,7 @@ const AddPost: React.FC = () => {
       setFestivals(prev => [...prev, newFestival]);
       setSelectedFestival(docRef.id);
       setNewFestivalName("");
-      setNewFestivalAccessCode("");
+      setNewFestivalDescription("");
       setShowAddFestival(false);
 
       const festivalDoc = await getDoc(doc(db, "festivals", docRef.id));
@@ -704,6 +691,10 @@ const AddPost: React.FC = () => {
       alert("Please enter an access code");
       return;
     }
+    if (!newAccessCodeName.trim()) {
+      alert("Please enter a name for the access code");
+      return;
+    }
     if (selectedCategoryIds.length === 0) {
       alert("Please select at least one category");
       return;
@@ -727,6 +718,7 @@ const AddPost: React.FC = () => {
       const festivalRef = doc(db, "festivals", selectedFestival);
       const newCategoryAccessCode: AccessCode = {
         code: newAccessCode.trim(),
+        name: newAccessCodeName.trim(),
         categoryIds: selectedCategoryIds,
         createdAt: new Date().toISOString()
       };
@@ -749,6 +741,7 @@ const AddPost: React.FC = () => {
       ));
 
       setNewAccessCode("");
+      setNewAccessCodeName("");
       setSelectedCategoryIds([]);
       setShowAddAccessCode(false);
       showToast("Access code created successfully! ✨", "success");
@@ -948,12 +941,11 @@ const AddPost: React.FC = () => {
                   placeholder="Enter festival name"
                   className="w-full p-3 border rounded-lg"
                 />
-                <input
-                  type="text"
-                  value={newFestivalAccessCode}
-                  onChange={(e) => setNewFestivalAccessCode(e.target.value)}
-                  placeholder="Enter access code"
-                  className="w-full p-3 border rounded-lg"
+                <textarea
+                  value={newFestivalDescription}
+                  onChange={(e) => setNewFestivalDescription(e.target.value)}
+                  placeholder="Enter festival description"
+                  className="w-full p-3 border rounded-lg min-h-[100px] resize-y"
                 />
                 <button
                   type="button"
@@ -1198,6 +1190,13 @@ const AddPost: React.FC = () => {
               <div className="space-y-4">
                 <input
                   type="text"
+                  value={newAccessCodeName}
+                  onChange={(e) => setNewAccessCodeName(e.target.value)}
+                  placeholder="Enter access code name"
+                  className="w-full p-3 border rounded-lg"
+                />
+                <input
+                  type="text"
                   value={newAccessCode}
                   onChange={(e) => setNewAccessCode(e.target.value)}
                   placeholder="Enter access code"
@@ -1260,14 +1259,44 @@ const AddPost: React.FC = () => {
                 {festivals
                   .find(f => f.id === selectedFestival)
                   ?.categoryAccessCodes?.map(accessCode => (
-                    <div key={accessCode.code} className="flex justify-between items-center">
-                      <span>{accessCode.code}</span>
-                      <button
-                        onClick={() => handleDeleteAccessCode(accessCode.code)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Delete
-                      </button>
+                    <div key={accessCode.code} className="p-4 bg-gray-50 rounded-lg space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <span className="font-medium text-lg">{accessCode.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <Key size={14} className="text-gray-400" />
+                            <span className="text-sm text-gray-500">{accessCode.code}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteAccessCode(accessCode.code)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                      
+                      <div className="pt-2 border-t border-gray-200">
+                        <span className="text-xs font-medium text-gray-600 block mb-2">
+                          Categories:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {accessCode.categoryIds.map(categoryId => {
+                            const category = festivals
+                              .find(f => f.id === selectedFestival)
+                              ?.categories?.find(c => c.id === categoryId);
+                            
+                            return category ? (
+                              <span
+                                key={categoryId}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                              >
+                                {category.name}
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      </div>
                     </div>
                   ))
                 }
