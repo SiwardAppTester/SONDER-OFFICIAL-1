@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, arrayUnion, arrayRemove, serverTimestamp, getDoc, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, doc, arrayUnion, arrayRemove, serverTimestamp, getDoc, getDocs, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { User } from 'firebase/auth';
-import { Menu, Heart, MessageCircle, Send, Image, Video, X, Plus, Search as SearchIcon } from 'lucide-react';
+import { Menu, Heart, MessageCircle, Send, Image, Video, X, Plus, Search as SearchIcon, Share as ShareIcon } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
@@ -32,12 +32,15 @@ interface Comment {
   userDisplayName: string;
   userPhotoURL?: string;
   createdAt: any;
+  likes: string[];
 }
 
 interface UserProfile {
+  id: string;
   email: string;
   displayName?: string;
   photoURL?: string;
+  username?: string;
 }
 
 const Discover: React.FC = () => {
@@ -54,6 +57,10 @@ const Discover: React.FC = () => {
   const [selectedFestival, setSelectedFestival] = useState<string>('');
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showShareModal, setShowShareModal] = useState<string | null>(null);
+  const [chatUsers, setChatUsers] = useState<UserProfile[]>([]);
+  const [shareSuccess, setShareSuccess] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
@@ -83,40 +90,58 @@ const Discover: React.FC = () => {
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || (!newPost.trim() && selectedFiles.length === 0)) return;
+    if (!user) {
+      console.log("No user logged in");
+      return;
+    }
+
+    if (!newPost.trim() && selectedFiles.length === 0) {
+      console.log("No content to post");
+      return;
+    }
 
     try {
       setUploadProgress(0);
       const mediaFiles: MediaFile[] = [];
 
-      for (const file of selectedFiles) {
-        const fileRef = ref(storage, `discover_posts/${user.uid}/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(fileRef);
-        
-        mediaFiles.push({
-          url,
-          type: file.type.startsWith('image/') ? 'image' : 'video'
-        });
+      // Upload files if any
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const fileRef = ref(storage, `discover_posts/${user.uid}/${Date.now()}_${file.name}`);
+          await uploadBytes(fileRef, file);
+          const url = await getDownloadURL(fileRef);
+          
+          mediaFiles.push({
+            url,
+            type: file.type.startsWith('image/') ? 'image' : 'video'
+          });
 
-        setUploadProgress((prev) => prev + (100 / selectedFiles.length));
+          setUploadProgress((prev) => prev + (100 / selectedFiles.length));
+        }
       }
 
-      await addDoc(collection(db, "discover_posts"), {
+      // Create the post document
+      const postData = {
         text: newPost.trim(),
         userId: user.uid,
         userDisplayName: userProfile?.displayName || 'Anonymous',
-        userPhotoURL: userProfile?.photoURL,
+        userPhotoURL: userProfile?.photoURL || null,
         createdAt: serverTimestamp(),
         likes: [],
         comments: [],
-        mediaFiles
-      });
+        mediaFiles: mediaFiles.length > 0 ? mediaFiles : []
+      };
 
+      await addDoc(collection(db, "discover_posts"), postData);
+
+      // Reset form state
       setNewPost('');
       setSelectedFiles([]);
       setPreviewUrls([]);
       setUploadProgress(0);
+      setShowCreatePost(false); // Close the modal after posting
+
+      console.log("Post created successfully");
     } catch (error) {
       console.error("Error creating post:", error);
     }
@@ -151,7 +176,8 @@ const Discover: React.FC = () => {
         userId: user.uid,
         userDisplayName: userProfile?.displayName || 'Anonymous',
         userPhotoURL: userProfile?.photoURL,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        likes: []
       };
 
       // Get current post data
@@ -172,6 +198,45 @@ const Discover: React.FC = () => {
       setCommentText(prev => ({ ...prev, [postId]: '' }));
     } catch (error) {
       console.error("Error adding comment:", error);
+    }
+  };
+
+  const handleCommentLike = async (postId: string, commentId: string) => {
+    if (!user) return;
+
+    try {
+      const postRef = doc(db, "discover_posts", postId);
+      const postDoc = await getDoc(postRef);
+      
+      if (!postDoc.exists()) {
+        console.error("Post not found");
+        return;
+      }
+
+      const post = postDoc.data();
+      const comments = post.comments || [];
+      const commentIndex = comments.findIndex((c: Comment) => c.id === commentId);
+
+      if (commentIndex === -1) return;
+
+      const comment = comments[commentIndex];
+      const likes = comment.likes || [];
+      
+      // Toggle like
+      if (likes.includes(user.uid)) {
+        likes.splice(likes.indexOf(user.uid), 1);
+      } else {
+        likes.push(user.uid);
+      }
+
+      comments[commentIndex] = { ...comment, likes };
+
+      // Update the post with modified comments
+      await updateDoc(postRef, {
+        comments: comments
+      });
+    } catch (error) {
+      console.error("Error liking comment:", error);
     }
   };
 
@@ -206,6 +271,96 @@ const Discover: React.FC = () => {
       post.userDisplayName.toLowerCase().includes(lowercaseQuery)
     );
   });
+
+  const fetchChatUsers = async () => {
+    if (!user) return;
+    
+    try {
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const users = usersSnapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            username: data.username || 'anonymous'
+          };
+        })
+        .filter(u => u.id !== user.uid)
+        .sort((a, b) => (a.username || '').localeCompare(b.username || '')) as UserProfile[];
+      setChatUsers(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  const handleShareToChat = async (userId: string, postId: string) => {
+    if (!user) return;
+
+    try {
+      // Create or get existing chat room
+      const chatRoomQuery = query(
+        collection(db, "chatRooms"),
+        where("participants", "array-contains", user.uid)
+      );
+      const chatRoomSnapshot = await getDocs(chatRoomQuery);
+      let chatRoomId = "";
+
+      const existingChatRoom = chatRoomSnapshot.docs.find(doc => {
+        const data = doc.data();
+        return data.participants.includes(userId);
+      });
+
+      if (existingChatRoom) {
+        chatRoomId = existingChatRoom.id;
+      } else {
+        const newChatRoomRef = await addDoc(collection(db, "chatRooms"), {
+          participants: [user.uid, userId],
+          lastMessage: "Shared a post",
+          lastMessageTimestamp: serverTimestamp()
+        });
+        chatRoomId = newChatRoomRef.id;
+      }
+
+      // Create message with post link
+      const postLink = `/discover/post/${postId}`;
+      
+      // Add message to chat room
+      await addDoc(collection(db, "chatRooms", chatRoomId, "messages"), {
+        senderId: user.uid,
+        receiverId: userId,
+        type: "shared_post",
+        postId: postId,
+        text: "Shared a post",
+        postLink: postLink,
+        timestamp: serverTimestamp(),
+        createdAt: serverTimestamp()
+      });
+
+      // Update chat room's last message
+      await updateDoc(doc(db, "chatRooms", chatRoomId), {
+        lastMessage: "Shared a post",
+        lastMessageTimestamp: serverTimestamp()
+      });
+
+      // Show success message
+      setShareSuccess(true);
+      setTimeout(() => setShareSuccess(false), 3000);
+
+      // Close share modal
+      setShowShareModal(null);
+
+    } catch (error) {
+      console.error("Error sharing post:", error);
+    }
+  };
+
+  // Add this useEffect to fetch chat users when share modal opens
+  useEffect(() => {
+    if (showShareModal) {
+      fetchChatUsers();
+    }
+  }, [showShareModal]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
@@ -331,6 +486,16 @@ const Discover: React.FC = () => {
                     <MessageCircle size={20} />
                     <span>{post.comments.length}</span>
                   </button>
+                  <button
+                    onClick={() => {
+                      fetchChatUsers();
+                      setShowShareModal(post.id);
+                    }}
+                    className="flex items-center gap-2 text-gray-500 hover:text-purple-600 ml-auto"
+                  >
+                    <ShareIcon size={20} />
+                    <span>Share</span>
+                  </button>
                 </div>
 
                 {/* Comments Section */}
@@ -338,22 +503,42 @@ const Discover: React.FC = () => {
                   <div className="mt-4 space-y-4">
                     {post.comments.map((comment) => (
                       <div key={comment.id} className="flex items-start gap-3 bg-gray-50 p-3 rounded-lg">
-                        {comment.userPhotoURL ? (
-                          <img
-                            src={comment.userPhotoURL}
-                            alt={comment.userDisplayName}
-                            className="w-8 h-8 rounded-full"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span className="text-purple-600 text-sm font-medium">
-                              {comment.userDisplayName[0].toUpperCase()}
-                            </span>
+                        <div className="flex-shrink-0">
+                          {comment.userPhotoURL ? (
+                            <img
+                              src={comment.userPhotoURL}
+                              alt={comment.userDisplayName}
+                              className="w-8 h-8 rounded-full"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                              <span className="text-purple-600 text-sm font-medium">
+                                {comment.userDisplayName[0].toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-grow">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-sm">{comment.userDisplayName}</p>
+                              <p className="text-gray-800">{comment.text}</p>
+                            </div>
+                            <button
+                              onClick={() => handleCommentLike(post.id, comment.id)}
+                              className="flex items-center gap-1 text-sm text-gray-500 hover:text-purple-600 
+                                        transition-colors ml-4 flex-shrink-0"
+                            >
+                              <Heart
+                                size={14}
+                                className={user && comment.likes?.includes(user.uid) 
+                                  ? "fill-purple-600 text-purple-600" 
+                                  : ""
+                                }
+                              />
+                              <span>{comment.likes?.length || 0}</span>
+                            </button>
                           </div>
-                        )}
-                        <div>
-                          <p className="font-medium text-sm">{comment.userDisplayName}</p>
-                          <p className="text-gray-800">{comment.text}</p>
                         </div>
                       </div>
                     ))}
@@ -479,6 +664,59 @@ const Discover: React.FC = () => {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-800">Share with</h2>
+              <button
+                onClick={() => setShowShareModal(null)}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="max-h-[60vh] overflow-y-auto p-4">
+              {chatUsers.map((chatUser) => (
+                <button
+                  key={chatUser.id}
+                  onClick={() => handleShareToChat(chatUser.id, showShareModal)}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  {chatUser.photoURL ? (
+                    <img
+                      src={chatUser.photoURL}
+                      alt={`@${chatUser.username}`}
+                      className="w-10 h-10 rounded-full"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                      <span className="text-purple-600 font-medium">
+                        {chatUser.username ? chatUser.username[0].toUpperCase() : 'A'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">@{chatUser.username}</span>
+                    {chatUser.displayName && chatUser.displayName !== chatUser.username && (
+                      <span className="text-sm text-gray-500">{chatUser.displayName}</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {shareSuccess && (
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up">
+          Post shared successfully!
         </div>
       )}
     </div>

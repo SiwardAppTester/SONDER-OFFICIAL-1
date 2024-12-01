@@ -14,16 +14,21 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { User } from "firebase/auth";
-import { Menu, Plus, Search, X } from "lucide-react";
+import { Menu, Plus, Search, X, Share } from "lucide-react";
 import Sidebar from "./Sidebar";
 import BusinessSidebar from "./BusinessSidebar";
+import SinglePostView from "./SinglePostView";
 
 interface Message {
   id: string;
   text: string;
   senderId: string;
   receiverId: string;
+  timestamp: any;
   createdAt: any;
+  type?: string;
+  postId?: string;
+  postLink?: string;
 }
 
 interface ChatUser {
@@ -106,6 +111,7 @@ const Chat: React.FC = () => {
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState<ChatUser[]>([]);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -552,19 +558,39 @@ const Chat: React.FC = () => {
                       key={message.id}
                       className={`flex ${
                         message.senderId === currentUser?.uid ? "justify-end" : "justify-start"
-                      }`}
+                      } mb-4`}
                     >
                       <div
-                        className={`max-w-[70%] rounded-2xl px-6 py-3 shadow-sm ${
+                        className={`max-w-[70%] rounded-2xl px-4 py-3 ${
                           message.senderId === currentUser?.uid
                             ? "bg-purple-600 text-white"
                             : "bg-gray-100 text-gray-900"
                         }`}
                       >
-                        <p>{message.text}</p>
-                        <p className="text-xs mt-1 opacity-70">
-                          {message.createdAt?.toDate().toLocaleTimeString()}
-                        </p>
+                        {message.type === "shared_post" ? (
+                          <div className="cursor-pointer">
+                            <div 
+                              onClick={() => setSelectedPostId(message.postId)}
+                              className="hover:opacity-90 transition-opacity"
+                            >
+                              <div className="flex items-center gap-2 mb-1">
+                                <Share size={16} />
+                                <span className="font-medium">Shared a post</span>
+                              </div>
+                              <span className="text-sm underline">Click to view post</span>
+                            </div>
+                            <p className="text-xs mt-1 opacity-70">
+                              {message.timestamp?.toDate().toLocaleTimeString()}
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <p>{message.text}</p>
+                            <p className="text-xs mt-1 opacity-70">
+                              {message.timestamp?.toDate().toLocaleTimeString()}
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -733,6 +759,26 @@ const Chat: React.FC = () => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Post Preview Modal */}
+      {selectedPostId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-800">Shared Post</h2>
+              <button
+                onClick={() => setSelectedPostId(null)}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-4">
+              <SinglePostView postId={selectedPostId} />
+            </div>
           </div>
         </div>
       )}
