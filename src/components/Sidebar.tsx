@@ -39,6 +39,12 @@ interface SidebarProps {
   setSelectedFestival: (festivalId: string) => void;
 }
 
+interface FestivalData {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
 const Sidebar: React.FC<SidebarProps> = ({
   isNavOpen,
   setIsNavOpen,
@@ -54,6 +60,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [followersDetails, setFollowersDetails] = useState<UserDetails[]>([]);
   const [followingDetails, setFollowingDetails] = useState<UserDetails[]>([]);
   const [accessibleFestivalsCount, setAccessibleFestivalsCount] = useState(0);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     setLocalPhotoURL(userProfile?.photoURL);
@@ -77,33 +85,33 @@ const Sidebar: React.FC<SidebarProps> = ({
     };
   }, []);
 
-  useEffect(() => {
-    const fetchUserDetails = async (userIds: string[], setDetails: (users: UserDetails[]) => void) => {
-      if (!userIds.length) return;
+  const fetchUserDetails = async (userIds: string[], setDetails: (users: UserDetails[]) => void) => {
+    if (!userIds.length) return;
+    
+    try {
+      const users = await Promise.all(
+        userIds.map(async (userId) => {
+          const userDoc = await getDoc(doc(db, "users", userId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            return {
+              id: userDoc.id,
+              username: userData.username || 'anonymous',
+              displayName: userData.displayName || undefined,
+              photoURL: userData.photoURL || undefined
+            } as UserDetails;
+          }
+          return null;
+        })
+      );
       
-      try {
-        const users = await Promise.all(
-          userIds.map(async (userId) => {
-            const userDoc = await getDoc(doc(db, "users", userId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              return {
-                id: userDoc.id,
-                username: userData.username || 'anonymous',
-                displayName: userData.displayName || undefined,
-                photoURL: userData.photoURL || undefined
-              } as UserDetails;
-            }
-            return null;
-          })
-        );
-        
-        setDetails(users.filter((u): u is UserDetails => u !== null));
-      } catch (error) {
-        console.error("Error fetching user details:", error);
-      }
-    };
+      setDetails(users.filter((u): u is UserDetails => u !== null));
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+    }
+  };
 
+  useEffect(() => {
     if (userProfile?.followers) {
       fetchUserDetails(userProfile.followers, setFollowersDetails);
     }
@@ -121,25 +129,30 @@ const Sidebar: React.FC<SidebarProps> = ({
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          const accessibleFestivals = userData.accessibleFestivals || [];
-          setAccessibleFestivalsCount(accessibleFestivals.length);
+          const accessibleFestivalIds = userData.accessibleFestivals || [];
           
-          // Also update festival details for the dropdown
-          if (accessibleFestivals.length > 0) {
-            const festivals = await Promise.all(
-              accessibleFestivals.map(async (festivalId) => {
-                const festivalDoc = await getDoc(doc(db, "festivals", festivalId));
-                if (festivalDoc.exists()) {
-                  return {
-                    id: festivalDoc.id,
-                    name: festivalDoc.data().name || 'Unnamed Festival'
-                  };
-                }
-                return null;
-              })
-            );
+          // Fetch all accessible festivals
+          if (accessibleFestivalIds.length > 0) {
+            const festivalsSnapshot = await getDocs(collection(db, "festivals"));
             
-            setFestivalDetails(festivals.filter((f): f is Festival => f !== null));
+            const accessibleFestivals = festivalsSnapshot.docs
+              .filter(doc => {
+                // Only include festivals that are in the user's accessibleFestivals array
+                return accessibleFestivalIds.includes(doc.id);
+              })
+              .map(doc => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  name: data.name || data.festivalName || 'Unnamed Festival'
+                };
+              });
+
+            setFestivalDetails(accessibleFestivals);
+            setAccessibleFestivalsCount(accessibleFestivals.length);
+          } else {
+            setFestivalDetails([]);
+            setAccessibleFestivalsCount(0);
           }
         }
       } catch (error) {
@@ -216,12 +229,53 @@ const Sidebar: React.FC<SidebarProps> = ({
     };
   }, [isNavOpen]);
 
+  // Remove or modify the existing useEffect that fetches user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as UserProfile;
+          // Update followers and following counts
+          if (userData.followers) {
+            fetchUserDetails(userData.followers, setFollowersDetails);
+          }
+          if (userData.following) {
+            fetchUserDetails(userData.following, setFollowingDetails);
+          }
+          
+          // Don't set festivals count here - it will be handled by fetchFestivalsCount
+          // which properly checks for active status
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    };
+
+    // Only fetch if userProfile is not provided
+    if (!userProfile && user?.uid) {
+      fetchUserProfile();
+    }
+  }, [user?.uid, userProfile]);
+
+  // Update effect for when userProfile changes
+  useEffect(() => {
+    if (userProfile) {
+      setLocalPhotoURL(userProfile.photoURL);
+      setFollowerCount(userProfile.followers?.length || 0);
+      setFollowingCount(userProfile.following?.length || 0);
+      // Don't set festivals count here - it will be handled by fetchFestivalsCount
+    }
+  }, [userProfile]);
+
   return (
     <>
       <div className={`fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
       } overflow-y-auto overflow-x-hidden`}>
-        {/* Close button - slightly smaller and more elegant */}
+        {/* Close button */}
         <div className="p-3 flex justify-end">
           <button
             onClick={() => setIsNavOpen(false)}
@@ -248,13 +302,13 @@ const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Enhanced Profile Section */}
-        <div className="px-6 -mt-2">
-          <div className="flex flex-col items-center mb-6">
+        {/* Profile Image Section - Moved above Stats Grid */}
+        <div className="px-6 mb-4">
+          <div className="flex flex-col items-center">
             <div className="relative transform hover:scale-105 transition-all duration-300">
-              {localPhotoURL ? (
+              {userProfile?.photoURL ? (
                 <img
-                  src={localPhotoURL}
+                  src={userProfile.photoURL}
                   alt="Profile"
                   className="w-24 h-24 rounded-full mb-3 shadow-lg hover:shadow-purple-500/50 
                            transition-all duration-300 object-cover border-2 border-white"
@@ -287,142 +341,154 @@ const Sidebar: React.FC<SidebarProps> = ({
               @{userProfile?.username || user?.email?.split('@')[0] || 'anonymous'}
             </span>
           </div>
+        </div>
 
-          {/* Enhanced Stats Grid - Smaller Version */}
-          <div className="grid grid-cols-3 gap-2 text-center mb-4 stats-grid px-4">
-            {[
-              { label: 'Followers', count: userProfile?.followers?.length || 0, type: 'followers' as const },
-              { label: 'Following', count: userProfile?.following?.length || 0, type: 'following' as const },
-              { label: 'Festivals', count: accessibleFestivalsCount, type: 'festivals' as const }
-            ].map(({ label, count, type }) => (
-              <div 
-                key={type}
-                className={`stats-grid-item bg-white/80 backdrop-blur-sm p-2 rounded-lg cursor-pointer
-                  transition-all duration-300 border border-transparent
-                  ${openDropdown === type 
-                    ? 'shadow-md shadow-purple-500/20 scale-105 border-purple-200' 
-                    : 'hover:scale-105 hover:shadow-md hover:shadow-purple-500/10'}
-                  transform`}
-                onClick={() => toggleDropdown(type)}
-              >
-                <div className="flex flex-col items-center">
-                  <span className="text-base font-bold text-gray-800">{count}</span>
-                  <span className="text-xs text-gray-600 font-medium">{label}</span>
-                  <div className="mt-0.5">
-                    {openDropdown === type 
-                      ? <ChevronUp size={12} className="text-purple-500" /> 
-                      : <ChevronDown size={12} className="text-purple-500" />}
-                  </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-2 text-center mb-4 stats-grid px-4">
+          {[
+            { 
+              label: 'Followers', 
+              count: userProfile?.followers?.length || 0, 
+              type: 'followers' as const 
+            },
+            { 
+              label: 'Following', 
+              count: userProfile?.following?.length || 0, 
+              type: 'following' as const 
+            },
+            { 
+              label: 'Festivals', 
+              count: accessibleFestivalsCount, 
+              type: 'festivals' as const 
+            }
+          ].map(({ label, count, type }) => (
+            <div 
+              key={type}
+              className={`stats-grid-item bg-white/80 backdrop-blur-sm p-2 rounded-lg cursor-pointer
+                transition-all duration-300 border border-transparent
+                ${openDropdown === type 
+                  ? 'shadow-md shadow-purple-500/20 scale-105 border-purple-200' 
+                  : 'hover:scale-105 hover:shadow-md hover:shadow-purple-500/10'}
+                transform`}
+              onClick={() => toggleDropdown(type)}
+            >
+              <div className="flex flex-col items-center">
+                <span className="text-base font-bold text-gray-800">{count}</span>
+                <span className="text-xs text-gray-600 font-medium">{label}</span>
+                <div className="mt-0.5">
+                  {openDropdown === type 
+                    ? <ChevronUp size={12} className="text-purple-500" /> 
+                    : <ChevronDown size={12} className="text-purple-500" />}
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Enhanced Dropdown Content */}
-          {openDropdown && (
-            <div 
-              className="dropdown-content h-28 border border-purple-100 bg-white/40 backdrop-blur-sm 
-                        rounded-xl mb-4 shadow-inner overflow-hidden"
-            >
-              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 
-                            scrollbar-track-transparent py-2">
-                {openDropdown === 'followers' && followersDetails.length > 0 && (
-                  <div className="h-full overflow-y-auto py-1 px-2">
-                    {followersDetails.map((follower) => (
-                      <Link
-                        key={follower.id}
-                        to={`/profile/${follower.id}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdown(null);
-                          setIsNavOpen(false);
-                        }}
-                        className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
-                                  transition-all duration-300 group
-                                  hover:shadow-sm border border-purple-100/50
-                                  bg-white/40 overflow-hidden cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          {follower.photoURL ? (
-                            <img 
-                              src={follower.photoURL} 
-                              alt={follower.username} 
-                              className="w-6 h-6 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                              {follower.username[0].toUpperCase()}
-                            </div>
-                          )}
-                          <span>@{follower.username}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-
-                {openDropdown === 'following' && followingDetails.length > 0 && (
-                  <div className="h-full overflow-y-auto py-1 px-2">
-                    {followingDetails.map((following) => (
-                      <Link
-                        key={following.id}
-                        to={`/profile/${following.id}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdown(null);
-                          setIsNavOpen(false);
-                        }}
-                        className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
-                                  transition-all duration-300 group
-                                  hover:shadow-sm border border-purple-100/50
-                                  bg-white/40 overflow-hidden cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          {following.photoURL ? (
-                            <img 
-                              src={following.photoURL} 
-                              alt={following.username} 
-                              className="w-6 h-6 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                              {following.username[0].toUpperCase()}
-                            </div>
-                          )}
-                          <span>@{following.username}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-
-                {openDropdown === 'festivals' && festivalDetails.length > 0 && (
-                  <div className="h-full overflow-y-auto py-1 px-2">
-                    {festivalDetails.map((festival) => (
-                      <div
-                        key={festival.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdown(null);
-                          setIsNavOpen(false);
-                          setSelectedFestival(festival.id);
-                        }}
-                        className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
-                                  transition-all duration-300 group
-                                  hover:shadow-sm border border-purple-100/50
-                                  bg-white/40 overflow-hidden cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span>{festival.name}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
-          )}
+          ))}
         </div>
+
+        {/* Enhanced Dropdown Content */}
+        {openDropdown && (
+          <div 
+            className="dropdown-content h-28 border border-purple-100 bg-white/40 backdrop-blur-sm 
+                      rounded-xl mb-4 shadow-inner overflow-hidden"
+          >
+            <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 
+                              scrollbar-track-transparent py-2">
+              {openDropdown === 'followers' && followersDetails.length > 0 && (
+                <div className="h-full overflow-y-auto py-1 px-2">
+                  {followersDetails.map((follower) => (
+                    <Link
+                      key={follower.id}
+                      to={`/profile/${follower.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenDropdown(null);
+                        setIsNavOpen(false);
+                      }}
+                      className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
+                                transition-all duration-300 group
+                                hover:shadow-sm border border-purple-100/50
+                                bg-white/40 overflow-hidden cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        {follower.photoURL ? (
+                          <img 
+                            src={follower.photoURL} 
+                            alt={follower.username} 
+                            className="w-6 h-6 rounded-full"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                            {follower.username[0].toUpperCase()}
+                          </div>
+                        )}
+                        <span>@{follower.username}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {openDropdown === 'following' && followingDetails.length > 0 && (
+                <div className="h-full overflow-y-auto py-1 px-2">
+                  {followingDetails.map((following) => (
+                    <Link
+                      key={following.id}
+                      to={`/profile/${following.id}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenDropdown(null);
+                        setIsNavOpen(false);
+                      }}
+                      className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
+                                transition-all duration-300 group
+                                hover:shadow-sm border border-purple-100/50
+                                bg-white/40 overflow-hidden cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        {following.photoURL ? (
+                          <img 
+                            src={following.photoURL} 
+                            alt={following.username} 
+                            className="w-6 h-6 rounded-full"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                            {following.username[0].toUpperCase()}
+                          </div>
+                        )}
+                        <span>@{following.username}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {openDropdown === 'festivals' && festivalDetails.length > 0 && (
+                <div className="h-full overflow-y-auto py-1 px-2">
+                  {festivalDetails.map((festival) => (
+                    <div
+                      key={festival.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenDropdown(null);
+                        setIsNavOpen(false);
+                        setSelectedFestival(festival.id);
+                      }}
+                      className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
+                                transition-all duration-300 group
+                                hover:shadow-sm border border-purple-100/50
+                                bg-white/40 overflow-hidden cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{festival.name}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Enhanced Navigation Links */}
         <div className="flex-1 px-6 pt-4">
@@ -463,7 +529,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Enhanced Overlay */}
+      {/* Overlay */}
       {isNavOpen && (
         <div
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300"

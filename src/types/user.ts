@@ -4,8 +4,6 @@ interface UserProfile {
   photoURL?: string;
   followers?: string[];
   following?: string[];
-  accessibleFestivals?: {
-    festivalId: string;
-    categoryIds: string[];
-  }[];
+  accessibleFestivals?: string[];
+  username?: string;
 } 

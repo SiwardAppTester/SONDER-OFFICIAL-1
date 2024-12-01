@@ -36,12 +36,14 @@ interface Category {
 }
 
 interface UserProfile {
+  id: string;
   email: string;
   displayName?: string;
   photoURL?: string;
   followers?: string[];
   following?: string[];
   accessibleFestivals?: string[];
+  username?: string;
 }
 
 interface AccessCode {
@@ -130,8 +132,8 @@ const Home: React.FC = () => {
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data() as UserProfile;
-          setUserProfile(userData);
           setAccessibleFestivals(new Set(userData.accessibleFestivals || []));
+          setAccessibleCategories(userData.accessibleCategories || {});
         }
       }
     });
@@ -149,24 +151,24 @@ const Home: React.FC = () => {
   }, [location.state]);
 
   useEffect(() => {
-    const loadAccessibleCategories = async () => {
-      if (!user) return;
+    const fetchUserProfile = async () => {
+      if (!auth.currentUser?.uid) return;
       
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.data();
-      
-      if (userData?.accessibleFestivals) {
-        const categoriesMap: Record<string, string[]> = {};
-        userData.accessibleFestivals.forEach((access: { festivalId: string; categoryIds: string[] }) => {
-          categoriesMap[access.festivalId] = access.categoryIds;
-        });
-        setAccessibleCategories(categoriesMap);
+      try {
+        const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+        if (userDoc.exists()) {
+          setUserProfile({
+            id: userDoc.id,
+            ...userDoc.data()
+          } as UserProfile);
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
       }
     };
 
-    loadAccessibleCategories();
-  }, [user]);
+    fetchUserProfile();
+  }, [auth.currentUser?.uid]);
 
   const handleDownload = async (url: string, mediaType: string, postId: string, festivalId: string, categoryId?: string, mediaIndex?: number) => {
     try {
@@ -263,40 +265,20 @@ const Home: React.FC = () => {
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
         const userData = userDoc.data();
+
+        // Update the user document with the new festival access
+        await updateDoc(userRef, {
+          accessibleFestivals: arrayUnion(festival.id)  // Just store the festival ID
+        });
         
-        // Get existing festival access if it exists
-        const existingAccess = userData?.accessibleFestivals?.find(
-          (af: { festivalId: string }) => af.festivalId === festival.id
-        );
-
-        if (existingAccess) {
-          // Remove existing access
-          await updateDoc(userRef, {
-            accessibleFestivals: arrayRemove(existingAccess)
-          });
-
-          // Combine existing and new categories without duplicates
-          const combinedCategories = Array.from(new Set([
-            ...existingAccess.categoryIds,
-            ...accessibleCategories
-          ]));
-
-          // Add updated access
-          await updateDoc(userRef, {
-            accessibleFestivals: arrayUnion({
-              festivalId: festival.id,
-              categoryIds: combinedCategories
-            })
-          });
-        } else {
-          // Add new festival access
-          await updateDoc(userRef, {
-            accessibleFestivals: arrayUnion({
-              festivalId: festival.id,
-              categoryIds: accessibleCategories
-            })
-          });
-        }
+        // Update accessible categories separately
+        const existingAccessibleCategories = userData?.accessibleCategories || {};
+        await updateDoc(userRef, {
+          accessibleCategories: {
+            ...existingAccessibleCategories,
+            [festival.id]: accessibleCategories
+          }
+        });
         
         // Update local state
         setAccessibleFestivals(prev => new Set([...prev, festival.id]));
