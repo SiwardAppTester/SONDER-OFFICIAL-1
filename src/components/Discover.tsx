@@ -41,6 +41,7 @@ interface UserProfile {
   displayName?: string;
   photoURL?: string;
   username?: string;
+  following?: string[];
 }
 
 const Discover: React.FC = () => {
@@ -60,6 +61,7 @@ const Discover: React.FC = () => {
   const [showShareModal, setShowShareModal] = useState<string | null>(null);
   const [chatUsers, setChatUsers] = useState<UserProfile[]>([]);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [showFollowingOnly, setShowFollowingOnly] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -263,13 +265,18 @@ const Discover: React.FC = () => {
   };
 
   const filteredPosts = posts.filter(post => {
-    if (!searchQuery.trim()) return true;
-    
-    const lowercaseQuery = searchQuery.toLowerCase();
-    return (
-      post.text.toLowerCase().includes(lowercaseQuery) ||
-      post.userDisplayName.toLowerCase().includes(lowercaseQuery)
-    );
+    // First apply search filter
+    const matchesSearch = !searchQuery.trim() || 
+      post.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.userDisplayName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Then apply following filter if needed
+    if (showFollowingOnly && userProfile) {
+      const following = userProfile.following || [];
+      return matchesSearch && following.includes(post.userId);
+    }
+
+    return matchesSearch;
   });
 
   const fetchChatUsers = async () => {
@@ -377,8 +384,8 @@ const Discover: React.FC = () => {
         <button
           onClick={() => setShowCreatePost(true)}
           className="bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700 
-                     transition-all duration-300 transform hover:scale-105
-                     shadow-lg hover:shadow-purple-500/20"
+                   transition-all duration-300 transform hover:scale-105
+                   shadow-lg hover:shadow-purple-500/20"
           aria-label="Create new post"
         >
           <Plus size={24} />
@@ -393,28 +400,55 @@ const Discover: React.FC = () => {
         setSelectedFestival={setSelectedFestival}
       />
 
-      {/* Search Section */}
+      {/* Search Section with Feed Toggle */}
       <div className="max-w-2xl mx-auto px-4 py-4">
-        <div className="relative mb-6">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search posts..."
-            className="w-full px-6 py-4 pr-12 rounded-full bg-white/90 backdrop-blur-sm
-                     shadow-[0_0_20px_rgba(168,85,247,0.15)]
-                     hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]
-                     transition-all duration-300
-                     text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-          <SearchIcon 
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-600"
-            size={20}
-          />
+        <div className="flex flex-col gap-4">
+          {/* Feed Toggle */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-full p-1 flex shadow-[0_0_20px_rgba(168,85,247,0.15)]">
+            <button
+              onClick={() => setShowFollowingOnly(false)}
+              className={`flex-1 px-4 py-2 rounded-full transition-all duration-300 ${
+                !showFollowingOnly 
+                  ? 'bg-purple-600 text-white shadow-lg' 
+                  : 'text-gray-600 hover:text-purple-600'
+              }`}
+            >
+              All Posts
+            </button>
+            <button
+              onClick={() => setShowFollowingOnly(true)}
+              className={`flex-1 px-4 py-2 rounded-full transition-all duration-300 ${
+                showFollowingOnly 
+                  ? 'bg-purple-600 text-white shadow-lg' 
+                  : 'text-gray-600 hover:text-purple-600'
+              }`}
+            >
+              Following
+            </button>
+          </div>
+
+          {/* Existing Search Input */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search posts..."
+              className="w-full px-6 py-4 pr-12 rounded-full bg-white/90 backdrop-blur-sm
+                       shadow-[0_0_20px_rgba(168,85,247,0.15)]
+                       hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]
+                       transition-all duration-300
+                       text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            <SearchIcon 
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-600"
+              size={20}
+            />
+          </div>
         </div>
 
-        {/* Posts List - Now using filteredPosts */}
-        <div className="space-y-6">
+        {/* Posts List - Now using updated filteredPosts */}
+        <div className="space-y-6 mt-6">
           {filteredPosts.length > 0 ? (
             filteredPosts.map((post) => (
               <div key={post.id} className="bg-white rounded-xl shadow-lg p-4">
@@ -572,7 +606,11 @@ const Discover: React.FC = () => {
             ))
           ) : (
             <div className="text-center py-8 bg-white/80 rounded-xl shadow-sm">
-              <p className="text-gray-600">No posts found matching your search</p>
+              <p className="text-gray-600">
+                {showFollowingOnly 
+                  ? "No posts found from people you follow" 
+                  : "No posts found matching your search"}
+              </p>
             </div>
           )}
         </div>
