@@ -5,6 +5,8 @@ import { db, auth } from "../firebase";
 import { Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { User as FirebaseUser } from "firebase/auth";
+import { collection, query, where, orderBy, onSnapshot, getDocs } from "firebase/firestore";
+import { Heart, MessageCircle } from "lucide-react";
 
 interface UserProfile {
   email: string;
@@ -17,6 +19,34 @@ interface UserProfile {
   username?: string;
 }
 
+// Add Post interface
+interface Post {
+  id: string;
+  text: string;
+  userId: string;
+  userDisplayName: string;
+  userPhotoURL?: string;
+  createdAt: any;
+  likes: string[];
+  comments: Comment[];
+  mediaFiles?: MediaFile[];
+}
+
+interface Comment {
+  id: string;
+  text: string;
+  userId: string;
+  userDisplayName: string;
+  userPhotoURL?: string;
+  createdAt: any;
+  likes: string[];
+}
+
+interface MediaFile {
+  url: string;
+  type: "image" | "video";
+}
+
 const Profile: React.FC = () => {
   const { userId } = useParams();
   const [profileUser, setProfileUser] = useState<UserProfile | null>(null);
@@ -26,6 +56,8 @@ const Profile: React.FC = () => {
   const [accessibleFestivals, setAccessibleFestivals] = useState<Set<string>>(new Set());
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [activeFestivalsCount, setActiveFestivalsCount] = useState(0);
 
   useEffect(() => {
     // Fetch the profile user's data
@@ -66,6 +98,67 @@ const Profile: React.FC = () => {
       setFollowersCount(profileUser.followers.length);
     }
   }, [currentUser, profileUser]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const postsQuery = query(
+      collection(db, "discover_posts"),
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe = onSnapshot(postsQuery, (snapshot) => {
+      const postsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Post[];
+      setPosts(postsData);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  useEffect(() => {
+    const fetchActiveFestivals = async () => {
+      if (!userId) return;
+      
+      try {
+        // Get user's document to check accessibleFestivals
+        const userDoc = await getDoc(doc(db, "users", userId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as UserProfile;
+          const accessibleFestivalIds = userData.accessibleFestivals || [];
+          
+          // Fetch all accessible festivals
+          if (accessibleFestivalIds.length > 0) {
+            const festivalsSnapshot = await getDocs(collection(db, "festivals"));
+            
+            const accessibleFestivals = festivalsSnapshot.docs
+              .filter(doc => {
+                // Only include festivals that are in the user's accessibleFestivals array
+                return accessibleFestivalIds.includes(doc.id);
+              })
+              .map(doc => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  name: data.name || data.festivalName || 'Unnamed Festival'
+                };
+              });
+            
+            setActiveFestivalsCount(accessibleFestivals.length);
+          } else {
+            setActiveFestivalsCount(0);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching festivals count:", error);
+      }
+    };
+
+    fetchActiveFestivals();
+  }, [userId]);
 
   const handleFollowToggle = async () => {
     if (!currentUser || !profileUser || !userId) return;
@@ -172,7 +265,7 @@ const Profile: React.FC = () => {
               {[
                 { label: 'Followers', value: followersCount },
                 { label: 'Following', value: profileUser.following?.length || 0 },
-                { label: 'Festivals', value: profileUser?.accessibleFestivals?.length || 0 }
+                { label: 'Festivals', value: activeFestivalsCount }
               ].map((stat, index) => (
                 <div key={index} className="bg-white/90 p-4 md:p-6 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
                   <div className="text-xl md:text-3xl font-bold text-purple-600 mb-1 md:mb-2 text-center">
@@ -184,6 +277,62 @@ const Profile: React.FC = () => {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Posts Section */}
+          <div className="mt-8 space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Posts</h2>
+            
+            {posts.length === 0 ? (
+              <div className="text-center py-8 bg-white/80 rounded-xl shadow-sm">
+                <p className="text-gray-600">No posts yet</p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <div key={post.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
+                  {/* Post Content */}
+                  <p className="text-gray-800 mb-4">{post.text}</p>
+
+                  {/* Media Content */}
+                  {post.mediaFiles && post.mediaFiles.length > 0 && (
+                    <div className="grid gap-4 mb-4 grid-cols-1 md:grid-cols-2">
+                      {post.mediaFiles.map((media, index) => (
+                        <div key={index} className="relative rounded-lg overflow-hidden">
+                          {media.type === 'video' ? (
+                            <video
+                              src={media.url}
+                              controls
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={media.url}
+                              alt={`Post content ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Post Stats */}
+                  <div className="flex items-center gap-4 text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <Heart size={20} className={post.likes.includes(currentUser?.uid || '') ? "fill-purple-600 text-purple-600" : ""} />
+                      <span>{post.likes.length}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MessageCircle size={20} />
+                      <span>{post.comments.length}</span>
+                    </div>
+                    <span className="text-sm ml-auto">
+                      {post.createdAt?.toDate().toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
