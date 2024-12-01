@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon, Camera, ChevronDown, ChevronUp } from "lucide-react";
+import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon, Camera, ChevronDown, ChevronUp, Compass } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import { signOut, updateProfile } from "firebase/auth";
 import { auth } from "../firebase";
@@ -429,6 +429,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-2">
             {[
               { to: "/", icon: HomeIcon, label: "Home" },
+              { to: "/discover", icon: Compass, label: "Discover" },
               { to: "/search", icon: SearchIcon, label: "Search" },
               { to: "/chat", icon: MessageCircle, label: "Messages" },
               { to: "/calendar", icon: CalendarIcon, label: "Calendar" }

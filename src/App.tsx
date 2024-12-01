@@ -16,6 +16,7 @@ import { getDoc, doc } from "firebase/firestore";
 import { db } from "./firebase";
 import CompleteProfile from "./components/CompleteProfile";
 import BusinessDashboard from './components/BusinessDashboard';
+import Discover from "./components/Discover";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -97,6 +98,7 @@ const App: React.FC = () => {
             {!isBusinessAccount && user && (
               <>
                 <Route path="/home" element={<Home />} />
+                <Route path="/discover" element={<Discover />} />
                 <Route path="/add-post" element={<AddPost />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/chat" element={<Chat />} />
