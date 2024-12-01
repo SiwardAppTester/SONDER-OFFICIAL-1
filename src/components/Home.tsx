@@ -353,7 +353,10 @@ const Home: React.FC = () => {
   };
 
   const filteredPosts = posts.filter(post => {
-    // First check if user has access to this festival
+    // First check if this post belongs to the selected festival
+    if (post.festivalId !== selectedFestival) return false;
+
+    // Then check if user has access to this festival
     if (!accessibleFestivals.has(post.festivalId)) return false;
 
     // Get user's accessible categories for this festival
