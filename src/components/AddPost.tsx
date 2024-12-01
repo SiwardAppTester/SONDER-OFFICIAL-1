@@ -6,7 +6,7 @@ import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } 
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
 import BusinessSidebar from "./BusinessSidebar";
-import { Menu, Plus, Share } from "lucide-react";
+import { Menu, Plus, Share, Key, Trash2 } from "lucide-react";
 
 interface MediaFile {
   file: File;
@@ -87,6 +87,7 @@ const AddPost: React.FC = () => {
   const [showAddAccessCode, setShowAddAccessCode] = useState(false);
   const [newAccessCode, setNewAccessCode] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [showManageAccessCodes, setShowManageAccessCodes] = useState(false);
 
   useEffect(() => {
     fetchFestivals();
@@ -758,6 +759,39 @@ const AddPost: React.FC = () => {
     }
   };
 
+  const handleDeleteAccessCode = async (code: string) => {
+    if (!selectedFestival) return;
+    
+    if (!window.confirm("Are you sure you want to delete this access code?")) {
+      return;
+    }
+
+    try {
+      const festivalRef = doc(db, "festivals", selectedFestival);
+      const festival = festivals.find(f => f.id === selectedFestival);
+      if (!festival?.categoryAccessCodes) return;
+
+      const accessCodeToDelete = festival.categoryAccessCodes.find(ac => ac.code === code);
+      if (!accessCodeToDelete) return;
+
+      await updateDoc(festivalRef, {
+        categoryAccessCodes: arrayRemove(accessCodeToDelete)
+      });
+
+      setFestivals(prev => prev.map(festival => 
+        festival.id === selectedFestival
+          ? { 
+              ...festival, 
+              categoryAccessCodes: festival.categoryAccessCodes?.filter(ac => ac.code !== code)
+            }
+          : festival
+      ));
+    } catch (error) {
+      console.error("Error deleting access code:", error);
+      alert("Failed to delete access code. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
       {/* Navigation */}
@@ -787,24 +821,23 @@ const AddPost: React.FC = () => {
             <div className="relative">
               {/* Festivals Section */}
               <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800">Festivals</h2>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">Festivals</h2>
                   <div className="flex gap-2">
-                    {/* Add Access Code button - Only show when a festival is selected */}
                     {selectedFestival && (
                       <button
-                        onClick={() => setShowAddAccessCode(true)}
-                        className="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
+                        type="button"
+                        onClick={() => setShowManageAccessCodes(true)}
+                        className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2"
                       >
-                        <Plus size={16} />
-                        New Access Code
+                        <Key size={16} />
+                        Manage Access Codes
                       </button>
                     )}
-                    {/* Existing New Festival button */}
                     <button
                       type="button"
                       onClick={() => setShowAddFestival(true)}
-                      className="px-4 py-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
+                      className="px-4 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-all transform hover:scale-105 shadow-lg shadow-purple-200 flex items-center gap-2"
                     >
                       <Plus size={16} />
                       New Festival
@@ -1206,6 +1239,48 @@ const AddPost: React.FC = () => {
                   className="w-full bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
                 >
                   Create Access Code
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Manage Access Codes Modal */}
+        {showManageAccessCodes && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
+              <button
+                onClick={() => setShowManageAccessCodes(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-semibold mb-6">Manage Access Codes</h2>
+              <div className="space-y-4">
+                {festivals
+                  .find(f => f.id === selectedFestival)
+                  ?.categoryAccessCodes?.map(accessCode => (
+                    <div key={accessCode.code} className="flex justify-between items-center">
+                      <span>{accessCode.code}</span>
+                      <button
+                        onClick={() => handleDeleteAccessCode(accessCode.code)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))
+                }
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowManageAccessCodes(false);
+                    setShowAddAccessCode(true);
+                  }}
+                  className="w-full bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-all transform hover:scale-105 shadow-lg shadow-purple-200 flex items-center justify-center gap-2"
+                >
+                  <Plus size={16} />
+                  Add Access Code
                 </button>
               </div>
             </div>
