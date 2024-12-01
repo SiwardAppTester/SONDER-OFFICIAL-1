@@ -314,6 +314,7 @@ const Discover: React.FC = () => {
       if (existingChatRoom) {
         chatRoomId = existingChatRoom.id;
       } else {
+        // Create new chat room
         const newChatRoomRef = await addDoc(collection(db, "chatRooms"), {
           participants: [user.uid, userId],
           lastMessage: "Shared a post",
@@ -322,19 +323,18 @@ const Discover: React.FC = () => {
         chatRoomId = newChatRoomRef.id;
       }
 
-      // Create message with post link
-      const postLink = `/discover/post/${postId}`;
-      
-      // Add message to chat room
-      await addDoc(collection(db, "chatRooms", chatRoomId, "messages"), {
+      // Add message to messages collection (not chatRooms/messages)
+      await addDoc(collection(db, "messages"), {
+        chatRoomId: chatRoomId,
         senderId: user.uid,
         receiverId: userId,
         type: "shared_post",
         postId: postId,
         text: "Shared a post",
-        postLink: postLink,
+        postLink: `/discover/post/${postId}`,
         timestamp: serverTimestamp(),
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        participants: [user.uid, userId] // Add this field to help with querying
       });
 
       // Update chat room's last message
