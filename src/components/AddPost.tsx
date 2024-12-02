@@ -666,6 +666,21 @@ const AddPost: React.FC = () => {
         if ('share' in navigator && navigator.canShare(shareData)) {
           try {
             await navigator.share(shareData);
+            
+            // Add share record to Firestore
+            if (auth.currentUser && postId) {
+              await addDoc(collection(db, 'messages'), {
+                type: 'shared_post',
+                postId: postId,
+                mediaIndex: mediaFiles.findIndex(m => m.url === media.url),
+                senderId: auth.currentUser.uid,
+                receiverId: 'instagram',
+                festivalId: selectedFestival,
+                categoryId: media.categoryId,
+                timestamp: serverTimestamp(),
+                platform: 'instagram'
+              });
+            }
           } catch (error) {
             console.error('Error sharing:', error);
             showToast("Please try sharing directly to Instagram", "error");

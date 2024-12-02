@@ -300,7 +300,7 @@ const Home: React.FC = () => {
     }
   };
 
-  const handleInstagramShare = async (url: string, type: string) => {
+  const handleInstagramShare = async (url: string, type: string, postId: string, festivalId: string, categoryId?: string, mediaIndex: number = 0) => {
     try {
       if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         // For mobile devices
@@ -318,6 +318,21 @@ const Home: React.FC = () => {
         if ('share' in navigator && navigator.canShare(shareData)) {
           try {
             await navigator.share(shareData);
+            
+            // Add share record to Firestore
+            if (auth.currentUser) {
+              await addDoc(collection(db, 'messages'), {
+                type: 'shared_post',
+                postId: postId,
+                mediaIndex: mediaIndex,
+                senderId: auth.currentUser.uid,
+                receiverId: 'instagram',
+                festivalId: festivalId,
+                categoryId: categoryId,
+                timestamp: serverTimestamp(),
+                platform: 'instagram'
+              });
+            }
           } catch (error) {
             console.error('Error sharing:', error);
             alert("Please try sharing directly to Instagram");
@@ -628,7 +643,14 @@ const Home: React.FC = () => {
                       />
                       <div className="absolute bottom-2 right-2 flex gap-2">
                         <button
-                          onClick={() => handleInstagramShare(media.url, media.type)}
+                          onClick={() => handleInstagramShare(
+                            media.url, 
+                            media.type, 
+                            post.id, 
+                            post.festivalId, 
+                            media.categoryId, 
+                            mediaIndex
+                          )}
                           className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity hover:from-purple-700 hover:to-pink-600"
                         >
                           <Share className="w-4 h-4" />
@@ -654,7 +676,14 @@ const Home: React.FC = () => {
                       />
                       <div className="absolute bottom-2 right-2 flex gap-2">
                         <button
-                          onClick={() => handleInstagramShare(media.url, media.type)}
+                          onClick={() => handleInstagramShare(
+                            media.url, 
+                            media.type, 
+                            post.id, 
+                            post.festivalId, 
+                            media.categoryId, 
+                            mediaIndex
+                          )}
                           className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity hover:from-purple-700 hover:to-pink-600"
                         >
                           <Share className="w-4 h-4" />

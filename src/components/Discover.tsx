@@ -7,6 +7,7 @@ import Sidebar from './Sidebar';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../firebase';
 import { useNavigate } from 'react-router-dom';
+import BusinessSidebar from './BusinessSidebar';
 
 interface MediaFile {
   url: string;
@@ -62,6 +63,7 @@ const Discover: React.FC = () => {
   const [chatUsers, setChatUsers] = useState<UserProfile[]>([]);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
+  const [isBusinessAccount, setIsBusinessAccount] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,7 +71,9 @@ const Discover: React.FC = () => {
       setUser(user);
       if (user) {
         const userDoc = await getDoc(doc(db, "users", user.uid));
-        setUserProfile(userDoc.data() as UserProfile);
+        const userData = userDoc.data();
+        setUserProfile(userData as UserProfile);
+        setIsBusinessAccount(userData?.isBusinessAccount || false);
       }
     });
 
@@ -403,13 +407,23 @@ const Discover: React.FC = () => {
         )}
       </div>
 
-      <Sidebar
-        isNavOpen={isNavOpen}
-        setIsNavOpen={setIsNavOpen}
-        user={user}
-        userProfile={userProfile}
-        setSelectedFestival={setSelectedFestival}
-      />
+      {isBusinessAccount ? (
+        <BusinessSidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={user}
+          userProfile={userProfile}
+          accessibleFestivalsCount={userProfile?.accessibleFestivals?.length || 0}
+        />
+      ) : (
+        <Sidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={user}
+          userProfile={userProfile}
+          setSelectedFestival={setSelectedFestival}
+        />
+      )}
 
       {/* Search Section with Feed Toggle */}
       <div className="max-w-2xl mx-auto px-4 py-4">
