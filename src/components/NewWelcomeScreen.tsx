@@ -10,7 +10,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import '../styles/fonts.css'
 import { gsap } from 'gsap'
 
@@ -188,14 +188,25 @@ const NewWelcomeScreen: React.FC = () => {
       ease: "power2.in"
     });
 
-    // Navigate after animation
+    // Navigate after animation but keep the component mounted
     setTimeout(() => {
-      navigate('/signin');
+      document.body.style.backgroundColor = '#000'; // Ensure black background
+      navigate('/signin', { state: { transitioning: true } });
     }, 1500);
   };
 
+  // Add cleanup effect
+  React.useEffect(() => {
+    return () => {
+      // Reset background color when component unmounts
+      setTimeout(() => {
+        document.body.style.backgroundColor = '';
+      }, 100);
+    };
+  }, []);
+
   return (
-    <div className="h-screen w-full relative">
+    <div className="h-screen w-full relative bg-black">
       {/* Video background - lowest layer */}
       <video 
         autoPlay 
