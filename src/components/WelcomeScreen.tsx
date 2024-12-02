@@ -11,6 +11,10 @@ const WelcomeScreen: React.FC = () => {
     setShowSignIn(true);
   };
 
+  const handleLogoClick = () => {
+    navigate('/new-welcome');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex flex-col justify-center items-center relative overflow-hidden">
       {/* Dynamic background effects */}
@@ -24,9 +28,12 @@ const WelcomeScreen: React.FC = () => {
         <div className="w-full h-screen flex flex-col md:flex-row items-center justify-center relative z-10 px-4">
           {/* Left side - Branding */}
           <div className="md:w-1/2 text-left md:pl-12 lg:pl-24 mb-12 md:mb-0">
-            {/* Logo with enhanced neon effect */}
-            <div className="text-7xl md:text-8xl lg:text-9xl font-bold mb-6 transform hover:scale-105 transition-all duration-500 cursor-default">
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[#FF6F31] to-orange-500 
+            {/* Updated Logo with onClick handler */}
+            <div 
+              onClick={handleLogoClick}
+              className="text-7xl md:text-8xl lg:text-9xl font-bold mb-6 transform hover:scale-105 transition-all duration-500 cursor-pointer flex justify-center relative z-10"
+            >
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF6F31] to-orange-500 
                            drop-shadow-[0_0_15px_rgba(255,111,49,0.5)]">
                 Sonder
               </span>

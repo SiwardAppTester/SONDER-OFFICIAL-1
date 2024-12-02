@@ -17,6 +17,7 @@ import { db } from "./firebase";
 import CompleteProfile from "./components/CompleteProfile";
 import BusinessDashboard from './components/BusinessDashboard';
 import Discover from "./components/Discover";
+import NewWelcomeScreen from "./components/NewWelcomeScreen";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -78,6 +79,7 @@ const App: React.FC = () => {
             {/* Public routes */}
             <Route path="/" element={!user ? <WelcomeScreen /> : <Navigate to="/home" />} />
             <Route path="/signin" element={!user ? <SignIn /> : <Navigate to="/home" />} />
+            <Route path="/new-welcome" element={<NewWelcomeScreen />} />
             
             {/* Protected routes */}
             <Route path="/complete-profile" element={user ? <CompleteProfile /> : <Navigate to="/signin" />} />
