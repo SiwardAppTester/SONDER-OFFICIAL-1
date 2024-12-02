@@ -80,6 +80,23 @@ function FloatingShell() {
     }
   })
 
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (meshRef.current) {
+        const isMobile = window.innerWidth < 768;
+        meshRef.current.scale.set(
+          isMobile ? 0.8 : 1,
+          isMobile ? 0.8 : 1,
+          isMobile ? 0.8 : 1
+        );
+      }
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <mesh ref={meshRef} position={[0, 0, 0]} castShadow>
       <sphereGeometry args={[1, 32, 32]} />
@@ -137,12 +154,12 @@ const NewWelcomeScreen: React.FC = () => {
         Your browser does not support the video tag.
       </video>
       
-      {/* Text layer - middle layer */}
+      {/* Text layer with mobile-only responsive changes */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-        <h1 className="text-[160px] font-[500] mb-12 tracking-[0.12em]
+        <h1 className="md:text-[160px] text-[70px] font-[500] md:mb-12 mb-6 tracking-[0.12em]
                       text-white/95 font-['Outfit']
                       drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
-                      transform -translate-y-48
+                      transform md:-translate-y-48 -translate-y-48
                       transition-all duration-700 ease-out
                       hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]">
           SONDER
@@ -150,8 +167,9 @@ const NewWelcomeScreen: React.FC = () => {
         <Button 
           onClick={() => navigate('/')}
           className="pointer-events-auto bg-transparent border border-white/20 
-                    text-white hover:bg-white/10 rounded-full px-8 py-6 
-                    transform translate-y-32 tracking-[0.2em] font-['Space_Grotesk'] font-[500]
+                    text-white hover:bg-white/10 rounded-full md:px-8 md:py-6 px-5 py-3
+                    transform md:translate-y-32 translate-y-32 tracking-[0.2em] font-['Space_Grotesk'] font-[500]
+                    md:text-base text-xs
                     transition-all duration-300 hover:scale-105"
         >
           JOIN THE REVOLUTION
