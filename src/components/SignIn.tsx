@@ -1,9 +1,47 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
+import * as THREE from 'three';
+
+// Add the Loader component
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-white text-xl">
+        {progress.toFixed(0)}% loaded
+      </div>
+    </Html>
+  )
+}
+
+// Add the InnerSphere component
+function InnerSphere() {
+  return (
+    <>
+      <Environment preset="sunset" />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      
+      <mesh scale={[-15, -15, -15]}> {/* Negative scale to see inside */}
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          side={THREE.BackSide}
+          color="#1a1a1a"
+          metalness={0.9}
+          roughness={0.1}
+          envMapIntensity={1}
+        />
+      </mesh>
+    </>
+  )
+}
 
 interface SignInProps {
   initialFestivalCode?: string;
@@ -146,110 +184,142 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100 flex flex-col justify-center items-center relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -top-20 -left-20 animate-pulse"></div>
-        <div className="absolute w-96 h-96 bg-white rounded-full blur-3xl opacity-20 -bottom-20 -right-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+    <div className="relative h-screen w-full overflow-hidden">
+      {/* Three.js Background */}
+      <div className="absolute inset-0">
+        <Canvas
+          className="w-full h-full"
+          gl={{ antialias: true, alpha: true }}
+        >
+          <Suspense fallback={<Loader />}>
+            <InnerSphere />
+          </Suspense>
+        </Canvas>
       </div>
 
-      <div className="w-full max-w-md mx-auto px-4 relative z-10">
-        {/* Logo */}
-        <div className="text-6xl font-bold mb-12 transform hover:scale-105 transition-transform duration-300 cursor-default flex justify-center">
-          <span className="text-purple-600">S</span>
-          <span style={{ color: '#DC2626' }}>o</span>
-          <span className="text-purple-600">nder</span>
-        </div>
-
-        {/* Sign In Form */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg p-8 w-full max-w-md mx-auto">
-          <h2 className="text-2xl font-bold mb-6 text-center text-gray-900 min-w-[300px]">
-            {isRegistering ? "Create Account" : "Welcome Back"}
-          </h2>
-          
-          <form onSubmit={handleEmailSignIn} className="space-y-4 mb-6">
-            <div className="w-full">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                className="w-full p-3 border border-gray-200 rounded-lg bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                required
-              />
-            </div>
-            <div className="w-full">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full p-3 border border-gray-200 rounded-lg bg-white/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-                required
-                minLength={6}
-              />
-            </div>
-            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-            <div className="w-full">
-              <button
-                type="submit"
-                className="w-full px-8 py-3 rounded-lg bg-purple-600 text-white font-semibold text-lg
-                         transition-all duration-300 
-                         shadow-[0_0_20px_rgba(168,85,247,0.3)] 
-                         hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]
-                         hover:bg-purple-500"
-              >
-                {isRegistering ? "Register" : "Sign In"}
-              </button>
-            </div>
-            <div className="w-full">
-              <button
-                type="button"
-                onClick={() => setIsRegistering(!isRegistering)}
-                className="w-full text-purple-600 text-sm hover:text-purple-500 transition-colors"
-              >
-                {isRegistering ? "Already have an account? Sign in" : "Need an account? Register"}
-              </button>
-            </div>
-          </form>
-
-          {/* Divider */}
-          <div className="flex items-center mb-6">
-            <div className="flex-grow border-t border-gray-300"></div>
-            <span className="px-4 text-gray-500 text-sm">OR</span>
-            <div className="flex-grow border-t border-gray-300"></div>
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex flex-col justify-center items-center">
+        <div className="w-full max-w-md mx-auto px-4">
+          {/* Logo - reduced bottom margin and upward translation */}
+          <div className="text-[50px] md:text-[100px] font-[500] mb-2 tracking-[0.12em]  /* Changed mb-6 to mb-2 */
+                        text-white/95 font-['Outfit']
+                        drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
+                        transform -translate-y-4  /* Changed from -translate-y-10 */
+                        transition-all duration-700 ease-out
+                        hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]
+                        flex justify-center">
+            SONDER
           </div>
 
-          {/* Google Sign In Button */}
-          <button
-            onClick={handleGoogleSignIn}
-            className="w-full bg-white text-gray-700 font-semibold py-3 px-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-3 mb-3"
-          >
-            <img
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt="Google logo"
-              className="w-6 h-6"
-            />
-            Sign in with Google
-          </button>
+          {/* Sign In Form - no translation needed */}
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                        p-8 w-full max-w-md mx-auto border border-white/20">
+            <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] mb-6 text-center text-white/90 min-w-[300px]">
+              {isRegistering ? "Create Account" : "Welcome Back"}
+            </h2>
+            
+            <form onSubmit={handleEmailSignIn} className="space-y-4 mb-6">
+              <div className="w-full">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                           text-white placeholder-white/50 font-['Space_Grotesk']
+                           focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                  required
+                />
+              </div>
+              <div className="w-full">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                           text-white placeholder-white/50 font-['Space_Grotesk']
+                           focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                  required
+                  minLength={6}
+                />
+              </div>
+              {error && <p className="text-white/80 text-sm text-center font-['Space_Grotesk']">{error}</p>}
+              <div className="w-full">
+                <button
+                  type="submit"
+                  className="relative px-16 py-4 border-2 border-white/30 rounded-full
+                          text-white text-lg font-['Space_Grotesk'] tracking-[0.2em]
+                          transition-all duration-300 
+                          hover:border-white/60 hover:scale-105
+                          hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                          active:scale-95
+                          w-full"
+                >
+                  {isRegistering ? "REGISTER" : "SIGN IN"}
+                </button>
+              </div>
+              <div className="w-full">
+                <button
+                  type="button"
+                  onClick={() => setIsRegistering(!isRegistering)}
+                  className="w-full text-white/60 text-sm hover:text-white/90 
+                           transition-colors font-['Space_Grotesk'] tracking-wider"
+                >
+                  {isRegistering ? "Already have an account? Sign in" : "Need an account? Register"}
+                </button>
+              </div>
+            </form>
 
-          {/* Apple Sign In Button */}
-          <button
-            onClick={() => console.log('Apple sign in - to be implemented')}
-            className="w-full bg-black text-white font-semibold py-3 px-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-center gap-3"
-          >
-            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.2 0-.83.37-1.54.32-2.44-.06-3.16-1.34-4.95-6.42-2.91-10.41.75-1.45 1.9-2.23 3.33-2.26 1.19-.02 1.96.74 2.93.77 1.02-.23 2-.95 3.08-.84 1.21.13 2.19.63 2.84 1.6-2.41 1.52-1.87 4.67.57 5.77-.55 1.65-1.28 3.28-2.12 5.03zm-3.14-17.01c-.92.11-2.03.89-2.5 2.06 1.04.11 2.07-.73 2.5-2.06z"/>
-            </svg>
-            Sign in with Apple
-          </button>
+            {/* Divider */}
+            <div className="flex items-center mb-6">
+              <div className="flex-grow border-t border-white/20"></div>
+              <span className="px-4 text-white/50 text-sm font-['Space_Grotesk']">OR</span>
+              <div className="flex-grow border-t border-white/20"></div>
+            </div>
 
+            {/* Google Sign In Button */}
+            <button
+              onClick={handleGoogleSignIn}
+              className="w-full bg-white/10 text-white font-['Space_Grotesk'] tracking-wider
+                       py-3 px-4 border border-white/20 rounded-lg 
+                       shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                       hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                       hover:bg-white/20
+                       transition-all duration-300 
+                       flex items-center justify-center gap-3 mb-3"
+            >
+              <img
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                alt="Google logo"
+                className="w-6 h-6"
+              />
+              Sign in with Google
+            </button>
+
+            {/* Apple Sign In Button */}
+            <button
+              onClick={() => console.log('Apple sign in - to be implemented')}
+              className="w-full bg-black/40 text-white font-['Space_Grotesk'] tracking-wider
+                       py-3 px-4 border border-white/20 rounded-lg
+                       shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                       hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                       hover:bg-black/60
+                       transition-all duration-300 
+                       flex items-center justify-center gap-3"
+            >
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.2 0-.83.37-1.54.32-2.44-.06-3.16-1.34-4.95-6.42-2.91-10.41.75-1.45 1.9-2.23 3.33-2.26 1.19-.02 1.96.74 2.93.77 1.02-.23 2-.95 3.08-.84 1.21.13 2.19.63 2.84 1.6-2.41 1.52-1.87 4.67.57 5.77-.55 1.65-1.28 3.28-2.12 5.03zm-3.14-17.01c-.92.11-2.03.89-2.5 2.06 1.04.11 2.07-.73 2.5-2.06z"/>
+              </svg>
+              Sign in with Apple
+            </button>
+          </div>
+
+          <p className="text-center text-white/60 mt-8 font-['Space_Grotesk'] tracking-wider
+                      hover:text-white/90 transition-colors duration-300">
+            Experience the moment. Cherish forever.
+          </p>
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-gray-600 mt-8 hover:text-gray-900 transition-colors duration-300">
-          Experience the moment. Cherish forever.
-        </p>
       </div>
     </div>
   );
