@@ -1,0 +1,10 @@
+.sonder-text {
+  font-size: 2rem; /* Increase text size */
+  z-index: -1; /* Place text behind other elements */
+  position: relative; /* Required for z-index to work */
+}
+
+.black-sphere {
+  z-index: 1;
+  position: relative;
+} 

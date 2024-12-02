@@ -11,6 +11,7 @@ import * as THREE from 'three'
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { useNavigate } from 'react-router-dom'
+import '../styles/fonts.css'
 
 // Utility function
 function cn(...inputs: ClassValue[]) {
@@ -121,17 +122,45 @@ const NewWelcomeScreen: React.FC = () => {
 
   return (
     <div className="h-screen w-full relative">
-      {/* Background image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+      {/* Video background - lowest layer */}
+      <video 
+        autoPlay 
+        loop 
+        muted 
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover z-0"
         style={{
-          backgroundImage: "url('/images/background.jpg')",
           filter: "brightness(0.5)"
         }}
-      />
+      >
+        <source src="/videos/background.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
       
+      {/* Text layer - middle layer */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+        <h1 className="text-[160px] font-[500] mb-12 tracking-[0.12em]
+                      text-white/95 font-['Outfit']
+                      drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
+                      transform -translate-y-48
+                      transition-all duration-700 ease-out
+                      hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]">
+          SONDER
+        </h1>
+        <Button 
+          onClick={() => navigate('/')}
+          className="pointer-events-auto bg-transparent border border-white/20 
+                    text-white hover:bg-white/10 rounded-full px-8 py-6 
+                    transform translate-y-32 tracking-[0.2em] font-['Space_Grotesk'] font-[500]
+                    transition-all duration-300 hover:scale-105"
+        >
+          JOIN THE REVOLUTION
+        </Button>
+      </div>
+
+      {/* Canvas (black sphere) - top layer */}
       <Canvas
-        className="absolute inset-0"
+        className="absolute inset-0 z-20"
         shadows
         gl={{ antialias: true, alpha: true }}
         camera={{ position: [0, 0, 5], fov: 75 }}
@@ -141,21 +170,7 @@ const NewWelcomeScreen: React.FC = () => {
         </Suspense>
       </Canvas>
       
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <h1 className="text-6xl font-bold mb-12 text-[#C0C0C0] tracking-widest 
-                      drop-shadow-[0_0_10px_rgba(192,192,192,0.5)]
-                      transform -translate-y-20">
-          SONDER
-        </h1>
-        <Button 
-          onClick={() => navigate('/')}
-          className="pointer-events-auto bg-transparent border border-white/20 text-white hover:bg-white/10 rounded-full px-8 py-6"
-        >
-          BIRTH YOUR VENUS
-        </Button>
-      </div>
-
-      {/* Back button */}
+      {/* Back button - highest layer */}
       <button
         onClick={() => navigate('/')}
         className="absolute top-4 left-4 text-white/50 hover:text-white transition-colors duration-300 z-50"

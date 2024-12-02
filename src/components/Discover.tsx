@@ -97,6 +97,15 @@ const Discover: React.FC = () => {
       return;
     }
 
+    // Check if user has a business account
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    const userData = userDoc.data();
+    
+    if (!userData?.isBusinessAccount) {
+      alert("Only business accounts can create posts");
+      return;
+    }
+
     if (!newPost.trim() && selectedFiles.length === 0) {
       console.log("No content to post");
       return;
@@ -380,16 +389,18 @@ const Discover: React.FC = () => {
           <Menu size={28} />
         </button>
         
-        {/* Add Post Button */}
-        <button
-          onClick={() => setShowCreatePost(true)}
-          className="bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700 
-                   transition-all duration-300 transform hover:scale-105
-                   shadow-lg hover:shadow-purple-500/20"
-          aria-label="Create new post"
-        >
-          <Plus size={24} />
-        </button>
+        {/* Add Post Button - Only show for business accounts */}
+        {userProfile?.isBusinessAccount && (
+          <button
+            onClick={() => setShowCreatePost(true)}
+            className="bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700 
+                     transition-all duration-300 transform hover:scale-105
+                     shadow-lg hover:shadow-purple-500/20"
+            aria-label="Create new post"
+          >
+            <Plus size={24} />
+          </button>
+        )}
       </div>
 
       <Sidebar
