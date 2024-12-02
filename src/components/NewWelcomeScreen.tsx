@@ -12,6 +12,7 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { useNavigate } from 'react-router-dom'
 import '../styles/fonts.css'
+import { gsap } from 'gsap'
 
 // Utility function
 function cn(...inputs: ClassValue[]) {
@@ -69,14 +70,39 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 // 3D Components
-function FloatingShell() {
+function FloatingShell({ isAnimating }: { isAnimating: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null)
+  const [hasAnimationStarted, setHasAnimationStarted] = React.useState(false)
   
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1
-      meshRef.current.rotation.y = Math.sin(state.clock.getElapsedTime() * 0.2) * 0.1
-      meshRef.current.position.y = Math.sin(state.clock.getElapsedTime() * 0.5) * 0.1
+      if (!isAnimating) {
+        // Normal floating animation
+        meshRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1
+        meshRef.current.rotation.y = Math.sin(state.clock.getElapsedTime() * 0.2) * 0.1
+        meshRef.current.position.y = Math.sin(state.clock.getElapsedTime() * 0.5) * 0.1
+      } else if (!hasAnimationStarted) {
+        // Sucking animation
+        setHasAnimationStarted(true)
+        gsap.to(meshRef.current.scale, {
+          x: 20,
+          y: 20,
+          z: 20,
+          duration: 1.5,
+          ease: "power2.in"
+        })
+        gsap.to(meshRef.current.position, {
+          z: -2,
+          duration: 1.5,
+          ease: "power2.in"
+        })
+        gsap.to(meshRef.current.rotation, {
+          x: Math.PI * 2,
+          y: Math.PI * 2,
+          duration: 1.5,
+          ease: "power2.in"
+        })
+      }
     }
   })
 
@@ -105,20 +131,34 @@ function FloatingShell() {
         metalness={0.9}
         roughness={0.1}
         envMapIntensity={1}
+        transparent
+        opacity={isAnimating ? 1 : 0.9}
       />
     </mesh>
   )
 }
 
-function Scene() {
+function Scene({ isAnimating }: { isAnimating: boolean }) {
+  const cameraRef = useRef<THREE.PerspectiveCamera>(null)
+
+  React.useEffect(() => {
+    if (isAnimating && cameraRef.current) {
+      gsap.to(cameraRef.current.position, {
+        z: -1,
+        duration: 1.5,
+        ease: "power2.in"
+      })
+    }
+  }, [isAnimating])
+
   return (
     <>
       <Environment preset="sunset" />
-      <PerspectiveCamera makeDefault position={[0, 0, 5]} />
+      <PerspectiveCamera ref={cameraRef} makeDefault position={[0, 0, 5]} />
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} intensity={1} castShadow />
       
-      <FloatingShell />
+      <FloatingShell isAnimating={isAnimating} />
     </>
   )
 }
@@ -136,6 +176,23 @@ function Loader() {
 
 const NewWelcomeScreen: React.FC = () => {
   const navigate = useNavigate();
+  const [isAnimating, setIsAnimating] = React.useState(false);
+
+  const handleClick = () => {
+    setIsAnimating(true);
+    
+    // Fade out content
+    gsap.to('.content-fade', {
+      opacity: 0,
+      duration: 1,
+      ease: "power2.in"
+    });
+
+    // Navigate after animation
+    setTimeout(() => {
+      navigate('/signin');
+    }, 1500);
+  };
 
   return (
     <div className="h-screen w-full relative">
@@ -145,7 +202,7 @@ const NewWelcomeScreen: React.FC = () => {
         loop 
         muted 
         playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0"
+        className="absolute inset-0 w-full h-full object-cover z-0 content-fade"
         style={{
           filter: "brightness(0.5)"
         }}
@@ -155,7 +212,7 @@ const NewWelcomeScreen: React.FC = () => {
       </video>
       
       {/* Text layer with mobile-only responsive changes */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-30 content-fade">
         <h1 className="md:text-[160px] text-[70px] font-[500] md:mb-12 mb-6 tracking-[0.12em]
                       text-white/95 font-['Outfit']
                       drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
@@ -164,19 +221,22 @@ const NewWelcomeScreen: React.FC = () => {
                       hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]">
           SONDER
         </h1>
-        <Button 
-          onClick={() => navigate('/')}
-          className="pointer-events-auto bg-transparent border border-white/20 
-                    text-white hover:bg-white/10 rounded-full md:px-8 md:py-6 px-5 py-3
-                    transform md:translate-y-32 translate-y-32 tracking-[0.2em] font-['Space_Grotesk'] font-[500]
-                    md:text-base text-xs
-                    transition-all duration-300 hover:scale-105"
+        <button 
+          onClick={handleClick}
+          className="relative px-16 py-4 border-2 border-white/30 rounded-full
+                    text-white text-lg font-['Space_Grotesk'] tracking-[0.2em]
+                    transform md:translate-y-32 translate-y-32
+                    transition-all duration-300 
+                    hover:border-white/60 hover:scale-105
+                    hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                    active:scale-95
+                    cursor-pointer"
         >
           JOIN THE REVOLUTION
-        </Button>
+        </button>
       </div>
 
-      {/* Canvas (black sphere) - top layer */}
+      {/* Canvas (black sphere) */}
       <Canvas
         className="absolute inset-0 z-20"
         shadows
@@ -184,17 +244,9 @@ const NewWelcomeScreen: React.FC = () => {
         camera={{ position: [0, 0, 5], fov: 75 }}
       >
         <Suspense fallback={<Loader />}>
-          <Scene />
+          <Scene isAnimating={isAnimating} />
         </Suspense>
       </Canvas>
-      
-      {/* Back button - highest layer */}
-      <button
-        onClick={() => navigate('/')}
-        className="absolute top-4 left-4 text-white/50 hover:text-white transition-colors duration-300 z-50"
-      >
-        ← Back
-      </button>
     </div>
   )
 }

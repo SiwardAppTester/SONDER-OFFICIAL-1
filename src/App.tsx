@@ -77,9 +77,8 @@ const App: React.FC = () => {
         <main className="flex-grow">
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={!user ? <WelcomeScreen /> : <Navigate to="/home" />} />
+            <Route path="/" element={!user ? <NewWelcomeScreen /> : <Navigate to="/home" />} />
             <Route path="/signin" element={!user ? <SignIn /> : <Navigate to="/home" />} />
-            <Route path="/new-welcome" element={<NewWelcomeScreen />} />
             
             {/* Protected routes */}
             <Route path="/complete-profile" element={user ? <CompleteProfile /> : <Navigate to="/signin" />} />
