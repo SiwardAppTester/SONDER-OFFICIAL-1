@@ -77,10 +77,9 @@ function FloatingShell({ isAnimating }: { isAnimating: boolean }) {
   useFrame((state) => {
     if (meshRef.current) {
       if (!isAnimating) {
-        // Normal floating animation
+        // Only rotate, no position change
         meshRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1
         meshRef.current.rotation.y = Math.sin(state.clock.getElapsedTime() * 0.2) * 0.1
-        meshRef.current.position.y = Math.sin(state.clock.getElapsedTime() * 0.5) * 0.1
       } else if (!hasAnimationStarted) {
         // Sucking animation
         setHasAnimationStarted(true)
@@ -124,7 +123,7 @@ function FloatingShell({ isAnimating }: { isAnimating: boolean }) {
   }, []);
 
   return (
-    <mesh ref={meshRef} position={[0, 0, 0]} castShadow>
+    <mesh ref={meshRef} position={[0, -0.1, 0]} castShadow>
       <sphereGeometry args={[1, 32, 32]} />
       <meshStandardMaterial
         color="#1a1a1a"
