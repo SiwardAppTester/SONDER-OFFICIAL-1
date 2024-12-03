@@ -4,9 +4,10 @@ import { ref, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { Menu, KeyRound, User, Sparkles, Search as SearchIcon, Star, Package, Download, Share } from "lucide-react";
+import { Menu, KeyRound, User, Sparkles, Search as SearchIcon, Star, Package, Download, Share, QrCode, X, Camera, Upload } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import Sidebar from "./Sidebar";
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface Post {
   id: string;
@@ -27,6 +28,14 @@ interface Festival {
   accessCode: string;
   categoryAccessCodes?: AccessCode[];
   categories?: Category[];
+  qrCodes?: {
+    id: string;
+    code: string;
+    linkedCategories: string[];
+    imageUrl: string;
+    name: string;
+    createdAt: any;
+  }[];
 }
 
 interface Category {
@@ -44,6 +53,7 @@ interface UserProfile {
   following?: string[];
   accessibleFestivals?: string[];
   username?: string;
+  accessibleCategories?: Record<string, string[]>;
 }
 
 interface AccessCode {
@@ -70,6 +80,9 @@ const Home: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [accessibleCategories, setAccessibleCategories] = useState<Record<string, string[]>>({});
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     const postsQuery = query(
@@ -170,6 +183,126 @@ const Home: React.FC = () => {
     fetchUserProfile();
   }, [auth.currentUser?.uid]);
 
+  useEffect(() => {
+    let html5Qrcode: Html5Qrcode | null = null;
+
+    if (showQRScanner) {
+      html5Qrcode = new Html5Qrcode("qr-reader");
+    }
+
+    // Cleanup
+    return () => {
+      if (html5Qrcode && isScanning) {
+        html5Qrcode.stop().catch(console.error);
+      }
+    };
+  }, [showQRScanner]);
+
+  const toggleScanning = async () => {
+    const html5Qrcode = new Html5Qrcode("qr-reader");
+    
+    if (!isScanning) {
+      try {
+        await html5Qrcode.start(
+          { facingMode: { exact: "environment" } },
+          {
+            fps: 10,
+            qrbox: {
+              width: 250,
+              height: 250,
+            },
+          },
+          async (decodedText: string) => {
+            console.log("Scanned QR code content:", decodedText);
+            
+            try {
+              // Stop scanning immediately
+              await html5Qrcode.stop();
+              setIsScanning(false);
+              setShowQRScanner(false);
+              
+              // Process the code immediately without showing the input
+              const cleanedCode = decodedText.trim().toLowerCase();
+              
+              // Find matching festival and QR code
+              let matchingFestival: Festival | undefined;
+              let matchingQRCode: any;
+
+              for (const festival of festivals) {
+                const qrCode = festival.qrCodes?.find(qr => {
+                  if (!qr?.code) return false;
+                  const qrCodeClean = qr.code.trim().toLowerCase();
+                  return qrCodeClean === cleanedCode;
+                });
+                
+                if (qrCode) {
+                  matchingFestival = festival;
+                  matchingQRCode = qrCode;
+                  break;
+                }
+              }
+
+              if (matchingFestival && matchingQRCode && user) {
+                // Update user's access
+                const userRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userRef);
+                const userData = userDoc.data();
+
+                await updateDoc(userRef, {
+                  accessibleFestivals: arrayUnion(matchingFestival.id),
+                  accessibleCategories: {
+                    ...(userData?.accessibleCategories || {}),
+                    [matchingFestival.id]: matchingQRCode.linkedCategories
+                  }
+                });
+
+                // Update local state
+                setAccessibleFestivals(prev => new Set([...prev, matchingFestival.id]));
+                setAccessibleCategories(prev => ({
+                  ...prev,
+                  [matchingFestival.id]: matchingQRCode.linkedCategories
+                }));
+
+                // Navigate directly to content view
+                setSelectedFestival(matchingFestival.id);
+                setShowFestivalList(false);
+                setShowAccessInput(false);
+                if (matchingQRCode.linkedCategories.length > 0) {
+                  setSelectedCategory(matchingQRCode.linkedCategories[0]);
+                }
+              } else {
+                setGeneralAccessError("Invalid QR code");
+              }
+            } catch (error) {
+              console.error("Error processing QR code:", error);
+              setGeneralAccessError("Error processing QR code");
+            }
+          },
+          (errorMessage: string) => {
+            if (errorMessage.includes("NotFound")) {
+              setScanError("No QR code found. Please try again.");
+            } else if (errorMessage.includes("NotAllowed")) {
+              setScanError("Camera access denied. Please grant camera permissions.");
+            } else {
+              setScanError("Error scanning QR code. Please try again.");
+            }
+          }
+        );
+        setIsScanning(true);
+      } catch (err) {
+        console.error("Error starting scanner:", err);
+        setScanError("Failed to start scanner. Please try again.");
+      }
+    } else {
+      try {
+        await html5Qrcode.stop();
+        setIsScanning(false);
+      } catch (err) {
+        console.error("Error stopping scanner:", err);
+      }
+    }
+  };
+
   const handleDownload = async (url: string, mediaType: string, postId: string, festivalId: string, categoryId?: string, mediaIndex?: number) => {
     try {
       // Create download record with media index
@@ -234,69 +367,148 @@ const Home: React.FC = () => {
   const handleAccessCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
-    const festival = festivals.find(f => {
-      // Check main festival access code
-      if (f.accessCode === generalAccessCode) return true;
-      
-      // Check category-specific access codes
-      return f.categoryAccessCodes?.some(ac => ac.code === generalAccessCode);
-    });
-    
-    if (festival) {
-      try {
-        let accessibleCategories: string[] = [];
-        
-        // If it's the main festival access code, include all categories
-        if (festival.accessCode === generalAccessCode) {
-          accessibleCategories = festival.categories?.map(c => c.id) || [];
-        } else {
-          // Find the matching category access code
-          const matchingAccessCode = festival.categoryAccessCodes?.find(
-            ac => ac.code === generalAccessCode
-          );
-          if (!matchingAccessCode) {
-            throw new Error("Access code not found");
-          }
-          // Only include the categories specified in the access code
-          accessibleCategories = matchingAccessCode.categoryIds;
-        }
 
+    try {
+      // Clean up the access code by removing whitespace and converting to lowercase
+      const cleanedCode = generalAccessCode?.trim().toLowerCase() || '';
+      if (!cleanedCode) {
+        setGeneralAccessError("Please enter an access code");
+        return;
+      }
+      
+      // First check if it's a valid URL
+      let codeToCheck = cleanedCode;
+      try {
+        // If it's a URL, we'll use it as is
+        new URL(cleanedCode);
+      } catch {
+        // If it's not a URL, we'll use it as a regular code
+        codeToCheck = cleanedCode;
+      }
+
+      // First check for QR codes
+      let matchingFestival: Festival | undefined;
+      let matchingQRCode: any;
+
+      for (const festival of festivals) {
+        const qrCode = festival.qrCodes?.find(qr => {
+          if (!qr?.code) return false;
+          // Compare both the original code and cleaned version
+          const qrCodeClean = qr.code.trim().toLowerCase();
+          return qrCodeClean === codeToCheck || qrCodeClean === cleanedCode;
+        });
+        
+        if (qrCode) {
+          matchingFestival = festival;
+          matchingQRCode = qrCode;
+          break;
+        }
+      }
+
+      if (matchingFestival && matchingQRCode) {
+        // QR code found - grant access to linked categories
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
         const userData = userDoc.data();
 
         // Update the user document with the new festival access
         await updateDoc(userRef, {
-          accessibleFestivals: arrayUnion(festival.id)  // Just store the festival ID
-        });
-        
-        // Update accessible categories separately
-        const existingAccessibleCategories = userData?.accessibleCategories || {};
-        await updateDoc(userRef, {
+          accessibleFestivals: arrayUnion(matchingFestival.id),
           accessibleCategories: {
-            ...existingAccessibleCategories,
-            [festival.id]: accessibleCategories
+            ...(userData?.accessibleCategories || {}),
+            [matchingFestival.id]: matchingQRCode.linkedCategories
           }
         });
-        
+
         // Update local state
-        setAccessibleFestivals(prev => new Set([...prev, festival.id]));
+        setAccessibleFestivals(prev => new Set([...prev, matchingFestival.id]));
         setAccessibleCategories(prev => ({
           ...prev,
-          [festival.id]: accessibleCategories
+          [matchingFestival.id]: matchingQRCode.linkedCategories
         }));
-        
-        setSelectedFestival(festival.id);
+
+        // Set states to show content view
+        setSelectedFestival(matchingFestival.id);
         setShowAccessInput(false);
         setShowFestivalList(false);
+        setShowQRScanner(false);
         setGeneralAccessError(null);
-      } catch (error) {
-        console.error("Error updating user's accessible festivals:", error);
-        setGeneralAccessError("Error saving access. Please try again.");
+        
+        // Set the first linked category as selected if any exist
+        if (matchingQRCode.linkedCategories.length > 0) {
+          setSelectedCategory(matchingQRCode.linkedCategories[0]);
+        }
+
+        return;
       }
-    } else {
-      setGeneralAccessError("Invalid access code");
+
+      // If no QR code found, check regular access codes
+      const festival = festivals.find(f => {
+        if (f.accessCode === cleanedCode) return true;
+        return f.categoryAccessCodes?.some(ac => ac?.code?.toLowerCase() === cleanedCode);
+      });
+
+      if (festival) {
+        try {
+          let accessibleCategories: string[] = [];
+          
+          // If it's the main festival access code, include all categories
+          if (festival.accessCode === cleanedCode) {
+            accessibleCategories = festival.categories?.map(c => c.id) || [];
+          } else {
+            // Check for category access code
+            const matchingAccessCode = festival.categoryAccessCodes?.find(
+              ac => ac?.code?.toLowerCase() === cleanedCode
+            );
+            
+            if (matchingAccessCode) {
+              // Use categories from access code
+              accessibleCategories = matchingAccessCode.categoryIds;
+            }
+          }
+
+          const userRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userRef);
+          const userData = userDoc.data();
+
+          // Update the user document with the new festival access
+          await updateDoc(userRef, {
+            accessibleFestivals: arrayUnion(festival.id),
+            accessibleCategories: {
+              ...(userData?.accessibleCategories || {}),
+              [festival.id]: accessibleCategories
+            }
+          });
+          
+          // Update local state
+          setAccessibleFestivals(prev => new Set([...prev, festival.id]));
+          setAccessibleCategories(prev => ({
+            ...prev,
+            [festival.id]: accessibleCategories
+          }));
+          
+          // Set states to show content view
+          setSelectedFestival(festival.id);
+          setShowAccessInput(false);
+          setShowFestivalList(false);
+          setShowQRScanner(false);
+          setGeneralAccessError(null);
+
+          // Set the first accessible category as selected if any exist
+          if (accessibleCategories.length > 0) {
+            setSelectedCategory(accessibleCategories[0]);
+          }
+
+        } catch (error) {
+          console.error("Error updating user's accessible festivals:", error);
+          setGeneralAccessError("Error saving access. Please try again.");
+        }
+      } else {
+        setGeneralAccessError("Invalid access code or QR code");
+      }
+    } catch (error) {
+      console.error("Error processing access:", error);
+      setGeneralAccessError("Error processing access. Please try again.");
     }
   };
 
@@ -379,6 +591,89 @@ const Home: React.FC = () => {
     })
   }));
 
+  const handleQRFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    
+    try {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      
+      reader.onload = async (event) => {
+        if (!event.target?.result) return;
+        
+        try {
+          const html5QrCode = new Html5Qrcode("qr-reader");
+          const decodedText = await html5QrCode.scanFile(file, true);
+          
+          console.log("Scanned QR code content:", decodedText);
+          setShowQRScanner(false);
+
+          // Process QR code directly
+          const cleanedCode = decodedText.trim().toLowerCase();
+          
+          // Find matching festival and QR code
+          let matchingFestival: Festival | undefined;
+          let matchingQRCode: any;
+
+          for (const festival of festivals) {
+            const qrCode = festival.qrCodes?.find(qr => {
+              if (!qr?.code) return false;
+              const qrCodeClean = qr.code.trim().toLowerCase();
+              return qrCodeClean === cleanedCode;
+            });
+            
+            if (qrCode) {
+              matchingFestival = festival;
+              matchingQRCode = qrCode;
+              break;
+            }
+          }
+
+          if (matchingFestival && matchingQRCode && user) {
+            // Update user's access
+            const userRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userRef);
+            const userData = userDoc.data();
+
+            await updateDoc(userRef, {
+              accessibleFestivals: arrayUnion(matchingFestival.id),
+              accessibleCategories: {
+                ...(userData?.accessibleCategories || {}),
+                [matchingFestival.id]: matchingQRCode.linkedCategories
+              }
+            });
+
+            // Update local state and navigate directly
+            setAccessibleFestivals(prev => new Set([...prev, matchingFestival.id]));
+            setAccessibleCategories(prev => ({
+              ...prev,
+              [matchingFestival.id]: matchingQRCode.linkedCategories
+            }));
+
+            // Navigate directly to content view
+            setSelectedFestival(matchingFestival.id);
+            setShowFestivalList(false);
+            setShowAccessInput(false);
+            if (matchingQRCode.linkedCategories.length > 0) {
+              setSelectedCategory(matchingQRCode.linkedCategories[0]);
+            }
+          } else {
+            setGeneralAccessError("Invalid QR code");
+          }
+          
+        } catch (error) {
+          console.error("Error scanning QR code file:", error);
+          setScanError("Failed to read QR code from image. Please try again.");
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error handling file upload:", error);
+      setScanError("Error processing file. Please try again.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
       {/* Navigation */}
@@ -456,17 +751,29 @@ const Home: React.FC = () => {
                     </p>
                   )}
                 </div>
-                <button
-                  type="submit"
-                  className="w-full bg-purple-600 text-white px-8 py-4 rounded-xl
-                           font-medium text-lg
-                           hover:bg-purple-700 active:bg-purple-800
-                           transform transition-all duration-300
-                           hover:shadow-[0_4px_20px_rgba(168,85,247,0.3)]
-                           focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                >
-                  Join Festival
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-purple-600 text-white px-8 py-4 rounded-xl
+                             font-medium text-lg
+                             hover:bg-purple-700 active:bg-purple-800
+                             transform transition-all duration-300
+                             hover:shadow-[0_4px_20px_rgba(168,85,247,0.3)]
+                             focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                  >
+                    Join Festival
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowQRScanner(true)}
+                    className="aspect-square bg-purple-100 text-purple-600 p-4 rounded-xl
+                             hover:bg-purple-200 active:bg-purple-300
+                             transform transition-all duration-300
+                             focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                  >
+                    <QrCode size={24} />
+                  </button>
+                </div>
               </form>
             </div>
 
@@ -712,6 +1019,85 @@ const Home: React.FC = () => {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full mx-4 relative shadow-2xl">
+            <button
+              onClick={() => setShowQRScanner(false)}
+              className="absolute -top-4 -right-4 p-2 rounded-full bg-white shadow-lg 
+                         hover:bg-gray-50 transition-colors duration-200"
+              aria-label="Close scanner"
+            >
+              <X size={24} className="text-gray-600" />
+            </button>
+            
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-semibold text-gray-800">
+                Scan Festival QR Code
+              </h3>
+              <p className="text-gray-500 text-sm mt-2">
+                Use your camera or upload a QR code image
+              </p>
+            </div>
+            
+            <div className="relative rounded-2xl overflow-hidden bg-gray-50 shadow-inner">
+              <div id="qr-reader" className="w-full max-w-sm mx-auto"></div>
+              <div className="absolute inset-0 border-2 border-purple-500/50 rounded-2xl pointer-events-none">
+                <div className="absolute inset-12 border-2 border-dashed border-purple-500/30 rounded-xl"></div>
+              </div>
+            </div>
+            
+            {scanError && (
+              <div className="mt-4 p-3 bg-red-50 rounded-xl">
+                <p className="text-red-600 text-sm text-center flex items-center justify-center gap-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                  {scanError}
+                </p>
+              </div>
+            )}
+            
+            <div className="mt-6 space-y-3">
+              {/* Camera controls */}
+              <button
+                onClick={toggleScanning}
+                className="w-full py-3 px-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 
+                           transition-colors duration-200 font-medium flex items-center justify-center gap-2"
+              >
+                <Camera size={20} />
+                {isScanning ? "Stop Scanning" : "Start Camera Scanning"}
+              </button>
+
+              {/* File upload option */}
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleQRFileUpload}
+                  className="hidden"
+                  id="qr-file-input"
+                />
+                <label
+                  htmlFor="qr-file-input"
+                  className="w-full py-3 px-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 
+                           transition-colors duration-200 font-medium cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Upload size={20} />
+                  Upload QR Code Image
+                </label>
+              </div>
+
+              <button
+                onClick={() => setShowQRScanner(false)}
+                className="w-full py-3 text-gray-500 text-sm hover:text-gray-700 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

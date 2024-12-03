@@ -6,7 +6,12 @@ import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } 
 import { db, storage, auth } from "../firebase";
 import { signOut } from "firebase/auth";
 import BusinessSidebar from "./BusinessSidebar";
-import { Menu, Plus, Share, Key, Trash2 } from "lucide-react";
+import { Menu, Plus, Share, Key, Trash2, Upload, QrCode } from "lucide-react";
+import { QRCodeSVG } from 'qrcode.react';
+import { Camera } from 'lucide-react';
+import ReactDOMServer from 'react-dom/server';
+import QRCode from "qrcode";
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface MediaFile {
   file: File;
@@ -39,6 +44,14 @@ interface Festival {
   description: string;
   categoryAccessCodes?: AccessCode[];
   categories?: Category[];
+  qrCodes?: {
+    id: string;
+    code: string;
+    linkedCategories: string[];
+    imageUrl: string;
+    name: string;
+    createdAt: any;
+  }[];
 }
 
 interface Post {
@@ -67,6 +80,32 @@ interface Toast {
   type: 'success' | 'error';
 }
 
+interface QRCodeData {
+  id: string;
+  code: string;
+  imageUrl: string;
+  name: string;
+  categoryIds: string[];
+  createdAt: any;
+}
+
+interface QRCode {
+  id: string;
+  imageUrl: string;
+  linkedCategories: string[];
+  createdAt: any;
+  name: string;
+}
+
+const generateQRCode = async (text: string): Promise<string> => {
+  try {
+    return await QRCode.toDataURL(text);
+  } catch (error) {
+    console.error("Error generating QR code:", error);
+    throw error;
+  }
+};
+
 const AddPost: React.FC = () => {
   const [text, setText] = useState("");
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
@@ -90,6 +129,14 @@ const AddPost: React.FC = () => {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [showManageAccessCodes, setShowManageAccessCodes] = useState(false);
   const [newAccessCodeName, setNewAccessCodeName] = useState("");
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [showQRPreview, setShowQRPreview] = useState(false);
+  const [showQRCodeModal, setShowQRCodeModal] = useState(false);
+  const [qrCodeFile, setQRCodeFile] = useState<File | null>(null);
+  const [qrCodeName, setQRCodeName] = useState("");
+  const [qrCodePreview, setQRCodePreview] = useState<string>("");
+  const [selectedQRCategories, setSelectedQRCategories] = useState<string[]>([]);
+  const [showQRCodesDisplay, setShowQRCodesDisplay] = useState(false);
 
   useEffect(() => {
     fetchFestivals();
@@ -127,8 +174,9 @@ const AddPost: React.FC = () => {
         id: doc.id,
         name: doc.data().name,
         description: doc.data().description,
-        categoryAccessCodes: doc.data().categoryAccessCodes,
-        categories: doc.data().categories
+        categoryAccessCodes: doc.data().categoryAccessCodes || [],
+        categories: doc.data().categories || [],
+        qrCodes: doc.data().qrCodes || []
       }));
       setFestivals(festivalsData);
     } catch (error) {
@@ -658,8 +706,10 @@ const AddPost: React.FC = () => {
       if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         // For mobile devices
         const file = media.url ? await fetch(media.url).then(r => r.blob()) : media.file;
+        // Convert blob to File object
+        const mediaFile = new File([file], 'shared-media', { type: file.type });
         const shareData = {
-          files: [file],
+          files: [mediaFile],
           title: 'Share to Instagram',
         };
 
@@ -668,10 +718,10 @@ const AddPost: React.FC = () => {
             await navigator.share(shareData);
             
             // Add share record to Firestore
-            if (auth.currentUser && postId) {
+            if (auth.currentUser) {
               await addDoc(collection(db, 'messages'), {
                 type: 'shared_post',
-                postId: postId,
+                mediaUrl: media.url,
                 mediaIndex: mediaFiles.findIndex(m => m.url === media.url),
                 senderId: auth.currentUser.uid,
                 receiverId: 'instagram',
@@ -699,19 +749,19 @@ const AddPost: React.FC = () => {
 
   const handleAddAccessCode = async () => {
     if (!selectedFestival) {
-      alert("Please select a festival first");
+      showToast("Please select a festival first", "error");
       return;
     }
     if (!newAccessCode.trim()) {
-      alert("Please enter an access code");
+      showToast("Please enter an access code", "error");
       return;
     }
     if (!newAccessCodeName.trim()) {
-      alert("Please enter a name for the access code");
+      showToast("Please enter a name for the access code", "error");
       return;
     }
     if (selectedCategoryIds.length === 0) {
-      alert("Please select at least one category");
+      showToast("Please select at least one category", "error");
       return;
     }
 
@@ -726,7 +776,7 @@ const AddPost: React.FC = () => {
       });
 
       if (accessCodeExists) {
-        alert("This access code is already in use. Please choose a different one.");
+        showToast("This access code is already in use", "error");
         return;
       }
 
@@ -763,7 +813,7 @@ const AddPost: React.FC = () => {
 
     } catch (error) {
       console.error("Error adding access code:", error);
-      showToast("Failed to create access code. Please try again.", "error");
+      showToast("Failed to create access code", "error");
     }
   };
 
@@ -800,6 +850,138 @@ const AddPost: React.FC = () => {
     }
   };
 
+  const handleQRCodeFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setQRCodeFile(file);
+      setQRCodePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handlePreviewQRCode = async () => {
+    if (!newAccessCode) {
+      showToast("Please enter an access code first", "error");
+      return;
+    }
+
+    try {
+      const qrDataUrl = await QRCode.toDataURL(newAccessCode);
+      setQrCodeUrl(qrDataUrl);
+      setShowQRPreview(true);
+    } catch (error) {
+      console.error("Error generating QR code preview:", error);
+      showToast("Failed to generate QR code preview", "error");
+    }
+  };
+
+  const handleAddQRCode = async () => {
+    if (!selectedFestival || !qrCodeName || selectedQRCategories.length === 0) {
+      showToast("Please fill in all required fields", "error");
+      return;
+    }
+
+    try {
+      if (!qrCodeFile) {
+        showToast("Please upload a QR code image", "error");
+        return;
+      }
+
+      // Create a hidden div for the QR reader
+      const qrReaderDiv = document.createElement('div');
+      qrReaderDiv.id = 'qr-reader';
+      qrReaderDiv.style.display = 'none';
+      document.body.appendChild(qrReaderDiv);
+
+      try {
+        // First, scan the uploaded QR code to get its content
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        const qrCodeContent = await html5QrCode.scanFile(qrCodeFile, true);
+        console.log("Uploaded QR code content:", qrCodeContent);
+
+        // Create a safe filename by using a UUID instead of the QR content
+        const safeFileName = `${crypto.randomUUID()}.png`;
+        
+        // Upload the original QR code image
+        const qrCodeRef = ref(storage, `qrcodes/${selectedFestival}/${safeFileName}`);
+        await uploadBytes(qrCodeRef, qrCodeFile);
+        const imageUrl = await getDownloadURL(qrCodeRef);
+
+        const newQRCode = {
+          id: crypto.randomUUID(),
+          code: qrCodeContent, // Store the actual QR code content
+          imageUrl,
+          linkedCategories: selectedQRCategories,
+          createdAt: new Date().toISOString(),
+          name: qrCodeName.trim()
+        };
+
+        const festivalRef = doc(db, "festivals", selectedFestival);
+        await updateDoc(festivalRef, {
+          qrCodes: arrayUnion(newQRCode)
+        });
+
+        // Fetch updated festivals data
+        await fetchFestivals();
+
+        setQRCodeFile(null);
+        setQRCodeName("");
+        setQRCodePreview("");
+        setSelectedQRCategories([]);
+        setShowQRCodeModal(false);
+        showToast("QR code added successfully! ✨", "success");
+
+      } finally {
+        // Clean up the temporary div
+        qrReaderDiv.remove();
+      }
+
+    } catch (error) {
+      console.error("Error adding QR code:", error);
+      showToast("Failed to add QR code", "error");
+    }
+  };
+
+  const handleDeleteQRCode = async (qrCodeId: string) => {
+    if (!selectedFestival) return;
+    
+    if (!window.confirm("Are you sure you want to delete this QR code?")) {
+      return;
+    }
+
+    try {
+      const festivalRef = doc(db, "festivals", selectedFestival);
+      const festival = festivals.find(f => f.id === selectedFestival);
+      if (!festival?.qrCodes) return;
+
+      const qrCodeToDelete = festival.qrCodes.find(qr => qr.id === qrCodeId);
+      if (!qrCodeToDelete) return;
+
+      // Delete the image from storage
+      const imageRef = ref(storage, qrCodeToDelete.imageUrl);
+      await deleteObject(imageRef);
+
+      // Remove the QR code from Firestore
+      await updateDoc(festivalRef, {
+        qrCodes: arrayRemove(qrCodeToDelete)
+      });
+
+      // Update local state
+      setFestivals(prev => prev.map(festival => 
+        festival.id === selectedFestival
+          ? { 
+              ...festival, 
+              qrCodes: festival.qrCodes?.filter(qr => qr.id !== qrCodeId)
+            }
+          : festival
+      ));
+
+      showToast("QR code deleted successfully", "success");
+    } catch (error) {
+      console.error("Error deleting QR code:", error);
+      showToast("Failed to delete QR code", "error");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
       {/* Navigation */}
@@ -832,16 +1014,30 @@ const AddPost: React.FC = () => {
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-semibold">Festivals</h2>
                   <div className="flex gap-2">
-                    {selectedFestival && (
-                      <button
-                        type="button"
-                        onClick={() => setShowManageAccessCodes(true)}
-                        className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2"
-                      >
-                        <Key size={16} />
-                        Manage Access Codes
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowManageAccessCodes(true)}
+                      className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2"
+                    >
+                      <Key size={16} />
+                      Access Codes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowQRCodesDisplay(true)}
+                      className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2"
+                    >
+                      <QrCode size={16} />
+                      QR Codes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowQRCodeModal(true)}
+                      className="px-4 py-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2"
+                    >
+                      <Plus size={16} />
+                      Add QR Code
+                    </button>
                     <button
                       type="button"
                       onClick={() => setShowAddFestival(true)}
@@ -1210,6 +1406,7 @@ const AddPost: React.FC = () => {
                   placeholder="Enter access code name"
                   className="w-full p-3 border rounded-lg"
                 />
+                
                 <input
                   type="text"
                   value={newAccessCode}
@@ -1217,7 +1414,7 @@ const AddPost: React.FC = () => {
                   placeholder="Enter access code"
                   className="w-full p-3 border rounded-lg"
                 />
-                
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
                     Select Categories for Access:
@@ -1262,7 +1459,7 @@ const AddPost: React.FC = () => {
         {/* Manage Access Codes Modal */}
         {showManageAccessCodes && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative overflow-y-auto max-h-[90vh]">
               <button
                 onClick={() => setShowManageAccessCodes(false)}
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
@@ -1313,8 +1510,7 @@ const AddPost: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  ))
-                }
+                  ))}
                 <button
                   type="button"
                   onClick={() => {
@@ -1326,6 +1522,171 @@ const AddPost: React.FC = () => {
                   <Plus size={16} />
                   Add Access Code
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* QR Code Upload Modal */}
+        {showQRCodeModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative">
+              <button
+                onClick={() => {
+                  setShowQRCodeModal(false);
+                  setQRCodeFile(null);
+                  setQRCodePreview("");
+                }}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-semibold mb-6">Upload QR Code</h2>
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  value={qrCodeName}
+                  onChange={(e) => setQRCodeName(e.target.value)}
+                  placeholder="Enter QR code name"
+                  className="w-full p-3 border rounded-lg"
+                />
+
+                {/* QR Code Upload Area */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleQRCodeFileChange}
+                    className="hidden"
+                    id="qr-code-upload"
+                  />
+                  <label
+                    htmlFor="qr-code-upload"
+                    className="w-full h-48 border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition-colors"
+                  >
+                    {qrCodePreview ? (
+                      <img
+                        src={qrCodePreview}
+                        alt="QR Code Preview"
+                        className="h-full object-contain p-2"
+                      />
+                    ) : (
+                      <>
+                        <Upload size={24} className="text-purple-400 mb-2" />
+                        <span className="text-sm text-purple-600">Upload QR Code</span>
+                      </>
+                    )}
+                  </label>
+                </div>
+
+                {/* Category Selection */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Link QR Code to Categories:
+                  </label>
+                  <div className="space-y-2">
+                    {festivals
+                      .find(f => f.id === selectedFestival)
+                      ?.categories?.map(category => (
+                        <label key={category.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedQRCategories.includes(category.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedQRCategories(prev => [...prev, category.id]);
+                              } else {
+                                setSelectedQRCategories(prev => 
+                                  prev.filter(id => id !== category.id)
+                                );
+                              }
+                            }}
+                            className="rounded text-purple-600 focus:ring-purple-500"
+                          />
+                          <span>{category.name}</span>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddQRCode}
+                  className="w-full bg-purple-600 text-white px-6 py-3 rounded-full hover:bg-purple-700 transition-all transform hover:scale-105 shadow-lg shadow-purple-200"
+                >
+                  Add QR Code
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* QR Codes Display Modal */}
+        {showQRCodesDisplay && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 relative overflow-y-auto max-h-[90vh]">
+              <button
+                onClick={() => setShowQRCodesDisplay(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+              <h2 className="text-xl font-semibold mb-6">QR Codes</h2>
+              <div className="space-y-4">
+                {festivals
+                  .find(f => f.id === selectedFestival)
+                  ?.qrCodes?.map(qrCode => (
+                    <div key={qrCode.id} className="p-4 bg-gray-50 rounded-lg space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <span className="font-medium text-lg">{qrCode.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <QrCode size={14} className="text-gray-400" />
+                            <span className="text-sm text-gray-500">Created: {new Date(qrCode.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteQRCode(qrCode.id)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <img
+                          src={qrCode.imageUrl}
+                          alt={`QR Code - ${qrCode.name}`}
+                          className="w-24 h-24 object-contain bg-white rounded-lg"
+                        />
+                        <div className="flex-1">
+                          <span className="text-xs font-medium text-gray-600 block mb-2">
+                            Linked Categories:
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {qrCode.linkedCategories.map(categoryId => {
+                              const category = festivals
+                                .find(f => f.id === selectedFestival)
+                                ?.categories?.find(c => c.id === categoryId);
+                              
+                              return category ? (
+                                <span
+                                  key={categoryId}
+                                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                                >
+                                  {category.name}
+                                </span>
+                              ) : null;
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                
+                {(!festivals.find(f => f.id === selectedFestival)?.qrCodes?.length) && (
+                  <p className="text-center text-gray-500 py-4">No QR codes found</p>
+                )}
               </div>
             </div>
           </div>

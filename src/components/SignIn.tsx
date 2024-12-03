@@ -103,6 +103,9 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   const handleGoogleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
         const userRef = doc(db, "users", result.user.uid);

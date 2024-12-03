@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^18.0.15",
     "@types/react-dom": "^18.0.6",
     "@types/react-router-dom": "^5.3.3",
@@ -29,6 +30,7 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@react-three/drei": "^9.119.0",
     "@react-three/fiber": "^8.17.10",
+    "@types/qrcode.react": "^1.0.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
@@ -36,7 +38,10 @@
     "firebase": "^10.12.5",
     "framer-motion": "^11.11.17",
     "gsap": "^3.12.5",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.427.0",
+    "qrcode": "^1.5.4",
+    "qrcode.react": "^4.1.0",
     "react-router-dom": "^6.26.0",
     "tailwind-merge": "^2.5.5",
     "three": "^0.171.0"

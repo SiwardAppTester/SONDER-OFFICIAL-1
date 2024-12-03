@@ -16,3 +16,69 @@
 .animate-fade-in-up {
   animation: fade-in-up 0.6s ease-out forwards;
 }
+
+#qr-reader {
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+#qr-reader__scan_region {
+  min-height: 350px !important;
+  background: transparent !important;
+}
+
+#qr-reader__dashboard {
+  padding: 1rem !important;
+  background: transparent !important;
+}
+
+#qr-reader__dashboard button {
+  background: #9333ea !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.75rem 1.5rem !important;
+  border-radius: 1rem !important;
+  cursor: pointer !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s !important;
+  width: 100% !important;
+  max-width: 300px !important;
+  margin: 0 auto !important;
+  display: block !important;
+}
+
+#qr-reader__dashboard button:hover {
+  background: #7e22ce !important;
+  transform: translateY(-1px) !important;
+}
+
+#qr-reader__dashboard button:active {
+  transform: translateY(0) !important;
+}
+
+#qr-reader__camera_permission_button {
+  margin-top: 1rem !important;
+}
+
+#qr-reader__dashboard_section_swaplink {
+  display: none !important;
+}
+
+#qr-reader__dashboard_section_csr {
+  margin-bottom: 0 !important;
+}
+
+#qr-reader__dashboard_section_fsr {
+  display: none !important;
+}
+
+#qr-reader__status_span {
+  display: none !important;
+}
+
+#qr-reader video {
+  border-radius: 1rem !important;
+}
