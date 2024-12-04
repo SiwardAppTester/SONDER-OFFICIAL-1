@@ -596,6 +596,25 @@ const Home: React.FC = () => {
     
     try {
       const file = e.target.files[0];
+      
+      // Check if the file is an image or PDF
+      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+        setScanError("Please upload only image or PDF files");
+        return;
+      }
+
+      // For PDFs, we'll use the filename or generate a unique identifier
+      if (file.type === 'application/pdf') {
+        const pdfId = `PDF-${crypto.randomUUID()}`;
+        console.log("Processing PDF file with ID:", pdfId);
+        
+        // Process the PDF directly without scanning
+        const cleanedCode = pdfId;
+        processQRCodeContent(cleanedCode);
+        return;
+      }
+
+      // For images, proceed with QR scanning
       const reader = new FileReader();
       
       reader.onload = async (event) => {
@@ -608,59 +627,9 @@ const Home: React.FC = () => {
           console.log("Scanned QR code content:", decodedText);
           setShowQRScanner(false);
 
-          // Process QR code directly
+          // Process QR code
           const cleanedCode = decodedText.trim().toLowerCase();
-          
-          // Find matching festival and QR code
-          let matchingFestival: Festival | undefined;
-          let matchingQRCode: any;
-
-          for (const festival of festivals) {
-            const qrCode = festival.qrCodes?.find(qr => {
-              if (!qr?.code) return false;
-              const qrCodeClean = qr.code.trim().toLowerCase();
-              return qrCodeClean === cleanedCode;
-            });
-            
-            if (qrCode) {
-              matchingFestival = festival;
-              matchingQRCode = qrCode;
-              break;
-            }
-          }
-
-          if (matchingFestival && matchingQRCode && user) {
-            // Update user's access
-            const userRef = doc(db, "users", user.uid);
-            const userDoc = await getDoc(userRef);
-            const userData = userDoc.data();
-
-            await updateDoc(userRef, {
-              accessibleFestivals: arrayUnion(matchingFestival.id),
-              accessibleCategories: {
-                ...(userData?.accessibleCategories || {}),
-                [matchingFestival.id]: matchingQRCode.linkedCategories
-              }
-            });
-
-            // Update local state and navigate directly
-            setAccessibleFestivals(prev => new Set([...prev, matchingFestival.id]));
-            setAccessibleCategories(prev => ({
-              ...prev,
-              [matchingFestival.id]: matchingQRCode.linkedCategories
-            }));
-
-            // Navigate directly to content view
-            setSelectedFestival(matchingFestival.id);
-            setShowFestivalList(false);
-            setShowAccessInput(false);
-            if (matchingQRCode.linkedCategories.length > 0) {
-              setSelectedCategory(matchingQRCode.linkedCategories[0]);
-            }
-          } else {
-            setGeneralAccessError("Invalid QR code");
-          }
-          
+          processQRCodeContent(cleanedCode);
         } catch (error) {
           console.error("Error scanning QR code file:", error);
           setScanError("Failed to read QR code from image. Please try again.");
@@ -671,6 +640,58 @@ const Home: React.FC = () => {
     } catch (error) {
       console.error("Error handling file upload:", error);
       setScanError("Error processing file. Please try again.");
+    }
+  };
+
+  const processQRCodeContent = async (cleanedCode: string) => {
+    // Find matching festival and QR code
+    let matchingFestival: Festival | undefined;
+    let matchingQRCode: any;
+
+    for (const festival of festivals) {
+      const qrCode = festival.qrCodes?.find(qr => {
+        if (!qr?.code) return false;
+        const qrCodeClean = qr.code.trim().toLowerCase();
+        return qrCodeClean === cleanedCode;
+      });
+      
+      if (qrCode) {
+        matchingFestival = festival;
+        matchingQRCode = qrCode;
+        break;
+      }
+    }
+
+    if (matchingFestival && matchingQRCode && user) {
+      // Update user's access
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+
+      await updateDoc(userRef, {
+        accessibleFestivals: arrayUnion(matchingFestival.id),
+        accessibleCategories: {
+          ...(userData?.accessibleCategories || {}),
+          [matchingFestival.id]: matchingQRCode.linkedCategories
+        }
+      });
+
+      // Update local state and navigate directly
+      setAccessibleFestivals(prev => new Set([...prev, matchingFestival.id]));
+      setAccessibleCategories(prev => ({
+        ...prev,
+        [matchingFestival.id]: matchingQRCode.linkedCategories
+      }));
+
+      // Navigate directly to content view
+      setSelectedFestival(matchingFestival.id);
+      setShowFestivalList(false);
+      setShowAccessInput(false);
+      if (matchingQRCode.linkedCategories.length > 0) {
+        setSelectedCategory(matchingQRCode.linkedCategories[0]);
+      }
+    } else {
+      setGeneralAccessError("Invalid QR code");
     }
   };
 
@@ -1075,7 +1096,7 @@ const Home: React.FC = () => {
               <div className="relative">
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,application/pdf"
                   onChange={handleQRFileUpload}
                   className="hidden"
                   id="qr-file-input"
@@ -1086,7 +1107,7 @@ const Home: React.FC = () => {
                            transition-colors duration-200 font-medium cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Upload size={20} />
-                  Upload QR Code Image
+                  Upload QR Code Image or PDF
                 </label>
               </div>
 
