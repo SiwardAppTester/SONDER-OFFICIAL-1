@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { collection, addDoc, query, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { User } from 'firebase/auth';
 import { Menu, X } from "lucide-react";
 import Sidebar from "./Sidebar";
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface Event {
   id: string;
@@ -56,6 +59,39 @@ const euCapitals = [
   { city: "Stockholm", country: "Sweden" },
   { city: "Dublin", country: "Ireland" }
 ];
+
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-white text-xl">
+        {progress.toFixed(0)}% loaded
+      </div>
+    </Html>
+  )
+}
+
+function InnerSphere() {
+  return (
+    <>
+      <Environment preset="sunset" />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      
+      <mesh scale={[-15, -15, -15]}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          side={THREE.BackSide}
+          color="#1a1a1a"
+          metalness={0.9}
+          roughness={0.1}
+          envMapIntensity={1}
+        />
+      </mesh>
+    </>
+  )
+}
 
 const Calendar: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -213,471 +249,525 @@ const Calendar: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
-      {/* Navigation - adjusted for mobile */}
-      <div className="flex justify-between items-center p-2 md:p-4">
-        <button
-          onClick={() => setIsNavOpen(!isNavOpen)}
-          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
-          aria-label="Toggle navigation menu"
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Three.js Background */}
+      <div className="absolute inset-0">
+        <Canvas
+          className="w-full h-full"
+          gl={{ antialias: true, alpha: true }}
         >
-          <Menu size={28} />
-        </button>
+          <Suspense fallback={<Loader />}>
+            <InnerSphere />
+          </Suspense>
+        </Canvas>
       </div>
 
-      {/* Sidebar */}
-      <Sidebar
-        isNavOpen={isNavOpen}
-        setIsNavOpen={setIsNavOpen}
-        user={currentUser}
-        userProfile={userProfile}
-        accessibleFestivalsCount={accessibleFestivals.size}
-      />
-
-      {/* Main Content - adjusted for intermediate desktop size */}
-      <div className="max-w-4xl lg:max-w-6xl mx-auto px-2 md:px-4 lg:px-6 mt-2">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-3 md:p-4 lg:p-5 mb-6">
-          {/* Filters Section */}
-          <div className="space-y-2 mb-4">
-            {/* Genre Filter */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setIsGenreFilterOpen(!isGenreFilterOpen)}
-                className="w-full px-3 py-2 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-gray-700">Filter by Genre</h3>
-                  {selectedGenres.size > 0 && (
-                    <span className="bg-purple-100 text-purple-800 text-xs px-1.5 py-0.5 rounded-full">
-                      {selectedGenres.size}
-                    </span>
-                  )}
-                </div>
-                <svg 
-                  className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
-                    isGenreFilterOpen ? 'transform rotate-180' : ''
-                  }`}
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {isGenreFilterOpen && (
-                <div className="p-2">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        value={genreSearch}
-                        onChange={(e) => setGenreSearch(e.target.value)}
-                        placeholder="Search genres..."
-                        className="w-full px-2 py-1 text-xs rounded-md border border-gray-200 
-                                 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                      />
-                      {genreSearch && (
-                        <button
-                          onClick={() => setGenreSearch('')}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-                    {selectedGenres.size > 0 && (
-                      <button
-                        onClick={() => setSelectedGenres(new Set())}
-                        className="text-purple-600 hover:text-purple-700 text-xs whitespace-nowrap"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {filteredGenres.map(genre => (
-                      <button
-                        key={genre}
-                        onClick={() => toggleGenre(genre)}
-                        className={`px-2 py-1 rounded-full text-xs transition-all transform hover:scale-105 ${
-                          selectedGenres.has(genre)
-                            ? "bg-purple-600 text-white shadow-sm shadow-purple-200"
-                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-                        }`}
-                      >
-                        {genre}
-                      </button>
-                    ))}
-                    {filteredGenres.length === 0 && (
-                      <p className="text-xs text-gray-500 py-1">No matching genres found</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Artist Filter */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setIsArtistFilterOpen(!isArtistFilterOpen)}
-                className="w-full px-3 py-2 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-gray-700">Filter by Artist</h3>
-                  {selectedArtists.size > 0 && (
-                    <span className="bg-purple-100 text-purple-800 text-xs px-1.5 py-0.5 rounded-full">
-                      {selectedArtists.size}
-                    </span>
-                  )}
-                </div>
-                <svg 
-                  className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
-                    isArtistFilterOpen ? 'transform rotate-180' : ''
-                  }`}
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {isArtistFilterOpen && (
-                <div className="p-2">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        value={artistSearch}
-                        onChange={(e) => setArtistSearch(e.target.value)}
-                        placeholder="Search artists..."
-                        className="w-full px-2 py-1 text-xs rounded-md border border-gray-200 
-                                 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                      />
-                      {artistSearch && (
-                        <button
-                          onClick={() => setArtistSearch('')}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-                    {selectedArtists.size > 0 && (
-                      <button
-                        onClick={() => setSelectedArtists(new Set())}
-                        className="text-purple-600 hover:text-purple-700 text-xs whitespace-nowrap"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {filteredArtists.map(artist => (
-                      <button
-                        key={artist}
-                        onClick={() => toggleArtist(artist)}
-                        className={`px-2 py-1 rounded-full text-xs transition-all transform hover:scale-105 ${
-                          selectedArtists.has(artist)
-                            ? "bg-purple-600 text-white shadow-sm shadow-purple-200"
-                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-                        }`}
-                      >
-                        {artist}
-                      </button>
-                    ))}
-                    {filteredArtists.length === 0 && (
-                      <p className="text-xs text-gray-500 py-1">No matching artists found</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Location Filter */}
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setIsLocationFilterOpen(!isLocationFilterOpen)}
-                className="w-full px-3 py-2 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-medium text-gray-700">Filter by Location</h3>
-                  {selectedLocations.size > 0 && (
-                    <span className="bg-purple-100 text-purple-800 text-xs px-1.5 py-0.5 rounded-full">
-                      {selectedLocations.size}
-                    </span>
-                  )}
-                </div>
-                <svg 
-                  className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
-                    isLocationFilterOpen ? 'transform rotate-180' : ''
-                  }`}
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {isLocationFilterOpen && (
-                <div className="p-2">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        value={locationSearch}
-                        onChange={(e) => setLocationSearch(e.target.value)}
-                        placeholder="Search locations..."
-                        className="w-full px-2 py-1 text-xs rounded-md border border-gray-200 
-                                 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                      />
-                      {locationSearch && (
-                        <button
-                          onClick={() => setLocationSearch('')}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-                    {selectedLocations.size > 0 && (
-                      <button
-                        onClick={() => setSelectedLocations(new Set())}
-                        className="text-purple-600 hover:text-purple-700 text-xs whitespace-nowrap"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {filteredLocations.map(({ city }) => (
-                      <button
-                        key={city}
-                        onClick={() => toggleLocation(city)}
-                        className={`px-2 py-1 rounded-full text-xs transition-all transform hover:scale-105 ${
-                          selectedLocations.has(city)
-                            ? "bg-purple-600 text-white shadow-sm shadow-purple-200"
-                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-                        }`}
-                      >
-                        {city}
-                      </button>
-                    ))}
-                    {filteredLocations.length === 0 && (
-                      <p className="text-xs text-gray-500 py-1">No matching locations found</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Month Navigation - slightly reduced from previous */}
-          <div className="flex justify-between items-center mb-4 lg:mb-5">
-            <button
-              onClick={handlePreviousMonth}
-              className="bg-purple-600 text-white px-3 md:px-6 py-1.5 md:py-2 lg:py-2.5 text-sm md:text-base lg:text-lg rounded-full hover:bg-purple-700 transition-colors"
-            >
-              Previous
-            </button>
-            <h2 className="text-lg md:text-2xl lg:text-2xl font-bold text-gray-900">
-              {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-            </h2>
-            <button
-              onClick={handleNextMonth}
-              className="bg-purple-600 text-white px-3 md:px-6 py-1.5 md:py-2 lg:py-2.5 text-sm md:text-base lg:text-lg rounded-full hover:bg-purple-700 transition-colors"
-            >
-              Next
-            </button>
-          </div>
-
-          {/* Calendar Grid - adjusted cell size */}
-          <div className="grid grid-cols-7 gap-1 lg:gap-1.5">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-              <div key={day} className="text-center font-semibold text-gray-700 py-1 lg:py-1.5 text-xs md:text-sm lg:text-base">
-                {day}
-              </div>
-            ))}
-            {getMonthData().map((day, index) => {
-              const date = day ? formatDate(
-                currentMonth.getFullYear(),
-                currentMonth.getMonth(),
-                day
-              ) : '';
-              const dayEvents = filterEvents(events.filter(event => event.date === date));
-
-              return (
-                <div
-                  key={index}
-                  className={`min-h-[60px] md:min-h-[80px] lg:min-h-[100px] border rounded-xl p-1.5 md:p-2 lg:p-2.5 transition-all duration-300 
-                    ${day ? 'cursor-pointer hover:shadow-lg transform hover:scale-[1.02]' : ''}
-                    ${selectedDate === date ? 'bg-purple-50 border-purple-200' : 'bg-white/60'}
-                    ${!day ? 'bg-gray-50/30' : ''}`}
-                  onClick={() => day && handleDayClick(date)}
-                >
-                  {day && (
-                    <>
-                      <div className="font-semibold text-gray-900 text-xs md:text-sm lg:text-base">{day}</div>
-                      {dayEvents.length > 0 && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center justify-center bg-purple-100 text-purple-800 text-[10px] md:text-xs lg:text-sm font-medium px-1.5 md:px-2 lg:px-2.5 py-0.5 rounded-full">
-                            {dayEvents.length}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen">
+        {/* Navigation */}
+        <div className="flex justify-center items-center pt-16 pb-1">
+          {/* Logo */}
+          <div className="text-[40px] font-[500] tracking-[0.12em] text-white/95 font-['Outfit']
+                        drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
+                        transition-all duration-700 ease-out
+                        hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]">
+            SONDER
           </div>
         </div>
-      </div>
 
-      {/* Event Modal - adjusted for mobile */}
-      {showEventModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-0">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 w-full max-w-lg mx-2 md:mx-4 shadow-2xl border border-gray-100">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-gray-900">
-                Events for {new Date(selectedDate).toLocaleDateString('default', { 
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-                {selectedGenres.size > 0 && (
-                  <span className="text-xs md:text-sm font-normal text-gray-600 block mt-1">
-                    Filtered by: {Array.from(selectedGenres).join(", ")}
-                  </span>
-                )}
-              </h2>
-              <button
-                onClick={() => setShowEventModal(false)}
-                className="text-purple-600 hover:text-purple-700 transition-colors"
-              >
-                <X size={20} className="md:w-6 md:h-6" />
-              </button>
-            </div>
+        {/* Sidebar */}
+        <Sidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={currentUser}
+          userProfile={userProfile}
+        />
 
-            <div className="space-y-3 max-h-[60vh] md:max-h-[70vh] overflow-y-auto pr-2">
-              {filterEvents(events.filter(event => event.date === selectedDate))
-                .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
-                .map(event => (
-                  <div
-                    key={event.id}
-                    className="bg-white rounded-2xl p-3 md:p-4 shadow-lg hover:shadow-xl 
-                             transform hover:scale-[1.02] transition-all duration-300
-                             border border-gray-100"
-                  >
-                    <div className="flex justify-between items-start flex-wrap gap-2">
-                      <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                      {(event.startTime || event.endTime) && (
-                        <span className="bg-purple-100 text-purple-800 px-3 md:px-4 py-1 rounded-full text-xs md:text-sm font-medium">
-                          {event.startTime && event.endTime 
-                            ? `${event.startTime} - ${event.endTime}`
-                            : event.startTime || event.endTime}
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-gray-600 text-base md:text-lg mb-3">{event.description}</p>
-
-                    {/* Event Details Section */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {/* Location */}
-                      {event.city && (
-                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
-                          <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span className="text-xs text-gray-600">
-                            {event.city}{event.country ? `, ${event.country}` : ''}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Artists */}
-                      {event.artists && event.artists.length > 0 && (
-                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
-                          <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span className="text-xs text-gray-600">
-                            {event.artists.join(', ')}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Genre */}
-                      {event.genre && (
-                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
-                          <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                          </svg>
-                          <span className="text-xs text-gray-600">{event.genre}</span>
-                        </div>
-                      )}
-
-                      {/* Organizer */}
-                      {event.createdBy && (
-                        <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full">
-                          <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span className="text-xs text-gray-600">{event.createdBy}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Event Type Tags */}
-                    <div className="flex flex-wrap gap-1.5 md:gap-2">
-                      {event.festivalId && (
-                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Festival Event
-                        </span>
-                      )}
-                      {event.isBusinessEvent && (
-                        <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Business Event
-                        </span>
-                      )}
-                      {event.isPublic !== undefined && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          event.isPublic 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {event.isPublic ? 'Public' : 'Private'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-              {filterEvents(events.filter(event => event.date === selectedDate)).length === 0 && (
-                <div className="text-center py-6 md:py-8">
-                  <p className="text-gray-500 text-base md:text-lg">
-                    No events scheduled for this day
+        {/* Main Calendar Content */}
+        <div className="max-w-4xl mx-auto px-4 mt-1">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                         p-6 border border-white/20">
+            {/* Filters Section */}
+            <div className="space-y-3 mb-6">
+              {/* Genre Filter */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                      border border-white/20 overflow-hidden">
+                <button
+                  onClick={() => setIsGenreFilterOpen(!isGenreFilterOpen)}
+                  className="w-full px-4 py-3 flex justify-between items-center 
+                            hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-white/90 font-['Space_Grotesk'] tracking-wider">Filter by Genre</h3>
                     {selectedGenres.size > 0 && (
-                      <span className="block mt-2 text-xs md:text-sm">
-                        Filtered by: {Array.from(selectedGenres).join(", ")}
+                      <span className="bg-white/10 text-white/90 px-2 py-0.5 rounded-full text-sm">
+                        {selectedGenres.size}
                       </span>
                     )}
-                  </p>
+                  </div>
+                  <svg 
+                    className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
+                      isGenreFilterOpen ? 'transform rotate-180' : ''
+                    }`}
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {isGenreFilterOpen && (
+                  <div className="p-4 border-t border-white/10">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={genreSearch}
+                          onChange={(e) => setGenreSearch(e.target.value)}
+                          placeholder="Search genres..."
+                          className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 
+                                   text-white placeholder-white/50 font-['Space_Grotesk']
+                                   focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                        />
+                        {genreSearch && (
+                          <button
+                            onClick={() => setGenreSearch('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                      {selectedGenres.size > 0 && (
+                        <button
+                          onClick={() => setSelectedGenres(new Set())}
+                          className="text-white/60 hover:text-white/90 text-sm font-['Space_Grotesk'] tracking-wider"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {filteredGenres.map(genre => (
+                        <button
+                          key={genre}
+                          onClick={() => toggleGenre(genre)}
+                          className={`px-3 py-1.5 rounded-full text-sm transition-all transform hover:scale-105
+                                     font-['Space_Grotesk'] tracking-wider ${
+                            selectedGenres.has(genre)
+                              ? "bg-white/20 text-white border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                              : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          {genre}
+                        </button>
+                      ))}
+                      {filteredGenres.length === 0 && (
+                        <p className="text-white/50 text-sm font-['Space_Grotesk'] py-1">No matching genres found</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Artist Filter */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                      border border-white/20 overflow-hidden">
+                <button
+                  onClick={() => setIsArtistFilterOpen(!isArtistFilterOpen)}
+                  className="w-full px-4 py-3 flex justify-between items-center 
+                            hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-white/90 font-['Space_Grotesk'] tracking-wider">Filter by Artist</h3>
+                    {selectedArtists.size > 0 && (
+                      <span className="bg-white/10 text-white/90 px-2 py-0.5 rounded-full text-sm">
+                        {selectedArtists.size}
+                      </span>
+                    )}
+                  </div>
+                  <svg 
+                    className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
+                      isArtistFilterOpen ? 'transform rotate-180' : ''
+                    }`}
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isArtistFilterOpen && (
+                  <div className="p-4 border-t border-white/10">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={artistSearch}
+                          onChange={(e) => setArtistSearch(e.target.value)}
+                          placeholder="Search artists..."
+                          className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 
+                                   text-white placeholder-white/50 font-['Space_Grotesk']
+                                   focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                        />
+                        {artistSearch && (
+                          <button
+                            onClick={() => setArtistSearch('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                      {selectedArtists.size > 0 && (
+                        <button
+                          onClick={() => setSelectedArtists(new Set())}
+                          className="text-white/60 hover:text-white/90 text-sm font-['Space_Grotesk'] tracking-wider"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {filteredArtists.map(artist => (
+                        <button
+                          key={artist}
+                          onClick={() => toggleArtist(artist)}
+                          className={`px-3 py-1.5 rounded-full text-sm transition-all transform hover:scale-105
+                                     font-['Space_Grotesk'] tracking-wider ${
+                            selectedArtists.has(artist)
+                              ? "bg-white/20 text-white border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                              : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          {artist}
+                        </button>
+                      ))}
+                      {filteredArtists.length === 0 && (
+                        <p className="text-white/50 text-sm font-['Space_Grotesk'] py-1">No matching artists found</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Location Filter */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                      border border-white/20 overflow-hidden">
+                <button
+                  onClick={() => setIsLocationFilterOpen(!isLocationFilterOpen)}
+                  className="w-full px-4 py-3 flex justify-between items-center 
+                            hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-white/90 font-['Space_Grotesk'] tracking-wider">Filter by Location</h3>
+                    {selectedLocations.size > 0 && (
+                      <span className="bg-white/10 text-white/90 px-2 py-0.5 rounded-full text-sm">
+                        {selectedLocations.size}
+                      </span>
+                    )}
+                  </div>
+                  <svg 
+                    className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
+                      isLocationFilterOpen ? 'transform rotate-180' : ''
+                    }`}
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isLocationFilterOpen && (
+                  <div className="p-4 border-t border-white/10">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          value={locationSearch}
+                          onChange={(e) => setLocationSearch(e.target.value)}
+                          placeholder="Search locations..."
+                          className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 
+                                   text-white placeholder-white/50 font-['Space_Grotesk']
+                                   focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                        />
+                        {locationSearch && (
+                          <button
+                            onClick={() => setLocationSearch('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                      {selectedLocations.size > 0 && (
+                        <button
+                          onClick={() => setSelectedLocations(new Set())}
+                          className="text-white/60 hover:text-white/90 text-sm font-['Space_Grotesk'] tracking-wider"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {filteredLocations.map(({ city }) => (
+                        <button
+                          key={city}
+                          onClick={() => toggleLocation(city)}
+                          className={`px-3 py-1.5 rounded-full text-sm transition-all transform hover:scale-105
+                                     font-['Space_Grotesk'] tracking-wider ${
+                            selectedLocations.has(city)
+                              ? "bg-white/20 text-white border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                              : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          {city}
+                        </button>
+                      ))}
+                      {filteredLocations.length === 0 && (
+                        <p className="text-white/50 text-sm font-['Space_Grotesk'] py-1">No matching locations found</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Month Navigation */}
+            <div className="flex justify-between items-center mb-6">
+              <button
+                onClick={handlePreviousMonth}
+                className="px-6 py-2 border-2 border-white/30 rounded-full
+                         text-white font-['Space_Grotesk'] tracking-wider
+                         transition-all duration-300 
+                         hover:border-white/60 hover:scale-105
+                         hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              >
+                Previous
+              </button>
+              <h2 className="text-2xl font-['Space_Grotesk'] tracking-wider text-white/90">
+                {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+              </h2>
+              <button
+                onClick={handleNextMonth}
+                className="px-6 py-2 border-2 border-white/30 rounded-full
+                         text-white font-['Space_Grotesk'] tracking-wider
+                         transition-all duration-300 
+                         hover:border-white/60 hover:scale-105
+                         hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              >
+                Next
+              </button>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-2">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                <div key={day} className="text-center font-['Space_Grotesk'] tracking-wider text-white/70 py-2">
+                  {day}
                 </div>
-              )}
+              ))}
+              {getMonthData().map((day, index) => {
+                const date = day ? formatDate(
+                  currentMonth.getFullYear(),
+                  currentMonth.getMonth(),
+                  day
+                ) : '';
+                const dayEvents = filterEvents(events.filter(event => event.date === date));
+
+                return (
+                  <div
+                    key={index}
+                    className={`min-h-[80px] border rounded-xl p-3 transition-all duration-300 
+                      ${day ? 'cursor-pointer hover:scale-[1.02]' : ''}
+                      ${selectedDate === date ? 'bg-white/20 border-white/40' : 'border-white/20'}
+                      ${!day ? 'bg-transparent border-transparent' : 'bg-white/10'}
+                      hover:bg-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]`}
+                    onClick={() => day && handleDayClick(date)}
+                  >
+                    {day && (
+                      <>
+                        <div className="font-['Space_Grotesk'] tracking-wider text-white/90">{day}</div>
+                        {dayEvents.length > 0 && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center justify-center 
+                                           bg-white/10 text-white/90 text-xs font-medium 
+                                           px-2 py-0.5 rounded-full">
+                              {dayEvents.length}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
-      )}
+
+        {/* Event Modal */}
+        {showEventModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 w-full max-w-lg
+                           shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-['Space_Grotesk'] tracking-wider text-white/90">
+                  Events for {new Date(selectedDate).toLocaleDateString('default', { 
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                  {selectedGenres.size > 0 && (
+                    <span className="text-sm font-normal text-white/60 block mt-1">
+                      Filtered by: {Array.from(selectedGenres).join(", ")}
+                    </span>
+                  )}
+                </h2>
+                <button
+                  onClick={() => setShowEventModal(false)}
+                  className="text-white/70 hover:text-white/90 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                {filterEvents(events.filter(event => event.date === selectedDate))
+                  .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
+                  .map(event => (
+                    <div
+                      key={event.id}
+                      className="backdrop-blur-xl bg-white/5 rounded-2xl p-4 
+                               shadow-[0_0_30px_rgba(255,255,255,0.05)] border border-white/10
+                               hover:bg-white/10 hover:border-white/20 
+                               transform hover:scale-[1.02] transition-all duration-300"
+                    >
+                      <div className="flex justify-between items-start gap-3">
+                        <h3 className="text-xl font-['Space_Grotesk'] tracking-wide text-white/90">
+                          {event.title}
+                        </h3>
+                        {(event.startTime || event.endTime) && (
+                          <span className="bg-white/10 text-white/90 px-3 py-1 rounded-full 
+                                         text-sm font-['Space_Grotesk'] tracking-wider">
+                            {event.startTime && event.endTime 
+                              ? `${event.startTime} - ${event.endTime}`
+                              : event.startTime || event.endTime}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-white/70 text-base mt-2 mb-4 font-['Space_Grotesk']">
+                        {event.description}
+                      </p>
+
+                      {/* Event Details Section */}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {/* Location */}
+                        {event.city && (
+                          <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full
+                                        border border-white/10">
+                            <svg className="w-3.5 h-3.5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            </svg>
+                            <span className="text-sm text-white/80 font-['Space_Grotesk'] tracking-wide">
+                              {event.city}{event.country ? `, ${event.country}` : ''}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Artists */}
+                        {event.artists && event.artists.length > 0 && (
+                          <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full
+                                        border border-white/10">
+                            <svg className="w-3.5 h-3.5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span className="text-sm text-white/80 font-['Space_Grotesk'] tracking-wide">
+                              {event.artists.join(', ')}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Genre */}
+                        {event.genre && (
+                          <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full
+                                        border border-white/10">
+                            <svg className="w-3.5 h-3.5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                            </svg>
+                            <span className="text-sm text-white/80 font-['Space_Grotesk'] tracking-wide">
+                              {event.genre}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Organizer */}
+                        {event.createdBy && (
+                          <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full
+                                        border border-white/10">
+                            <svg className="w-3.5 h-3.5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span className="text-sm text-white/80 font-['Space_Grotesk'] tracking-wide">
+                              {event.createdBy}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Event Type Tags */}
+                      <div className="flex flex-wrap gap-2">
+                        {event.festivalId && (
+                          <span className="bg-white/10 text-white/90 px-3 py-1.5 rounded-full 
+                                         text-sm font-['Space_Grotesk'] tracking-wider border border-white/20">
+                            Festival Event
+                          </span>
+                        )}
+                        {event.isBusinessEvent && (
+                          <span className="bg-white/10 text-white/90 px-3 py-1.5 rounded-full 
+                                         text-sm font-['Space_Grotesk'] tracking-wider border border-white/20">
+                            Business Event
+                          </span>
+                        )}
+                        {event.isPublic !== undefined && (
+                          <span className={`px-3 py-1.5 rounded-full text-sm font-['Space_Grotesk'] tracking-wider 
+                                          border border-white/20 ${
+                            event.isPublic 
+                              ? 'bg-white/10 text-white/90' 
+                              : 'bg-white/5 text-white/80'
+                          }`}>
+                            {event.isPublic ? 'Public' : 'Private'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                {filterEvents(events.filter(event => event.date === selectedDate)).length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-white/70 text-lg font-['Space_Grotesk'] tracking-wide">
+                      No events scheduled for this day
+                      {selectedGenres.size > 0 && (
+                        <span className="block mt-2 text-sm text-white/50">
+                          Filtered by: {Array.from(selectedGenres).join(", ")}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

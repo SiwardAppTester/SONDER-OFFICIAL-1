@@ -54,6 +54,7 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState("");
   const [festivalCode] = useState(initialFestivalCode || "");
+  const [isBusinessAccount, setIsBusinessAccount] = useState(false);
 
   useEffect(() => {
     // Create admin account if it doesn't exist
@@ -153,7 +154,8 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
             createdAt: serverTimestamp(),
             followers: [],
             following: [],
-            isProfileComplete: false
+            isProfileComplete: false,
+            isBusinessAccount: isBusinessAccount
           });
           navigate("/complete-profile");
         }
@@ -200,11 +202,11 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col justify-center items-center">
         <div className="w-full max-w-md mx-auto px-4">
-          {/* Logo - reduced bottom margin and upward translation */}
-          <div className="text-[50px] md:text-[100px] font-[500] mb-2 tracking-[0.12em]  /* Changed mb-6 to mb-2 */
+          {/* Logo */}
+          <div className="text-[50px] md:text-[100px] font-[500] mb-2 tracking-[0.12em]
                         text-white/95 font-['Outfit']
                         drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
-                        transform -translate-y-4  /* Changed from -translate-y-10 */
+                        transform -translate-y-4
                         transition-all duration-700 ease-out
                         hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]
                         flex justify-center">
@@ -214,6 +216,25 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
           {/* Sign In Form - no translation needed */}
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
                         p-8 w-full max-w-md mx-auto border border-white/20">
+            {/* Account Type Toggle */}
+            <div className="flex justify-center items-center mb-8 space-x-4">
+              <span className={`text-sm font-['Space_Grotesk'] tracking-wider transition-colors duration-300 ${!isBusinessAccount ? 'text-white' : 'text-white/50'}`}>
+                Personal
+              </span>
+              <button
+                onClick={() => setIsBusinessAccount(!isBusinessAccount)}
+                className="relative w-14 h-7 rounded-full bg-white/10 border border-white/20 transition-colors duration-300"
+              >
+                <div
+                  className={`absolute top-1 left-1 w-5 h-5 rounded-full transition-transform duration-300 ease-in-out
+                            ${isBusinessAccount ? 'translate-x-7 bg-[#EA4335]/90' : 'translate-x-0 bg-white/90'}`}
+                ></div>
+              </button>
+              <span className={`text-sm font-['Space_Grotesk'] tracking-wider transition-colors duration-300 ${isBusinessAccount ? 'text-white' : 'text-white/50'}`}>
+                Business
+              </span>
+            </div>
+
             <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] mb-6 text-center text-white/90 min-w-[300px]">
               {isRegistering ? "Create Account" : "Welcome Back"}
             </h2>
@@ -271,48 +292,53 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
               </div>
             </form>
 
-            {/* Divider */}
-            <div className="flex items-center mb-6">
-              <div className="flex-grow border-t border-white/20"></div>
-              <span className="px-4 text-white/50 text-sm font-['Space_Grotesk']">OR</span>
-              <div className="flex-grow border-t border-white/20"></div>
-            </div>
+            {/* Only show social sign-in options for personal accounts */}
+            {!isBusinessAccount && (
+              <>
+                {/* Divider */}
+                <div className="flex items-center mb-6">
+                  <div className="flex-grow border-t border-white/20"></div>
+                  <span className="px-4 text-white/50 text-sm font-['Space_Grotesk']">OR</span>
+                  <div className="flex-grow border-t border-white/20"></div>
+                </div>
 
-            {/* Google Sign In Button */}
-            <button
-              onClick={handleGoogleSignIn}
-              className="w-full bg-white/10 text-white font-['Space_Grotesk'] tracking-wider
-                       py-3 px-4 border border-white/20 rounded-lg 
-                       shadow-[0_0_20px_rgba(255,255,255,0.1)]
-                       hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                       hover:bg-white/20
-                       transition-all duration-300 
-                       flex items-center justify-center gap-3 mb-3"
-            >
-              <img
-                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                alt="Google logo"
-                className="w-6 h-6"
-              />
-              Sign in with Google
-            </button>
+                {/* Google Sign In Button */}
+                <button
+                  onClick={handleGoogleSignIn}
+                  className="w-full bg-white/10 text-white font-['Space_Grotesk'] tracking-wider
+                           py-3 px-4 border border-white/20 rounded-lg 
+                           shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                           hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                           hover:bg-white/20
+                           transition-all duration-300 
+                           flex items-center justify-center gap-3 mb-3"
+                >
+                  <img
+                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                    alt="Google logo"
+                    className="w-6 h-6"
+                  />
+                  Sign in with Google
+                </button>
 
-            {/* Apple Sign In Button */}
-            <button
-              onClick={() => console.log('Apple sign in - to be implemented')}
-              className="w-full bg-black/40 text-white font-['Space_Grotesk'] tracking-wider
-                       py-3 px-4 border border-white/20 rounded-lg
-                       shadow-[0_0_20px_rgba(255,255,255,0.1)]
-                       hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                       hover:bg-black/60
-                       transition-all duration-300 
-                       flex items-center justify-center gap-3"
-            >
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.2 0-.83.37-1.54.32-2.44-.06-3.16-1.34-4.95-6.42-2.91-10.41.75-1.45 1.9-2.23 3.33-2.26 1.19-.02 1.96.74 2.93.77 1.02-.23 2-.95 3.08-.84 1.21.13 2.19.63 2.84 1.6-2.41 1.52-1.87 4.67.57 5.77-.55 1.65-1.28 3.28-2.12 5.03zm-3.14-17.01c-.92.11-2.03.89-2.5 2.06 1.04.11 2.07-.73 2.5-2.06z"/>
-              </svg>
-              Sign in with Apple
-            </button>
+                {/* Apple Sign In Button */}
+                <button
+                  onClick={() => console.log('Apple sign in - to be implemented')}
+                  className="w-full bg-black/40 text-white font-['Space_Grotesk'] tracking-wider
+                           py-3 px-4 border border-white/20 rounded-lg
+                           shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                           hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                           hover:bg-black/60
+                           transition-all duration-300 
+                           flex items-center justify-center gap-3"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.2 0-.83.37-1.54.32-2.44-.06-3.16-1.34-4.95-6.42-2.91-10.41.75-1.45 1.9-2.23 3.33-2.26 1.19-.02 1.96.74 2.93.77 1.02-.23 2-.95 3.08-.84 1.21.13 2.19.63 2.84 1.6-2.41 1.52-1.87 4.67.57 5.77-.55 1.65-1.28 3.28-2.12 5.03zm-3.14-17.01c-.92.11-2.03.89-2.5 2.06 1.04.11 2.07-.73 2.5-2.06z"/>
+                  </svg>
+                  Sign in with Apple
+                </button>
+              </>
+            )}
           </div>
 
           <p className="text-center text-white/60 mt-8 font-['Space_Grotesk'] tracking-wider
