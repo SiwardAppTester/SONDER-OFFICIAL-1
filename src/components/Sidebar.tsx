@@ -272,7 +272,76 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      <div className={`fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+      {/* Desktop Top Bar */}
+      <div className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-rose-50 to-rose-100 shadow-lg z-50">
+        <div className="container mx-auto px-4 flex items-center justify-between">
+          {/* Logo/Brand */}
+          <div className="flex items-center space-x-4">
+            {/* Add your logo here */}
+            <span className="text-xl font-bold text-purple-600">Your Logo</span>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="flex items-center space-x-6">
+            {[
+              { to: "/", icon: HomeIcon, label: "Home" },
+              { to: "/discover", icon: Compass, label: "Discover" },
+              { to: "/search", icon: SearchIcon, label: "Search" },
+              { to: "/chat", icon: MessageCircle, label: "Messages" },
+              { to: "/calendar", icon: CalendarIcon, label: "Calendar" }
+            ].map(({ to, icon: Icon, label }) => (
+              <Link
+                key={to}
+                to={to}
+                className="flex items-center space-x-2 p-2 rounded-lg
+                  hover:bg-white/70 transition-all duration-300 group"
+              >
+                <Icon size={18} className="text-purple-600 group-hover:scale-110 transition-transform duration-300" />
+                <span className="text-gray-800 font-medium">{label}</span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Profile Section */}
+          <div className="flex items-center space-x-4">
+            <div className="relative group">
+              <div 
+                className="cursor-pointer flex items-center space-x-2"
+                onClick={() => toggleDropdown('followers')}
+              >
+                {userProfile?.photoURL ? (
+                  <img
+                    src={userProfile.photoURL}
+                    alt="Profile"
+                    className="w-10 h-10 rounded-full shadow-lg hover:shadow-purple-500/50 
+                             transition-all duration-300 object-cover border-2 border-white"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-purple-500/50 
+                                transition-all duration-300 flex items-center justify-center
+                                text-xl font-semibold text-purple-600">
+                    {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
+                  </div>
+                )}
+                <span className="text-gray-800 font-medium">
+                  @{userProfile?.username || user?.email?.split('@')[0] || 'anonymous'}
+                </span>
+              </div>
+              {/* Add dropdown menu for profile options if needed */}
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold
+                transition-all duration-300 hover:bg-purple-700 active:scale-95"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar - keeping the existing sidebar code but only showing on mobile */}
+      <div className={`md:hidden fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
       } overflow-y-auto overflow-x-hidden`}>
         {/* Close button */}
@@ -490,30 +559,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* Enhanced Navigation Links */}
-        <div className="flex-1 px-6 pt-4">
-          <div className="space-y-2">
-            {[
-              { to: "/", icon: HomeIcon, label: "Home" },
-              { to: "/discover", icon: Compass, label: "Discover" },
-              { to: "/search", icon: SearchIcon, label: "Search" },
-              { to: "/chat", icon: MessageCircle, label: "Messages" },
-              { to: "/calendar", icon: CalendarIcon, label: "Calendar" }
-            ].map(({ to, icon: Icon, label }) => (
-              <Link
-                key={to}
-                to={to}
-                className="flex items-center space-x-4 p-4 bg-white/50 backdrop-blur-sm rounded-xl
-                  hover:bg-white/70 transition-all duration-300 transform hover:scale-102
-                  hover:shadow-lg hover:shadow-purple-500/20 group"
-              >
-                <Icon size={20} className="text-purple-600 group-hover:scale-110 transition-transform duration-300" />
-                <span className="text-gray-800 font-medium">{label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
         {/* Enhanced Sign Out Button */}
         <div className="p-6">
           <button
@@ -529,13 +574,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Overlay */}
+      {/* Mobile Overlay */}
       {isNavOpen && (
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300"
+          className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300"
           onClick={() => setIsNavOpen(false)}
         />
       )}
+
+      {/* Spacer for content below the fixed top bar on desktop */}
+      <div className="hidden md:block h-16" />
     </>
   );
 };
