@@ -340,7 +340,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Sidebar - keeping the existing sidebar code but only showing on mobile */}
+      {/* Mobile Sidebar */}
       <div className={`md:hidden fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
       } overflow-y-auto overflow-x-hidden`}>
@@ -371,7 +371,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Profile Image Section - Moved above Stats Grid */}
+        {/* Profile Image Section */}
         <div className="px-6 mb-4">
           <div className="flex flex-col items-center">
             <div className="relative transform hover:scale-105 transition-all duration-300">
@@ -452,6 +452,31 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Navigation Links for Mobile */}
+        <div className="px-4 py-6">
+          <div className="space-y-2">
+            {[
+              { to: "/", icon: HomeIcon, label: "Home" },
+              { to: "/discover", icon: Compass, label: "Discover" },
+              { to: "/search", icon: SearchIcon, label: "Search" },
+              { to: "/chat", icon: MessageCircle, label: "Messages" },
+              { to: "/calendar", icon: CalendarIcon, label: "Calendar" }
+            ].map(({ to, icon: Icon, label }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setIsNavOpen(false)}
+                className="flex items-center space-x-3 p-3 rounded-xl
+                  hover:bg-white/70 transition-all duration-300 group
+                  bg-white/40 backdrop-blur-sm"
+              >
+                <Icon size={20} className="text-purple-600 group-hover:scale-110 transition-transform duration-300" />
+                <span className="text-gray-800 font-medium">{label}</span>
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Enhanced Dropdown Content */}

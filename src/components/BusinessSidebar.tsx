@@ -140,7 +140,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
                 username: userData.username || 'anonymous',
                 displayName: userData.displayName,
                 photoURL: userData.photoURL
-              };
+              } as UserDetails;
             }
             return null;
           })
@@ -486,6 +486,44 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
               </div>
             </div>
           )}
+
+          {/* Navigation Links for Mobile */}
+          <div className="px-6 mt-4">
+            <div className="space-y-2">
+              {[
+                { to: "/add-post", icon: Plus, label: "Create Post" },
+                { to: "/discover", icon: SearchIcon, label: "Discover" },
+                { to: "/business-dashboard", icon: HomeIcon, label: "Dashboard" },
+                { to: "/chat", icon: MessageCircle, label: "Messages" },
+                { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" }
+              ].map(({ to, icon: Icon, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setIsNavOpen(false)}
+                  className="flex items-center space-x-3 p-3 rounded-xl
+                    bg-white/60 backdrop-blur-sm
+                    hover:bg-white/80 transition-all duration-300 group
+                    border border-purple-100/50"
+                >
+                  <Icon size={18} className="text-purple-600 group-hover:scale-110 transition-transform duration-300" />
+                  <span className="text-gray-800 font-medium">{label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Sign Out Button for Mobile */}
+          <div className="px-6 mt-6 mb-8">
+            <button
+              onClick={handleSignOut}
+              className="w-full px-4 py-3 rounded-xl bg-purple-600 text-white font-semibold
+                transition-all duration-300 hover:bg-purple-700 active:scale-95
+                flex items-center justify-center space-x-2"
+            >
+              <span>Sign Out</span>
+            </button>
+          </div>
         </div>
       </div>
 
