@@ -266,13 +266,7 @@ const Calendar: React.FC = () => {
       <div className="relative z-10 min-h-screen">
         {/* Navigation */}
         <div className="flex justify-center items-center pt-16 pb-1">
-          {/* Logo */}
-          <div className="text-[40px] font-[500] tracking-[0.12em] text-white/95 font-['Outfit']
-                        drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
-                        transition-all duration-700 ease-out
-                        hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]">
-            SONDER
-          </div>
+          {/* Removing the SONDER logo div entirely */}
         </div>
 
         {/* Sidebar */}

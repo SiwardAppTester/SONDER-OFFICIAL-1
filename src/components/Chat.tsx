@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   collection,
@@ -18,6 +18,9 @@ import { Menu, Plus, Search, X, Share } from "lucide-react";
 import Sidebar from "./Sidebar";
 import BusinessSidebar from "./BusinessSidebar";
 import SinglePostView from "./SinglePostView";
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface Message {
   id: string;
@@ -89,6 +92,41 @@ const ChatAvatar: React.FC<{ user: ChatUser }> = ({ user }) => {
     </div>
   );
 };
+
+// Add the Loader component
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-white text-xl">
+        {progress.toFixed(0)}% loaded
+      </div>
+    </Html>
+  )
+}
+
+// Add the InnerSphere component
+function InnerSphere() {
+  return (
+    <>
+      <Environment preset="sunset" />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      
+      <mesh scale={[-15, -15, -15]}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          side={THREE.BackSide}
+          color="#1a1a1a"
+          metalness={0.9}
+          roughness={0.1}
+          envMapIntensity={1}
+        />
+      </mesh>
+    </>
+  )
+}
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -427,221 +465,233 @@ const Chat: React.FC = () => {
   if (!currentUser) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100 pb-4">
-      {/* Navigation */}
-      <div className="flex justify-between items-center p-4">
-        <button
-          onClick={() => setIsNavOpen(!isNavOpen)}
-          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
-          aria-label="Toggle navigation menu"
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Three.js Background */}
+      <div className="absolute inset-0">
+        <Canvas
+          className="w-full h-full"
+          gl={{ antialias: true, alpha: true }}
         >
-          <Menu size={28} />
-        </button>
+          <Suspense fallback={<Loader />}>
+            <InnerSphere />
+          </Suspense>
+        </Canvas>
       </div>
 
-      {/* Keep existing Sidebar components */}
-      {isBusinessAccount ? (
-        <BusinessSidebar
-          isNavOpen={isNavOpen}
-          setIsNavOpen={setIsNavOpen}
-          user={currentUser}
-          userProfile={userProfile}
-          accessibleFestivalsCount={accessibleFestivals.size}
-        />
-      ) : (
-        <Sidebar
-          isNavOpen={isNavOpen}
-          setIsNavOpen={setIsNavOpen}
-          user={currentUser}
-          userProfile={userProfile}
-          accessibleFestivalsCount={accessibleFestivals.size}
-        />
-      )}
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen">
+        {/* Navigation */}
+        <div className="flex justify-between items-center p-4">
+          <button
+            onClick={() => setIsNavOpen(!isNavOpen)}
+            className="text-white/90 hover:text-white transition-colors duration-300"
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={28} />
+          </button>
+        </div>
 
-      {/* Update the main content area */}
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden px-4 pb-4 h-[calc(100vh-8rem)] space-y-4 md:space-y-0">
-        {/* Users sidebar - updated for mobile */}
-        <div className={`w-full md:w-1/4 md:mr-4 h-full ${selectedUser ? 'hidden md:block' : 'block'}`}>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-6 h-full">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Chats</h2>
-              <button
-                onClick={() => setIsSearchModalOpen(true)}
-                className="p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-all duration-300 transform hover:scale-105"
-                aria-label="New chat"
-              >
-                <Plus size={20} />
-              </button>
-            </div>
+        {/* Keep existing Sidebar components with updated styling */}
+        {isBusinessAccount ? (
+          <BusinessSidebar
+            isNavOpen={isNavOpen}
+            setIsNavOpen={setIsNavOpen}
+            user={currentUser}
+            userProfile={userProfile}
+          />
+        ) : (
+          <Sidebar
+            isNavOpen={isNavOpen}
+            setIsNavOpen={setIsNavOpen}
+            user={currentUser}
+            userProfile={userProfile}
+          />
+        )}
 
-            {/* Search input - keep existing styling */}
-            <div className="mb-6">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search chats..."
-                className="w-full p-3 border rounded-lg focus:outline-none focus:border-purple-500 bg-white/50"
-              />
-            </div>
+        {/* Chat Layout */}
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden px-4 pb-4 h-[calc(100vh-8rem)] space-y-4 md:space-y-0">
+          {/* Users sidebar */}
+          <div className={`w-full md:w-1/4 md:mr-4 h-full ${selectedUser ? 'hidden md:block' : 'block'}`}>
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                          border border-white/20 p-6 h-full">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">Chats</h2>
+                <button
+                  onClick={() => setIsSearchModalOpen(true)}
+                  className="p-2 text-white/90 hover:text-white rounded-full 
+                           hover:bg-white/10 transition-all duration-300"
+                  aria-label="New chat"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
 
-            {/* Chats list - keep existing styling */}
-            <div className="space-y-3">
-              {filteredChats.length > 0 ? (
-                filteredChats.map((chat) => (
+              {/* Search input */}
+              <div className="mb-6">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search chats..."
+                  className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                           text-white placeholder-white/50 font-['Space_Grotesk']
+                           focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                />
+              </div>
+
+              {/* Chats list */}
+              <div className="space-y-3 overflow-y-auto">
+                {filteredChats.map((chat) => (
                   <div
                     key={chat.uid}
                     onClick={() => handleUserSelect(chat)}
-                    className={`flex items-center p-4 cursor-pointer rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                      selectedUser?.uid === chat.uid
-                        ? "bg-purple-100 shadow-md"
-                        : "hover:bg-white/50"
-                    }`}
+                    className={`flex items-center p-4 cursor-pointer rounded-xl 
+                              transition-all duration-300 transform hover:scale-[1.02]
+                              ${selectedUser?.uid === chat.uid
+                                ? "bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                                : "hover:bg-white/10"}`}
                   >
                     <ChatAvatar user={chat} />
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900">{chat.displayName}</div>
-                      <div className="text-sm text-gray-500 truncate">
+                      <div className="font-['Space_Grotesk'] text-white/90">{chat.displayName}</div>
+                      <div className="text-sm text-white/60 truncate">
                         {chat.isGroup ? `Group: ${chat.email}` : chat.email}
                       </div>
                       {chat.lastMessage && (
-                        <div className="text-sm text-gray-500 truncate">
+                        <div className="text-sm text-white/60 truncate">
                           {chat.lastMessage}
                         </div>
                       )}
                     </div>
-                    {chat.timestamp && (
-                      <div className="text-xs text-gray-400 ml-2">
-                        {new Date(chat.timestamp.seconds * 1000).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    )}
                   </div>
-                ))
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Chat area */}
+          <div className={`flex-1 h-full ${selectedUser ? 'block' : 'hidden md:block'}`}>
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                          border border-white/20 flex flex-col h-full">
+              {selectedUser ? (
+                <>
+                  {/* Chat header */}
+                  <div className="p-4 md:p-6 border-b border-white/20">
+                    <div className="flex items-center">
+                      <button
+                        onClick={() => setSelectedUser(null)}
+                        className="mr-2 p-2 text-white/90 hover:text-white 
+                                 hover:bg-white/10 rounded-full transition-colors md:hidden"
+                      >
+                        <X size={20} />
+                      </button>
+                      <ChatAvatar user={selectedUser} />
+                      <div>
+                        <div className="font-['Space_Grotesk'] text-white/90">
+                          {selectedUser.displayName}
+                        </div>
+                        <div className="text-sm text-white/60">{selectedUser.email}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Messages area */}
+                  <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex ${
+                          message.senderId === currentUser?.uid ? "justify-end" : "justify-start"
+                        } mb-4`}
+                      >
+                        <div
+                          className={`max-w-[70%] rounded-2xl px-4 py-3 
+                                    ${message.senderId === currentUser?.uid
+                                      ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white/90"
+                                      : "bg-white/10 backdrop-blur-sm border border-white/20 text-white/90"}`}
+                        >
+                          {message.type === "shared_post" ? (
+                            <div className="cursor-pointer">
+                              <div 
+                                onClick={() => setSelectedPostId(message.postId)}
+                                className="hover:opacity-90 transition-opacity"
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Share size={16} />
+                                  <span className="font-['Space_Grotesk'] tracking-wider">Shared a post</span>
+                                </div>
+                                <span className="text-sm underline font-['Space_Grotesk']">Click to view post</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="font-['Space_Grotesk'] tracking-wider">{message.text}</p>
+                          )}
+                          <p className="text-xs mt-1 opacity-70 font-['Space_Grotesk']">
+                            {message.timestamp?.toDate().toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* Message input */}
+                  <div className="p-4 md:p-6 border-t border-white/20">
+                    <form onSubmit={handleSendMessage} className="flex gap-3">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type a message..."
+                        className="flex-1 p-3 rounded-lg bg-white/10 border border-white/20 
+                                 text-white placeholder-white/50 font-['Space_Grotesk']
+                                 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newMessage.trim()}
+                        className="relative px-8 py-3 border-2 border-white/30 rounded-full
+                                  text-white font-['Space_Grotesk'] tracking-[0.2em]
+                                  transition-all duration-300 
+                                  hover:border-white/60 hover:scale-105
+                                  hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                                  active:scale-95
+                                  disabled:opacity-50 disabled:hover:scale-100 
+                                  disabled:hover:border-white/30 disabled:hover:bg-transparent
+                                  disabled:hover:shadow-none"
+                      >
+                        SEND
+                      </button>
+                    </form>
+                  </div>
+                </>
               ) : (
-                <div className="text-center text-gray-500 py-4">
-                  {searchTerm ? "No matching chats found" : "No chats yet"}
+                <div className="flex-1 flex items-center justify-center text-white/60 
+                               font-['Space_Grotesk'] tracking-wider">
+                  Select a chat to start messaging
                 </div>
               )}
             </div>
           </div>
         </div>
-
-        {/* Chat area - updated for mobile */}
-        <div className={`flex-1 h-full ${selectedUser ? 'block' : 'hidden md:block'}`}>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg flex flex-col h-full">
-            {selectedUser ? (
-              <>
-                {/* Chat header - updated for mobile */}
-                <div className="p-4 md:p-6 border-b border-gray-100">
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => setSelectedUser(null)}
-                      className="mr-2 p-2 text-purple-600 hover:bg-purple-50 rounded-full transition-colors md:hidden"
-                    >
-                      <X size={20} />
-                    </button>
-                    <ChatAvatar user={selectedUser} />
-                    <div>
-                      <div className="font-bold text-gray-900">{selectedUser.displayName}</div>
-                      <div className="text-sm text-gray-500">{selectedUser.email}</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Messages area - keep existing code but update padding for mobile */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        message.senderId === currentUser?.uid ? "justify-end" : "justify-start"
-                      } mb-4`}
-                    >
-                      <div
-                        className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                          message.senderId === currentUser?.uid
-                            ? "bg-purple-600 text-white"
-                            : "bg-gray-100 text-gray-900"
-                        }`}
-                      >
-                        {message.type === "shared_post" ? (
-                          <div className="cursor-pointer">
-                            <div 
-                              onClick={() => setSelectedPostId(message.postId)}
-                              className="hover:opacity-90 transition-opacity"
-                            >
-                              <div className="flex items-center gap-2 mb-1">
-                                <Share size={16} />
-                                <span className="font-medium">Shared a post</span>
-                              </div>
-                              <span className="text-sm underline">Click to view post</span>
-                            </div>
-                            <p className="text-xs mt-1 opacity-70">
-                              {message.timestamp?.toDate().toLocaleTimeString()}
-                            </p>
-                          </div>
-                        ) : (
-                          <>
-                            <p>{message.text}</p>
-                            <p className="text-xs mt-1 opacity-70">
-                              {message.timestamp?.toDate().toLocaleTimeString()}
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Message input - update padding for mobile */}
-                <div className="p-4 md:p-6 border-t border-gray-100">
-                  <form onSubmit={handleSendMessage} className="flex gap-3">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
-                      className="flex-1 p-3 border rounded-full focus:outline-none focus:border-purple-500 bg-white/50"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!newMessage.trim()}
-                      className="bg-purple-600 text-white px-6 md:px-8 py-3 rounded-full hover:bg-purple-700 
-                               transition-all duration-300 transform hover:scale-105 disabled:opacity-50
-                               disabled:hover:scale-100 disabled:hover:bg-purple-600"
-                    >
-                      Send
-                    </button>
-                  </form>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-500">
-                Select a chat to start messaging
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
-      {/* Keep existing search modal code but update for mobile */}
+      {/* Search/Create Chat Modal */}
       {isSearchModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl w-full md:w-[480px] max-h-[90vh] flex flex-col shadow-xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl w-full md:w-[480px] max-h-[90vh] 
+                         flex flex-col shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20">
             {/* Modal Header */}
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-2xl font-bold text-gray-900">
+            <div className="p-6 border-b border-white/20 flex justify-between items-center">
+              <h3 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
                 {isCreatingGroup ? "Create Group" : "New Chat"}
               </h3>
               <div className="flex items-center gap-4">
                 {!isCreatingGroup && (
                   <button
                     onClick={() => setIsCreatingGroup(true)}
-                    className="text-purple-600 hover:text-purple-700 font-semibold transition-colors"
+                    className="text-white/80 hover:text-white font-['Space_Grotesk'] tracking-wider 
+                             transition-colors"
                   >
                     Create Group
                   </button>
@@ -655,7 +705,8 @@ const Chat: React.FC = () => {
                     setFollowersSearchTerm("");
                     setSearchResults([]);
                   }}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-all duration-300 transform hover:scale-105"
+                  className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-full 
+                           transition-all duration-300"
                 >
                   <X size={20} />
                 </button>
@@ -664,26 +715,29 @@ const Chat: React.FC = () => {
 
             {/* Group Creation Input */}
             {isCreatingGroup && (
-              <div className="p-6 border-b border-gray-100">
+              <div className="p-6 border-b border-white/20">
                 <input
                   type="text"
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
                   placeholder="Group name..."
-                  className="w-full p-3 border rounded-lg focus:outline-none focus:border-purple-500 bg-white/50 mb-4"
+                  className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                           text-white placeholder-white/50 font-['Space_Grotesk']
+                           focus:outline-none focus:ring-2 focus:ring-white/30 transition-all mb-4"
                 />
                 <div className="flex flex-wrap gap-2">
                   {selectedParticipants.map((participant) => (
                     <div
                       key={participant.uid}
-                      className="bg-purple-100 text-purple-800 px-4 py-2 rounded-full text-sm flex items-center gap-2"
+                      className="bg-purple-600/20 text-white/90 px-4 py-2 rounded-full text-sm 
+                               flex items-center gap-2 font-['Space_Grotesk']"
                     >
                       {participant.displayName}
                       <button
                         onClick={() => setSelectedParticipants(prev => 
                           prev.filter(p => p.uid !== participant.uid)
                         )}
-                        className="hover:text-purple-900 transition-colors"
+                        className="hover:text-white transition-colors"
                       >
                         <X size={14} />
                       </button>
@@ -694,16 +748,18 @@ const Chat: React.FC = () => {
             )}
             
             {/* Search Input */}
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 border-b border-white/20">
               <div className="relative">
                 <input
                   type="text"
                   value={followersSearchTerm}
                   onChange={(e) => setFollowersSearchTerm(e.target.value)}
                   placeholder={isCreatingGroup ? "Add participants..." : "Search people you follow..."}
-                  className="w-full p-3 pl-12 border rounded-lg focus:outline-none focus:border-purple-500 bg-white/50"
+                  className="w-full p-3 pl-12 rounded-lg bg-white/10 border border-white/20 
+                           text-white placeholder-white/50 font-['Space_Grotesk']
+                           focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
                 />
-                <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/50" />
               </div>
             </div>
 
@@ -726,19 +782,20 @@ const Chat: React.FC = () => {
                           setSearchResults([]);
                         }
                       }}
-                      className="flex items-center p-4 cursor-pointer rounded-xl transition-all duration-300 
-                               transform hover:scale-[1.02] hover:bg-white/50"
+                      className="flex items-center p-4 cursor-pointer rounded-xl 
+                               transition-all duration-300 transform hover:scale-[1.02]
+                               hover:bg-white/10"
                     >
                       <ChatAvatar user={user} />
                       <div>
-                        <div className="font-semibold text-gray-900">{user.displayName}</div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
+                        <div className="font-['Space_Grotesk'] text-white/90">{user.displayName}</div>
+                        <div className="text-sm text-white/60">{user.email}</div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-gray-500 py-8">
+                <div className="text-center text-white/60 py-8 font-['Space_Grotesk'] tracking-wider">
                   {followersSearchTerm ? "No users found" : "Type to search users"}
                 </div>
               )}
@@ -746,39 +803,21 @@ const Chat: React.FC = () => {
 
             {/* Create Group Button */}
             {isCreatingGroup && selectedParticipants.length > 0 && (
-              <div className="p-6 border-t border-gray-100">
+              <div className="p-6 border-t border-white/20">
                 <button
                   onClick={handleCreateGroup}
                   disabled={!groupName.trim()}
-                  className="w-full bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 
-                           transition-all duration-300 transform hover:scale-105 disabled:opacity-50
-                           disabled:hover:scale-100 disabled:hover:bg-purple-600 shadow-lg
-                           shadow-purple-200"
+                  className="w-full bg-purple-600/90 text-white px-8 py-3 rounded-full 
+                           hover:bg-purple-700/90 transition-all duration-300 
+                           transform hover:scale-105 disabled:opacity-50
+                           disabled:hover:scale-100 disabled:hover:bg-purple-600/90 
+                           font-['Space_Grotesk'] tracking-wider shadow-lg
+                           shadow-purple-900/20"
                 >
                   Create Group ({selectedParticipants.length + 1} participants)
                 </button>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Post Preview Modal */}
-      {selectedPostId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-800">Shared Post</h2>
-              <button
-                onClick={() => setSelectedPostId(null)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-4">
-              <SinglePostView postId={selectedPostId} />
-            </div>
           </div>
         </div>
       )}
