@@ -55,6 +55,7 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   const [error, setError] = useState("");
   const [festivalCode] = useState(initialFestivalCode || "");
   const [isBusinessAccount, setIsBusinessAccount] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
     // Create admin account if it doesn't exist
@@ -102,6 +103,7 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   }, []);
 
   const handleGoogleSignIn = async () => {
+    setIsSigningIn(true);
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
@@ -135,6 +137,8 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
       }
     } catch (error) {
       console.error("Error signing in with Google:", error);
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -305,20 +309,31 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
                 {/* Google Sign In Button */}
                 <button
                   onClick={handleGoogleSignIn}
+                  disabled={isSigningIn}
                   className="w-full bg-white/10 text-white font-['Space_Grotesk'] tracking-wider
                            py-3 px-4 border border-white/20 rounded-lg 
                            shadow-[0_0_20px_rgba(255,255,255,0.1)]
                            hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
                            hover:bg-white/20
                            transition-all duration-300 
-                           flex items-center justify-center gap-3 mb-3"
+                           flex items-center justify-center gap-3 mb-3
+                           disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <img
-                    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                    alt="Google logo"
-                    className="w-6 h-6"
-                  />
-                  Sign in with Google
+                  {isSigningIn ? (
+                    <>
+                      <div className="w-5 h-5 border-t-2 border-r-2 border-white rounded-full animate-spin" />
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <img
+                        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                        alt="Google logo"
+                        className="w-6 h-6"
+                      />
+                      <span>Sign in with Google</span>
+                    </>
+                  )}
                 </button>
 
                 {/* Apple Sign In Button */}

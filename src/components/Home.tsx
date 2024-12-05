@@ -306,9 +306,8 @@ const Home: React.FC = () => {
                 setSelectedFestival(matchingFestival.id);
                 setShowFestivalList(false);
                 setShowAccessInput(false);
-                if (matchingQRCode.linkedCategories.length > 0) {
-                  setSelectedCategory(matchingQRCode.linkedCategories[0]);
-                }
+                setShowQRScanner(false);
+                setSelectedCategory("");
               } else {
                 setGeneralAccessError("Invalid QR code");
               }
@@ -404,6 +403,7 @@ const Home: React.FC = () => {
 
     setSelectedFestival(festivalId);
     setSelectedCategory("");
+    setShowFestivalList(false);
   };
 
   const handleAccessCodeSubmit = async (e: React.FormEvent) => {
@@ -475,12 +475,8 @@ const Home: React.FC = () => {
         setShowFestivalList(false);
         setShowQRScanner(false);
         setGeneralAccessError(null);
+        setSelectedCategory("");
         
-        // Set the first linked category as selected if any exist
-        if (matchingQRCode.linkedCategories.length > 0) {
-          setSelectedCategory(matchingQRCode.linkedCategories[0]);
-        }
-
         return;
       }
 
@@ -535,6 +531,7 @@ const Home: React.FC = () => {
           setShowFestivalList(false);
           setShowQRScanner(false);
           setGeneralAccessError(null);
+          setSelectedCategory("");
 
           // Set the first accessible category as selected if any exist
           if (accessibleCategories.length > 0) {
@@ -742,10 +739,8 @@ const Home: React.FC = () => {
         setSelectedFestival(matchingFestival.id);
         setShowFestivalList(false);
         setShowAccessInput(false);
-        setShowQRScanner(false); // Close the scanner
-        if (matchingQRCode.linkedCategories.length > 0) {
-          setSelectedCategory(matchingQRCode.linkedCategories[0]);
-        }
+        setShowQRScanner(false);
+        setSelectedCategory("");
       } else {
         setGeneralAccessError("Invalid QR code");
       }
@@ -779,6 +774,7 @@ const Home: React.FC = () => {
                 setSelectedFestival("");
                 setShowFestivalList(true);
                 setShowAccessInput(false);
+                setSelectedCategory("");
               }}
               className="text-white/40 hover:text-white/90 
                         transition-all duration-300
@@ -928,6 +924,7 @@ const Home: React.FC = () => {
                   setSelectedFestival("");
                   setShowFestivalList(true);
                   setShowAccessInput(false);
+                  setSelectedCategory("");
                 }}
                 className="backdrop-blur-xl bg-white/5 rounded-full 
                           px-6 py-2.5 border border-white/10
