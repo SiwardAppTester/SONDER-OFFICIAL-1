@@ -22,6 +22,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Suspense } from 'react';
+import FestivalDetails from './components/FestivalDetails';
 
 // Add Loader component
 function Loader() {
@@ -142,11 +143,11 @@ const App: React.FC = () => {
               <>
                 <Route path="/home" element={<Navigate to="/add-post" replace />} />
                 <Route path="/add-post" element={<AddPost />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/chat/:userId" element={<Chat />} />
+                <Route path="/chat" element={<Chat isBusinessAccount={isBusinessAccount} />} />
+                <Route path="/chat/:userId" element={<Chat isBusinessAccount={isBusinessAccount} />} />
                 <Route path="/business-calendar" element={<BusinessCalendar />} />
                 <Route path="/business-dashboard" element={<BusinessDashboard />} />
-                <Route path="/discover" element={<Discover />} />
+                <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} />
               </>
             )}
 
@@ -154,11 +155,11 @@ const App: React.FC = () => {
             {!isBusinessAccount && user && (
               <>
                 <Route path="/home" element={<Home />} />
-                <Route path="/discover" element={<Discover />} />
+                <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} />
                 <Route path="/add-post" element={<AddPost />} />
                 <Route path="/search" element={<Search />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/chat/:userId" element={<Chat />} />
+                <Route path="/chat" element={<Chat isBusinessAccount={isBusinessAccount} />} />
+                <Route path="/chat/:userId" element={<Chat isBusinessAccount={isBusinessAccount} />} />
                 <Route path="/profile/:userId" element={<Profile />} />
                 <Route path="/calendar" element={<Calendar />} />
                 <Route path="/business-calendar" element={<BusinessCalendar />} />
@@ -168,6 +169,7 @@ const App: React.FC = () => {
 
             {/* Catch all route */}
             <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
+            <Route path="/festival/:festivalId" element={<FestivalDetails />} />
           </Routes>
         </main>
       </div>

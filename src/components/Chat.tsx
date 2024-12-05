@@ -129,7 +129,11 @@ function InnerSphere() {
   )
 }
 
-const Chat: React.FC = () => {
+interface ChatProps {
+  isBusinessAccount: boolean;
+}
+
+const Chat: React.FC<ChatProps> = ({ isBusinessAccount: initialIsBusinessAccount }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -142,7 +146,7 @@ const Chat: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [accessibleFestivals, setAccessibleFestivals] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
-  const [isBusinessAccount, setIsBusinessAccount] = useState(false);
+  const [isBusinessAccount, setIsBusinessAccount] = useState(initialIsBusinessAccount);
   const [existingChats, setExistingChats] = useState<ChatUser[]>([]);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [followersSearchTerm, setFollowersSearchTerm] = useState("");
@@ -170,7 +174,9 @@ const Chat: React.FC = () => {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setUserProfile(userData as UserProfile);
-          setIsBusinessAccount(!!userData.isBusinessAccount);
+          if (!!userData.isBusinessAccount !== initialIsBusinessAccount) {
+            setIsBusinessAccount(!!userData.isBusinessAccount);
+          }
         }
       } else {
         navigate("/signin");
@@ -178,7 +184,7 @@ const Chat: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [navigate]);
+  }, [navigate, initialIsBusinessAccount]);
 
   // Modify the fetchExistingChats function
   useEffect(() => {

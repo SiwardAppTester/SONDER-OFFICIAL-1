@@ -50,6 +50,10 @@ interface UserProfile {
   accessibleFestivals?: string[];
 }
 
+interface DiscoverProps {
+  isBusinessAccount: boolean;
+}
+
 function Loader() {
   const { progress } = useProgress()
   return (
@@ -83,7 +87,7 @@ function InnerSphere() {
   )
 }
 
-const Discover: React.FC = () => {
+const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
   const [isNavOpen, setIsNavOpen] = useState(false);
@@ -101,7 +105,6 @@ const Discover: React.FC = () => {
   const [chatUsers, setChatUsers] = useState<UserProfile[]>([]);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
-  const [isBusinessAccount, setIsBusinessAccount] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -111,7 +114,6 @@ const Discover: React.FC = () => {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         const userData = userDoc.data();
         setUserProfile(userData as UserProfile);
-        setIsBusinessAccount(userData?.isBusinessAccount || false);
       }
     });
 

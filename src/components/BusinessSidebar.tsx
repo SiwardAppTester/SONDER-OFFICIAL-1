@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon, Plus, Settings, ChevronDown, ChevronUp, Camera, Compass } from "lucide-react";
+import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon, Plus, Settings, ChevronDown, ChevronUp, Camera, Compass, LayoutDashboard } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
@@ -238,6 +238,11 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
             <Link to="/chat" className="flex items-center space-x-2 p-2 rounded-lg
               text-white/80 hover:text-white transition-all duration-300 group">
               <MessageCircle size={18} className="group-hover:scale-110 transition-transform duration-300" />
+            </Link>
+            
+            <Link to="/business-dashboard" className="flex items-center space-x-2 p-2 rounded-lg
+              text-white/80 hover:text-white transition-all duration-300 group">
+              <LayoutDashboard size={18} className="group-hover:scale-110 transition-transform duration-300" />
             </Link>
             
             <Link to="/business-calendar" className="flex items-center space-x-2 p-2 rounded-lg
@@ -482,7 +487,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
             {[
               { to: "/add-post", icon: Plus, label: "Create Post" },
               { to: "/discover", icon: Compass, label: "Discover" },
-              { to: "/business-dashboard", icon: HomeIcon, label: "Dashboard" },
+              { to: "/business-dashboard", icon: LayoutDashboard, label: "Dashboard" },
               { to: "/chat", icon: MessageCircle, label: "Messages" },
               { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" }
             ].map(({ to, icon: Icon, label }) => (
