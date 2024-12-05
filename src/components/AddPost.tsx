@@ -42,6 +42,9 @@ interface Festival {
   id: string;
   name: string;
   description: string;
+  imageUrl: string;
+  date: string;
+  time: string;
   categoryAccessCodes?: AccessCode[];
   categories?: Category[];
   qrCodes?: {
@@ -52,6 +55,12 @@ interface Festival {
     name: string;
     createdAt: any;
   }[];
+  stats?: {
+    listas?: number;
+    entradas?: number;
+    reservas?: number;
+    pases?: number;
+  };
 }
 
 interface Post {
@@ -115,6 +124,10 @@ const AddPost: React.FC = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [newFestivalImage, setNewFestivalImage] = useState<File | null>(null);
+  const [newFestivalDate, setNewFestivalDate] = useState("");
+  const [newFestivalTime, setNewFestivalTime] = useState("");
+  const [imagePreview, setImagePreview] = useState<string>("");
 
   useEffect(() => {
     fetchFestivals();
@@ -127,9 +140,13 @@ const AddPost: React.FC = () => {
         id: doc.id,
         name: doc.data().name,
         description: doc.data().description,
+        imageUrl: doc.data().imageUrl,
+        date: doc.data().date,
+        time: doc.data().time,
         categoryAccessCodes: doc.data().categoryAccessCodes || [],
         categories: doc.data().categories || [],
-        qrCodes: doc.data().qrCodes || []
+        qrCodes: doc.data().qrCodes || [],
+        stats: doc.data().stats || {}
       }));
       setFestivals(festivalsData);
     } catch (error) {
@@ -137,27 +154,60 @@ const AddPost: React.FC = () => {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewFestivalImage(e.target.files[0]);
+      setImagePreview(URL.createObjectURL(e.target.files[0]));
+    }
+  };
+
   const handleAddFestival = async () => {
-    if (!newFestivalName.trim()) {
-      alert("Please enter a festival name");
+    if (!newFestivalName.trim() || !newFestivalImage || !newFestivalDate || !newFestivalTime) {
+      setToast({
+        message: "Please fill in all required fields",
+        type: 'error'
+      });
       return;
     }
 
     try {
+      // Upload image first
+      const imageRef = ref(storage, `festivals/${Date.now()}_${newFestivalImage.name}`);
+      const uploadResult = await uploadBytes(imageRef, newFestivalImage);
+      const imageUrl = await getDownloadURL(uploadResult.ref);
+
       const docRef = await addDoc(collection(db, "festivals"), {
         name: newFestivalName.trim(),
         description: newFestivalDescription.trim(),
+        imageUrl,
+        date: newFestivalDate,
+        time: newFestivalTime,
         createdAt: serverTimestamp(),
         categoryAccessCodes: [],
-        categories: []
+        categories: [],
+        stats: {
+          listas: 0,
+          entradas: 0,
+          reservas: 0,
+          pases: 0
+        }
       });
       
       const newFestival = { 
         id: docRef.id, 
         name: newFestivalName.trim(),
         description: newFestivalDescription.trim(),
+        imageUrl,
+        date: newFestivalDate,
+        time: newFestivalTime,
         categoryAccessCodes: [],
-        categories: []
+        categories: [],
+        stats: {
+          listas: 0,
+          entradas: 0,
+          reservas: 0,
+          pases: 0
+        }
       };
       
       setFestivals(prev => [...prev, newFestival]);
@@ -170,9 +220,16 @@ const AddPost: React.FC = () => {
         throw new Error("Festival was not saved properly");
       }
 
+      setNewFestivalImage(null);
+      setImagePreview("");
+      setNewFestivalDate("");
+      setNewFestivalTime("");
     } catch (error) {
       console.error("Error adding festival:", error);
-      alert("Failed to create festival. Please try again.");
+      setToast({
+        message: "Failed to create festival. Please try again.",
+        type: 'error'
+      });
     }
   };
 
@@ -216,41 +273,56 @@ const AddPost: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-4">
         {/* Festivals Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
           {/* Add Festival Card */}
           <button
             onClick={() => setShowAddFestival(true)}
-            className="h-48 bg-white/90 rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center gap-4 hover:bg-white transition-all group"
+            className="relative bg-white rounded-lg overflow-hidden shadow-md group h-[352px] flex flex-col items-center justify-center hover:bg-white/90 transition-all"
           >
-            <Plus size={32} className="text-purple-600 group-hover:scale-110 transition-transform" />
-            <span className="text-lg font-medium text-purple-600">Create New Festival</span>
+            <div className="flex flex-col items-center gap-4">
+              <Plus size={32} className="text-purple-600 group-hover:scale-110 transition-transform" />
+              <span className="text-lg font-medium text-purple-600">Create New Festival</span>
+            </div>
           </button>
 
           {/* Festival Cards */}
           {festivals.map((festival) => (
             <div
               key={festival.id}
-              className="relative group bg-white/90 rounded-2xl shadow-lg p-6 hover:bg-white transition-all"
+              onClick={() => handleFestivalClick(festival.id)}
+              className="relative bg-white rounded-lg overflow-hidden shadow-md group cursor-pointer"
             >
-              <button
-                onClick={() => handleFestivalClick(festival.id)}
-                className="w-full h-full text-left"
-              >
-                <h3 className="text-xl font-semibold mb-2">{festival.name}</h3>
-                <p className="text-gray-600 text-sm">{festival.description}</p>
-                <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
-                  <span>{festival.categories?.length || 0} Categories</span>
-                </div>
-              </button>
+              <img 
+                src={festival.imageUrl} 
+                alt={festival.name}
+                className="w-full h-48 object-cover"
+              />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteFestival(festival.id);
                 }}
-                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
               >
                 <Trash2 size={20} />
               </button>
+              <div className="absolute top-4 left-4 bg-black text-white px-3 py-1 rounded">
+                <div className="text-sm">{new Date(festival.date).toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase()}</div>
+                <div className="text-xl font-bold">{new Date(festival.date).getDate()}</div>
+                <div className="text-sm">SEP</div>
+              </div>
+              <div className="p-4">
+                <h3 className="text-xl font-bold mb-2">{festival.name}</h3>
+                <p className="text-gray-600 text-sm line-clamp-2">
+                  {festival.description}
+                </p>
+                {/* Time display */}
+                <div className="mt-2 text-sm text-gray-500">
+                  {festival.time && (
+                    <span>{festival.time} +18</span>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -267,6 +339,19 @@ const AddPost: React.FC = () => {
               </button>
               <h2 className="text-xl font-semibold mb-6">Create New Festival</h2>
               <div className="space-y-4">
+                {imagePreview && (
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full p-3 border rounded-lg"
+                />
                 <input
                   type="text"
                   value={newFestivalName}
@@ -279,6 +364,18 @@ const AddPost: React.FC = () => {
                   onChange={(e) => setNewFestivalDescription(e.target.value)}
                   placeholder="Enter festival description"
                   className="w-full p-3 border rounded-lg min-h-[100px] resize-y"
+                />
+                <input
+                  type="date"
+                  value={newFestivalDate}
+                  onChange={(e) => setNewFestivalDate(e.target.value)}
+                  className="w-full p-3 border rounded-lg"
+                />
+                <input
+                  type="time"
+                  value={newFestivalTime}
+                  onChange={(e) => setNewFestivalTime(e.target.value)}
+                  className="w-full p-3 border rounded-lg"
                 />
                 <button
                   type="button"
