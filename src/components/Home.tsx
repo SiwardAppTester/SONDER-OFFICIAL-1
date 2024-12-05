@@ -260,18 +260,22 @@ const Home: React.FC = () => {
               setIsScanning(false);
               setShowQRScanner(false);
               
-              // Process the code immediately without showing the input
-              const cleanedCode = decodedText.trim().toLowerCase();
-              
               // Find matching festival and QR code
               let matchingFestival: Festival | undefined;
               let matchingQRCode: any;
 
+              // Log all QR codes for debugging
+              festivals.forEach(festival => {
+                console.log("Festival QR codes:", festival.qrCodes);
+              });
+
               for (const festival of festivals) {
                 const qrCode = festival.qrCodes?.find(qr => {
-                  if (!qr?.code) return false;
-                  const qrCodeClean = qr.code.trim().toLowerCase();
-                  return qrCodeClean === cleanedCode;
+                  console.log("Comparing:", {
+                    stored: qr.code,
+                    scanned: decodedText
+                  });
+                  return qr.code === decodedText;
                 });
                 
                 if (qrCode) {
