@@ -729,7 +729,8 @@ const Chat: React.FC = () => {
                   {selectedParticipants.map((participant) => (
                     <div
                       key={participant.uid}
-                      className="bg-purple-600/20 text-white/90 px-4 py-2 rounded-full text-sm 
+                      className="bg-white/10 backdrop-blur-sm border border-white/20 
+                               text-white/90 px-4 py-2 rounded-full text-sm 
                                flex items-center gap-2 font-['Space_Grotesk']"
                     >
                       {participant.displayName}
@@ -807,14 +808,17 @@ const Chat: React.FC = () => {
                 <button
                   onClick={handleCreateGroup}
                   disabled={!groupName.trim()}
-                  className="w-full bg-purple-600/90 text-white px-8 py-3 rounded-full 
-                           hover:bg-purple-700/90 transition-all duration-300 
-                           transform hover:scale-105 disabled:opacity-50
-                           disabled:hover:scale-100 disabled:hover:bg-purple-600/90 
-                           font-['Space_Grotesk'] tracking-wider shadow-lg
-                           shadow-purple-900/20"
+                  className="w-full relative px-8 py-3 border-2 border-white/30 rounded-full
+                           text-white font-['Space_Grotesk'] tracking-[0.2em]
+                           transition-all duration-300 
+                           hover:border-white/60 hover:scale-105
+                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                           active:scale-95
+                           disabled:opacity-50 disabled:hover:scale-100 
+                           disabled:hover:border-white/30 disabled:hover:bg-transparent
+                           disabled:hover:shadow-none"
                 >
-                  Create Group ({selectedParticipants.length + 1} participants)
+                  CREATE GROUP ({selectedParticipants.length + 1} PARTICIPANTS)
                 </button>
               </div>
             )}

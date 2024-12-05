@@ -20,6 +20,9 @@ module.exports = {
       },
       animation: {
         'fade-in-up': 'fade-in-up 0.3s ease-out'
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       }
     },
   },

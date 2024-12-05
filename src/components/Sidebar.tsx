@@ -36,7 +36,8 @@ interface SidebarProps {
   setIsNavOpen: (isOpen: boolean) => void;
   user: FirebaseUser | null;
   userProfile: UserProfile | null;
-  setSelectedFestival: (festivalId: string) => void;
+  accessibleFestivalsCount: number;
+  className?: string;
 }
 
 interface FestivalData {
@@ -50,7 +51,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   setIsNavOpen,
   user,
   userProfile,
-  setSelectedFestival,
+  accessibleFestivalsCount,
+  className,
 }) => {
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -59,7 +61,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [festivalDetails, setFestivalDetails] = useState<Festival[]>([]);
   const [followersDetails, setFollowersDetails] = useState<UserDetails[]>([]);
   const [followingDetails, setFollowingDetails] = useState<UserDetails[]>([]);
-  const [accessibleFestivalsCount, setAccessibleFestivalsCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
@@ -125,21 +126,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       if (!user?.uid) return;
       
       try {
-        // Get user's document to check accessibleFestivals
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
-          const userData = userDoc.data();
+          const userData = userDoc.data() as UserProfile;
           const accessibleFestivalIds = userData.accessibleFestivals || [];
           
-          // Fetch all accessible festivals
           if (accessibleFestivalIds.length > 0) {
             const festivalsSnapshot = await getDocs(collection(db, "festivals"));
             
             const accessibleFestivals = festivalsSnapshot.docs
-              .filter(doc => {
-                // Only include festivals that are in the user's accessibleFestivals array
-                return accessibleFestivalIds.includes(doc.id);
-              })
+              .filter(doc => accessibleFestivalIds.includes(doc.id))
               .map(doc => {
                 const data = doc.data();
                 return {
@@ -149,10 +145,8 @@ const Sidebar: React.FC<SidebarProps> = ({
               });
 
             setFestivalDetails(accessibleFestivals);
-            setAccessibleFestivalsCount(accessibleFestivals.length);
           } else {
             setFestivalDetails([]);
-            setAccessibleFestivalsCount(0);
           }
         }
       } catch (error) {
@@ -269,6 +263,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       // Don't set festivals count here - it will be handled by fetchFestivalsCount
     }
   }, [userProfile]);
+
+  const handleFestivalClick = (festivalId: string) => {
+    setOpenDropdown(null);
+    setIsNavOpen(false);
+    navigate(`/festival/${festivalId}`);
+  };
 
   return (
     <>
@@ -559,9 +559,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       key={festival.id}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setOpenDropdown(null);
-                        setIsNavOpen(false);
-                        setSelectedFestival(festival.id);
+                        handleFestivalClick(festival.id);
                       }}
                       className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
                                 transition-all duration-300 group

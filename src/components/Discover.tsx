@@ -790,42 +790,59 @@ const Discover: React.FC = () => {
 
       {/* Share Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-800">Share with</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                        shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                        border border-white/20 
+                        w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="p-4 border-b border-white/10 flex justify-between items-center">
+              <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
+                Share with
+              </h2>
               <button
                 onClick={() => setShowShareModal(null)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-white/60 hover:text-white transition-colors"
               >
                 <X size={24} />
               </button>
             </div>
             
-            <div className="max-h-[60vh] overflow-y-auto p-4">
+            {/* Users List */}
+            <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2">
               {chatUsers.map((chatUser) => (
                 <button
                   key={chatUser.id}
                   onClick={() => handleShareToChat(chatUser.id, showShareModal)}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 p-3 
+                           bg-white/5 hover:bg-white/10 
+                           border border-white/10 hover:border-white/20
+                           rounded-lg transition-all duration-300
+                           group"
                 >
                   {chatUser.photoURL ? (
                     <img
                       src={chatUser.photoURL}
                       alt={`@${chatUser.username}`}
-                      className="w-10 h-10 rounded-full"
+                      className="w-10 h-10 rounded-full border border-white/20"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 font-medium">
+                    <div className="w-10 h-10 bg-white/10 rounded-full 
+                                 border border-white/20
+                                 flex items-center justify-center">
+                      <span className="text-white/90 font-medium">
                         {chatUser.username ? chatUser.username[0].toUpperCase() : 'A'}
                       </span>
                     </div>
                   )}
                   <div className="flex flex-col items-start">
-                    <span className="font-medium">@{chatUser.username}</span>
+                    <span className="text-white/90 font-medium group-hover:text-white transition-colors">
+                      @{chatUser.username}
+                    </span>
                     {chatUser.displayName && chatUser.displayName !== chatUser.username && (
-                      <span className="text-sm text-gray-500">{chatUser.displayName}</span>
+                      <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors">
+                        {chatUser.displayName}
+                      </span>
                     )}
                   </div>
                 </button>
@@ -835,8 +852,14 @@ const Discover: React.FC = () => {
         </div>
       )}
 
+      {/* Success Toast */}
       {shareSuccess && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up">
+        <div className="fixed bottom-4 right-4 
+                      backdrop-blur-xl bg-white/10 
+                      text-white px-6 py-3 rounded-lg 
+                      shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                      border border-white/20
+                      z-50 animate-fade-in-up">
           Post shared successfully!
         </div>
       )}
