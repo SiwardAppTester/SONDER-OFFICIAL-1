@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { db, auth } from '../firebase';
 import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, onSnapshot, orderBy, getDoc, doc } from 'firebase/firestore';
 import { Menu, X } from 'lucide-react';
 import BusinessSidebar from './BusinessSidebar';
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface Download {
   postId: string;
@@ -135,6 +138,39 @@ interface UserShareDetails {
   gender?: string;
   favoriteGenre?: string;
   age?: number;
+}
+
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-white text-xl">
+        {progress.toFixed(0)}% loaded
+      </div>
+    </Html>
+  )
+}
+
+function InnerSphere() {
+  return (
+    <>
+      <Environment preset="sunset" />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      
+      <mesh scale={[-15, -15, -15]}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          side={THREE.BackSide}
+          color="#1a1a1a"
+          metalness={0.9}
+          roughness={0.1}
+          envMapIntensity={1}
+        />
+      </mesh>
+    </>
+  )
 }
 
 const BusinessDashboard: React.FC = () => {
@@ -946,55 +982,61 @@ const BusinessDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
-      {/* Navigation */}
-      <div className="flex justify-between items-center p-4">
-        <button
-          onClick={() => setIsNavOpen(!isNavOpen)}
-          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
-          aria-label="Toggle navigation menu"
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Three.js Background */}
+      <div className="absolute inset-0">
+        <Canvas
+          className="w-full h-full"
+          gl={{ antialias: true, alpha: true }}
         >
-          <Menu size={28} />
-        </button>
+          <Suspense fallback={<Loader />}>
+            <InnerSphere />
+          </Suspense>
+        </Canvas>
       </div>
 
-      <BusinessSidebar
-        isNavOpen={isNavOpen}
-        setIsNavOpen={setIsNavOpen}
-        user={auth.currentUser}
-        userProfile={userProfile}
-        accessibleFestivalsCount={accessibleFestivalsCount}
-      />
-
-      {/* Main Content Area */}
-      <div className="max-w-6xl mx-auto px-4 py-8 relative">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute w-64 md:w-96 h-64 md:h-96 bg-white rounded-full blur-3xl opacity-20 -top-20 -left-20 animate-pulse"></div>
-          <div className="absolute w-64 md:w-96 h-64 md:h-96 bg-white rounded-full blur-3xl opacity-20 -bottom-20 -right-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+      {/* Content */}
+      <div className="relative z-10 min-h-screen">
+        {/* Navigation */}
+        <div className="flex justify-between items-center p-6">
+          <button
+            onClick={() => setIsNavOpen(!isNavOpen)}
+            className="text-white/90 hover:text-white transition-colors duration-300"
+            aria-label="Toggle navigation menu"
+          >
+            <Menu size={28} />
+          </button>
         </div>
 
-        {/* Content */}
-        <div className="relative">
+        <BusinessSidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={auth.currentUser}
+          userProfile={userProfile}
+          accessibleFestivalsCount={accessibleFestivalsCount}
+        />
+
+        {/* Main Content Area */}
+        <div className="max-w-7xl mx-auto px-4 py-8">
           {/* View Mode Toggle */}
           <div className="mb-8 flex justify-center">
-            <div className="bg-white/80 backdrop-blur-sm rounded-full p-1 inline-flex shadow-sm border border-purple-100">
+            <div className="backdrop-blur-xl bg-white/10 rounded-full p-1 inline-flex shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20">
               <button
                 onClick={() => setViewMode('downloads')}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`w-32 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                   viewMode === 'downloads'
-                    ? 'bg-purple-500 text-white'
-                    : 'text-gray-600 hover:text-purple-500'
+                    ? 'bg-white/20 text-white shadow-[0_0_30px_rgba(255,255,255,0.2)]'
+                    : 'text-white/60 hover:text-white'
                 }`}
               >
                 Downloads
               </button>
               <button
                 onClick={() => setViewMode('shares')}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                className={`w-32 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                   viewMode === 'shares'
-                    ? 'bg-purple-500 text-white'
-                    : 'text-gray-600 hover:text-purple-500'
+                    ? 'bg-white/20 text-white shadow-[0_0_30px_rgba(255,255,255,0.2)]'
+                    : 'text-white/60 hover:text-white'
                 }`}
               >
                 Shares
@@ -1005,25 +1047,29 @@ const BusinessDashboard: React.FC = () => {
           {viewMode === 'downloads' ? (
             <>
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-purple-100">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Total Downloads</h3>
-                  <p className="text-2xl font-bold text-gray-900">{downloadMetrics.totalDownloads}</p>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-purple-100">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Image Downloads</h3>
-                  <p className="text-2xl font-bold text-gray-900">{downloadMetrics.imageDownloads}</p>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-purple-100">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Video Downloads</h3>
-                  <p className="text-2xl font-bold text-gray-900">{downloadMetrics.videoDownloads}</p>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {[
+                  { title: 'Total Downloads', value: downloadMetrics.totalDownloads },
+                  { title: 'Image Downloads', value: downloadMetrics.imageDownloads },
+                  { title: 'Video Downloads', value: downloadMetrics.videoDownloads }
+                ].map((card) => (
+                  <div key={card.title} 
+                       className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 
+                                shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20
+                                hover:shadow-[0_0_40px_rgba(255,255,255,0.15)]
+                                transition-all duration-300">
+                    <h3 className="text-white/60 text-sm font-medium mb-1">{card.title}</h3>
+                    <p className="text-white text-3xl font-bold">{card.value}</p>
+                  </div>
+                ))}
               </div>
 
-              {/* New Demographics Section */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-100 overflow-hidden mb-8">
-                <div className="p-6 border-b border-gray-100">
-                  <h2 className="text-xl font-bold text-gray-900">Audience Demographics</h2>
+              {/* Demographics Section */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl mb-8 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20
+                            overflow-hidden">
+                <div className="p-6 border-b border-white/10">
+                  <h2 className="text-xl font-bold text-white">Audience Demographics</h2>
                 </div>
                 
                 <div className="p-6">
@@ -1031,21 +1077,20 @@ const BusinessDashboard: React.FC = () => {
                     {/* Left Column - Age & Gender */}
                     <div className="space-y-6">
                       {/* Total Users Card */}
-                      <div className="bg-purple-50/50 rounded-xl p-6">
+                      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">Total Unique Users</h3>
-                          <span className="text-2xl font-bold text-purple-600">
+                          <h3 className="text-lg font-semibold text-white">Total Unique Users</h3>
+                          <span className="text-2xl font-bold text-white">
                             {demographicStats.totalUniqueUsers}
                           </span>
                         </div>
-                        <div className="h-1 w-full bg-purple-100 rounded-full"></div>
                       </div>
 
-                      {/* Age Distribution Card */}
-                      <div className="bg-purple-50/50 rounded-xl p-6">
+                      {/* Age Distribution */}
+                      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">Age Distribution</h3>
-                          <span className="text-lg font-medium text-purple-600">
+                          <h3 className="text-lg font-semibold text-white">Age Distribution</h3>
+                          <span className="text-lg font-medium text-white/80">
                             Avg: {demographicStats.ageStats.average}
                           </span>
                         </div>
@@ -1053,17 +1098,16 @@ const BusinessDashboard: React.FC = () => {
                           {Object.entries(demographicStats.ageStats.ranges).map(([range, count]) => (
                             <div key={range}>
                               <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-600">{range}</span>
-                                <span className="text-gray-900 font-medium">
+                                <span className="text-white/60">{range}</span>
+                                <span className="text-white">
                                   {count} ({calculatePercentage(count, demographicStats.totalUniqueUsers)})
                                 </span>
                               </div>
-                              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                                 <div 
-                                  className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                                  className="h-full bg-white/20 rounded-full transition-all duration-500"
                                   style={{ 
-                                    width: calculatePercentage(count, demographicStats.totalUniqueUsers),
-                                    opacity: 0.8 
+                                    width: calculatePercentage(count, demographicStats.totalUniqueUsers)
                                   }}
                                 ></div>
                               </div>
@@ -1073,39 +1117,38 @@ const BusinessDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Right Column - Gender & Music Preferences */}
+                    {/* Right Column */}
                     <div className="space-y-6">
-                      {/* Gender Distribution Card */}
-                      <div className="bg-purple-50/50 rounded-xl p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Gender Distribution</h3>
+                      {/* Gender Distribution */}
+                      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                        <h3 className="text-lg font-semibold text-white mb-4">Gender Distribution</h3>
                         <div className="space-y-3">
                           {Object.entries(demographicStats.genderDistribution)
                             .sort(([,a], [,b]) => b - a)
                             .map(([gender, count]) => (
                               <div key={gender}>
                                 <div className="flex justify-between text-sm mb-1">
-                                  <span className="text-gray-600">{gender}</span>
-                                  <span className="text-gray-900 font-medium">
+                                  <span className="text-white/60">{gender}</span>
+                                  <span className="text-white">
                                     {count} ({calculatePercentage(count, demographicStats.totalUniqueUsers)})
                                   </span>
                                 </div>
-                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                                   <div 
-                                    className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                                    className="h-full bg-white/20 rounded-full transition-all duration-500"
                                     style={{ 
-                                      width: calculatePercentage(count, demographicStats.totalUniqueUsers),
-                                      opacity: 0.8 
+                                      width: calculatePercentage(count, demographicStats.totalUniqueUsers)
                                     }}
                                   ></div>
                                 </div>
                               </div>
-                          ))}
+                            ))}
                         </div>
                       </div>
 
-                      {/* Music Preferences Card */}
-                      <div className="bg-purple-50/50 rounded-xl p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Music Genres</h3>
+                      {/* Music Preferences */}
+                      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                        <h3 className="text-lg font-semibold text-white mb-4">Top Music Genres</h3>
                         <div className="space-y-3">
                           {Object.entries(demographicStats.genrePreferences)
                             .sort(([,a], [,b]) => b - a)
@@ -1113,22 +1156,21 @@ const BusinessDashboard: React.FC = () => {
                             .map(([genre, count]) => (
                               <div key={genre}>
                                 <div className="flex justify-between text-sm mb-1">
-                                  <span className="text-gray-600">{genre}</span>
-                                  <span className="text-gray-900 font-medium">
+                                  <span className="text-white/60">{genre}</span>
+                                  <span className="text-white">
                                     {count} ({calculatePercentage(count, demographicStats.totalUniqueUsers)})
                                   </span>
                                 </div>
-                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                                   <div 
-                                    className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                                    className="h-full bg-white/20 rounded-full transition-all duration-500"
                                     style={{ 
-                                      width: calculatePercentage(count, demographicStats.totalUniqueUsers),
-                                      opacity: 0.8 
+                                      width: calculatePercentage(count, demographicStats.totalUniqueUsers)
                                     }}
                                   ></div>
                                 </div>
                               </div>
-                          ))}
+                            ))}
                         </div>
                       </div>
                     </div>
@@ -1136,32 +1178,35 @@ const BusinessDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Media Downloads Table */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h2 className="text-xl font-bold text-gray-900">Downloads by Media</h2>
+              {/* Downloads Table */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20
+                            overflow-hidden">
+                <div className="p-6 border-b border-white/10">
+                  <h2 className="text-xl font-bold text-white">Downloads by Media</h2>
                 </div>
                 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                  <table className="min-w-full divide-y divide-white/10">
                     <thead>
-                      <tr className="bg-gray-50/50">
+                      <tr className="bg-white/5">
                         {['Preview', 'Media Type', 'Category', 'Festival', 'Downloads', 'Last Downloaded'].map((header) => (
-                          <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th key={header} 
+                              className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">
                             {header}
                           </th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-white/10">
                       {sortedMediaItems.map(([key, item]) => (
                         <tr 
                           key={key} 
-                          className="hover:bg-purple-50/30 transition-colors duration-200 cursor-pointer" 
+                          className="hover:bg-white/5 transition-colors duration-200 cursor-pointer" 
                           onClick={() => fetchUserDownloadDetails(key, item)}
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-purple-100">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
                               {item.mediaType === 'video' ? (
                                 <video
                                   src={item.url}
@@ -1185,24 +1230,24 @@ const BusinessDashboard: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               item.mediaType === 'image' 
-                                ? 'bg-purple-100 text-purple-800' 
-                                : 'bg-rose-100 text-rose-800'
+                                ? 'bg-white/10 text-white' 
+                                : 'bg-white/20 text-white'
                             }`}>
                               {item.mediaType}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
                             {categories[item.categoryId || ''] || 'Uncategorized'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
                             {festivals[item.festivalId] || 'Loading...'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-semibold text-gray-900">
+                            <div className="text-sm font-semibold text-white">
                               {Math.round(item.downloadCount)}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
                             {item.downloadedAt?.toDate().toLocaleDateString()}
                           </td>
                         </tr>
@@ -1212,7 +1257,7 @@ const BusinessDashboard: React.FC = () => {
 
                   {sortedMediaItems.length === 0 && (
                     <div className="text-center py-12">
-                      <p className="text-gray-500">No downloads to display yet</p>
+                      <p className="text-white/60">No downloads to display yet</p>
                     </div>
                   )}
                 </div>
@@ -1221,25 +1266,29 @@ const BusinessDashboard: React.FC = () => {
           ) : (
             <>
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-purple-100">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Total Shares</h3>
-                  <p className="text-2xl font-bold text-gray-900">{shareMetrics.totalShares}</p>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-purple-100">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Image Shares</h3>
-                  <p className="text-2xl font-bold text-gray-900">{shareMetrics.imageShares}</p>
-                </div>
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-purple-100">
-                  <h3 className="text-sm font-medium text-gray-500 mb-1">Video Shares</h3>
-                  <p className="text-2xl font-bold text-gray-900">{shareMetrics.videoShares}</p>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {[
+                  { title: 'Total Shares', value: shareMetrics.totalShares },
+                  { title: 'Image Shares', value: shareMetrics.imageShares },
+                  { title: 'Video Shares', value: shareMetrics.videoShares }
+                ].map((card) => (
+                  <div key={card.title} 
+                       className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 
+                                shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20
+                                hover:shadow-[0_0_40px_rgba(255,255,255,0.15)]
+                                transition-all duration-300">
+                    <h3 className="text-white/60 text-sm font-medium mb-1">{card.title}</h3>
+                    <p className="text-white text-3xl font-bold">{card.value}</p>
+                  </div>
+                ))}
               </div>
 
               {/* Demographics Section */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-100 overflow-hidden mb-8">
-                <div className="p-6 border-b border-gray-100">
-                  <h2 className="text-xl font-bold text-gray-900">Audience Demographics</h2>
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl mb-8 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20
+                            overflow-hidden">
+                <div className="p-6 border-b border-white/10">
+                  <h2 className="text-xl font-bold text-white">Audience Demographics</h2>
                 </div>
                 
                 <div className="p-6">
@@ -1247,21 +1296,20 @@ const BusinessDashboard: React.FC = () => {
                     {/* Left Column - Age & Gender */}
                     <div className="space-y-6">
                       {/* Total Users Card */}
-                      <div className="bg-purple-50/50 rounded-xl p-6">
+                      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">Total Unique Users</h3>
-                          <span className="text-2xl font-bold text-purple-600">
+                          <h3 className="text-lg font-semibold text-white">Total Unique Users</h3>
+                          <span className="text-2xl font-bold text-white">
                             {shareStats.totalUniqueUsers}
                           </span>
                         </div>
-                        <div className="h-1 w-full bg-purple-100 rounded-full"></div>
                       </div>
 
-                      {/* Age Distribution Card */}
-                      <div className="bg-purple-50/50 rounded-xl p-6">
+                      {/* Age Distribution */}
+                      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold text-gray-900">Age Distribution</h3>
-                          <span className="text-lg font-medium text-purple-600">
+                          <h3 className="text-lg font-semibold text-white">Age Distribution</h3>
+                          <span className="text-lg font-medium text-white/80">
                             Avg: {shareStats.ageStats.average}
                           </span>
                         </div>
@@ -1269,17 +1317,16 @@ const BusinessDashboard: React.FC = () => {
                           {Object.entries(shareStats.ageStats.ranges).map(([range, count]) => (
                             <div key={range}>
                               <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-600">{range}</span>
-                                <span className="text-gray-900 font-medium">
+                                <span className="text-white/60">{range}</span>
+                                <span className="text-white">
                                   {count} ({calculatePercentage(count, shareStats.totalUniqueUsers)})
                                 </span>
                               </div>
-                              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                                 <div 
-                                  className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                                  className="h-full bg-white/20 rounded-full transition-all duration-500"
                                   style={{ 
-                                    width: calculatePercentage(count, shareStats.totalUniqueUsers),
-                                    opacity: 0.8 
+                                    width: calculatePercentage(count, shareStats.totalUniqueUsers)
                                   }}
                                 ></div>
                               </div>
@@ -1289,28 +1336,27 @@ const BusinessDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Right Column - Gender & Music Preferences */}
+                    {/* Right Column */}
                     <div className="space-y-6">
-                      {/* Gender Distribution Card */}
-                      <div className="bg-purple-50/50 rounded-xl p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Gender Distribution</h3>
+                      {/* Gender Distribution */}
+                      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                        <h3 className="text-lg font-semibold text-white mb-4">Gender Distribution</h3>
                         <div className="space-y-3">
                           {Object.entries(shareStats.genderDistribution)
                             .sort(([,a], [,b]) => b - a)
                             .map(([gender, count]) => (
                               <div key={gender}>
                                 <div className="flex justify-between text-sm mb-1">
-                                  <span className="text-gray-600">{gender}</span>
-                                  <span className="text-gray-900 font-medium">
+                                  <span className="text-white/60">{gender}</span>
+                                  <span className="text-white">
                                     {count} ({calculatePercentage(count, shareStats.totalUniqueUsers)})
                                   </span>
                                 </div>
-                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                                   <div 
-                                    className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                                    className="h-full bg-white/20 rounded-full transition-all duration-500"
                                     style={{ 
-                                      width: calculatePercentage(count, shareStats.totalUniqueUsers),
-                                      opacity: 0.8 
+                                      width: calculatePercentage(count, shareStats.totalUniqueUsers)
                                     }}
                                   ></div>
                                 </div>
@@ -1319,9 +1365,9 @@ const BusinessDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Music Preferences Card */}
-                      <div className="bg-purple-50/50 rounded-xl p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Music Genres</h3>
+                      {/* Music Preferences */}
+                      <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                        <h3 className="text-lg font-semibold text-white mb-4">Top Music Genres</h3>
                         <div className="space-y-3">
                           {Object.entries(shareStats.genrePreferences)
                             .sort(([,a], [,b]) => b - a)
@@ -1329,17 +1375,16 @@ const BusinessDashboard: React.FC = () => {
                             .map(([genre, count]) => (
                               <div key={genre}>
                                 <div className="flex justify-between text-sm mb-1">
-                                  <span className="text-gray-600">{genre}</span>
-                                  <span className="text-gray-900 font-medium">
+                                  <span className="text-white/60">{genre}</span>
+                                  <span className="text-white">
                                     {count} ({calculatePercentage(count, shareStats.totalUniqueUsers)})
                                   </span>
                                 </div>
-                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
                                   <div 
-                                    className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                                    className="h-full bg-white/20 rounded-full transition-all duration-500"
                                     style={{ 
-                                      width: calculatePercentage(count, shareStats.totalUniqueUsers),
-                                      opacity: 0.8 
+                                      width: calculatePercentage(count, shareStats.totalUniqueUsers)
                                     }}
                                   ></div>
                                 </div>
@@ -1352,34 +1397,37 @@ const BusinessDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Shares by Media Table */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-purple-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                  <h2 className="text-xl font-bold text-gray-900">Shares by Media</h2>
+              {/* Shares Table */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20
+                            overflow-hidden">
+                <div className="p-6 border-b border-white/10">
+                  <h2 className="text-xl font-bold text-white">Shares by Media</h2>
                 </div>
                 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                  <table className="min-w-full divide-y divide-white/10">
                     <thead>
-                      <tr className="bg-gray-50/50">
+                      <tr className="bg-white/5">
                         {['Preview', 'Media Type', 'Category', 'Festival', 'Shares', 'Last Shared'].map((header) => (
-                          <th key={header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th key={header} 
+                              className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">
                             {header}
                           </th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-white/10">
                       {Object.entries(shareMetrics.sharesByMedia)
                         .sort(([, a], [, b]) => b.shareCount - a.shareCount)
                         .map(([key, item]) => (
                           <tr 
                             key={key} 
-                            className="hover:bg-purple-50/30 transition-colors duration-200 cursor-pointer"
+                            className="hover:bg-white/5 transition-colors duration-200 cursor-pointer"
                             onClick={() => handleShareRowClick(key, item)}
                           >
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border border-purple-100">
+                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
                                 {item.mediaType === 'video' ? (
                                   <video
                                     src={item.url}
@@ -1403,24 +1451,24 @@ const BusinessDashboard: React.FC = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                 item.mediaType === 'image' 
-                                  ? 'bg-purple-100 text-purple-800' 
-                                  : 'bg-rose-100 text-rose-800'
+                                  ? 'bg-white/10 text-white' 
+                                  : 'bg-white/20 text-white'
                               }`}>
                                 {item.mediaType}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
                               {categories[item.categoryId || ''] || 'Uncategorized'}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
                               {festivals[item.festivalId] || 'Loading...'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-semibold text-gray-900">
+                              <div className="text-sm font-semibold text-white">
                                 {Math.round(item.shareCount)}
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
                               {item.sharedAt?.toDate().toLocaleDateString()}
                             </td>
                           </tr>
@@ -1430,7 +1478,7 @@ const BusinessDashboard: React.FC = () => {
 
                   {Object.keys(shareMetrics.sharesByMedia).length === 0 && (
                     <div className="text-center py-12">
-                      <p className="text-gray-500">No shares to display yet</p>
+                      <p className="text-white/60">No shares to display yet</p>
                     </div>
                   )}
                 </div>
@@ -1440,15 +1488,17 @@ const BusinessDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Modal for showing user downloads */}
+      {/* Download Details Modal */}
       {selectedMedia && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Download Details</h2>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                         shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20 
+                         max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Download Details</h2>
               <button
                 onClick={() => setSelectedMedia(null)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-white/60 hover:text-white transition-colors"
               >
                 <X size={24} />
               </button>
@@ -1457,7 +1507,7 @@ const BusinessDashboard: React.FC = () => {
             <div className="p-6">
               {/* Media Preview */}
               <div className="mb-6 flex items-center gap-4">
-                <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 border border-purple-100">
+                <div className="w-20 h-20 rounded-lg overflow-hidden bg-white/5 border border-white/10">
                   {selectedMedia.item.mediaType === 'video' ? (
                     <video
                       src={selectedMedia.item.url}
@@ -1478,10 +1528,10 @@ const BusinessDashboard: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Festival</p>
-                  <p className="font-medium">{festivals[selectedMedia.item.festivalId] || 'Loading...'}</p>
-                  <p className="text-sm text-gray-500 mt-1">Category</p>
-                  <p className="font-medium">{categories[selectedMedia.item.categoryId || ''] || 'Uncategorized'}</p>
+                  <p className="text-sm text-white/60">Festival</p>
+                  <p className="font-medium text-white">{festivals[selectedMedia.item.festivalId] || 'Loading...'}</p>
+                  <p className="text-sm text-white/60 mt-1">Category</p>
+                  <p className="font-medium text-white">{categories[selectedMedia.item.categoryId || ''] || 'Uncategorized'}</p>
                 </div>
               </div>
 
@@ -1489,13 +1539,13 @@ const BusinessDashboard: React.FC = () => {
               <div className="space-y-4 max-h-[400px] overflow-y-auto">
                 {isLoadingUsers ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">Loading users...</p>
+                    <p className="text-white/60">Loading users...</p>
                   </div>
                 ) : selectedMedia.downloads.length > 0 ? (
                   selectedMedia.downloads.map((download, index) => (
                     <div 
                       key={`${download.userId}-${index}`}
-                      className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+                      className="flex items-center gap-4 p-4 bg-white/5 rounded-lg border border-white/10"
                     >
                       {download.photoURL ? (
                         <img 
@@ -1504,43 +1554,43 @@ const BusinessDashboard: React.FC = () => {
                           className="w-10 h-10 rounded-full"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                          <span className="text-purple-600 font-medium">
+                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                          <span className="text-white font-medium">
                             {(download.displayName || 'U')[0].toUpperCase()}
                           </span>
                         </div>
                       )}
                       <div className="flex-grow">
-                        <p className="font-medium">{download.displayName || 'Anonymous User'}</p>
+                        <p className="font-medium text-white">{download.displayName || 'Anonymous User'}</p>
                         {download.username && (
-                          <p className="text-sm text-gray-500">@{download.username}</p>
+                          <p className="text-sm text-white/60">@{download.username}</p>
                         )}
                         <div className="mt-1 space-y-1">
                           {download.age && (
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-white/60">
                               Age: {download.age}
                             </p>
                           )}
                           {download.gender && (
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-white/60">
                               Gender: {download.gender}
                             </p>
                           )}
                           {download.favoriteGenre && (
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-white/60">
                               Favorite Genre: {download.favoriteGenre}
                             </p>
                           )}
                         </div>
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-white/60">
                         {download.downloadedAt?.toDate().toLocaleDateString()}
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No download details available</p>
+                    <p className="text-white/60">No download details available</p>
                   </div>
                 )}
               </div>
@@ -1549,112 +1599,111 @@ const BusinessDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Add the share details modal */}
+      {/* Share Details Modal */}
       {selectedShareMedia && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Share Details</h2>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                         shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20 
+                         max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Share Details</h2>
               <button
                 onClick={() => setSelectedShareMedia(null)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-white/60 hover:text-white transition-colors"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Audience Demographics Section */}
-              <div className="space-y-6">
-                <h3 className="text-xl font-bold text-gray-900">Audience Demographics</h3>
-                
-                {/* Total Unique Users */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-purple-100">
-                  <h4 className="text-lg font-semibold mb-2">Total Unique Users</h4>
-                  <p className="text-3xl font-bold text-purple-600">{shareStats.totalUniqueUsers}</p>
+            <div className="p-6">
+              {/* Media Preview */}
+              <div className="mb-6 flex items-center gap-4">
+                <div className="w-20 h-20 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+                  {selectedShareMedia.item.mediaType === 'video' ? (
+                    <video
+                      src={selectedShareMedia.item.url}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLVideoElement).style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={selectedShareMedia.item.url}
+                      alt="Media preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  )}
                 </div>
-
-                {/* Age Distribution */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-purple-100">
-                  <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-lg font-semibold">Age Distribution</h4>
-                    <span className="text-purple-600 font-semibold">
-                      Avg: {shareStats.ageStats.average}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {Object.entries(shareStats.ageStats.ranges).map(([range, count]) => (
-                      <div key={range} className="flex justify-between items-center">
-                        <span>{range}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-32 bg-gray-100 rounded-full h-2">
-                            <div
-                              className="bg-purple-500 h-2 rounded-full"
-                              style={{
-                                width: `${(count / shareStats.totalUniqueUsers) * 100}%`
-                              }}
-                            />
-                          </div>
-                          <span>{count} ({calculatePercentage(count, shareStats.totalUniqueUsers)})</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Gender Distribution */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-purple-100">
-                  <h4 className="text-lg font-semibold mb-4">Gender Distribution</h4>
-                  <div className="space-y-2">
-                    {Object.entries(shareStats.genderDistribution).map(([gender, count]) => (
-                      <div key={gender} className="flex justify-between items-center">
-                        <span>{gender}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-32 bg-gray-100 rounded-full h-2">
-                            <div
-                              className="bg-purple-500 h-2 rounded-full"
-                              style={{
-                                width: `${(count / shareStats.totalUniqueUsers) * 100}%`
-                              }}
-                            />
-                          </div>
-                          <span>{count} ({calculatePercentage(count, shareStats.totalUniqueUsers)})</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Top Music Genres */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-purple-100">
-                  <h4 className="text-lg font-semibold mb-4">Top Music Genres</h4>
-                  <div className="space-y-2">
-                    {Object.entries(shareStats.genrePreferences)
-                      .sort(([,a], [,b]) => b - a)
-                      .map(([genre, count]) => (
-                        <div key={genre} className="flex justify-between items-center">
-                          <span>{genre}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-32 bg-gray-100 rounded-full h-2">
-                              <div
-                                className="bg-purple-500 h-2 rounded-full"
-                                style={{
-                                  width: `${(count / shareStats.totalUniqueUsers) * 100}%`
-                                }}
-                              />
-                            </div>
-                            <span>{count} ({calculatePercentage(count, shareStats.totalUniqueUsers)})</span>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
+                <div>
+                  <p className="text-sm text-white/60">Festival</p>
+                  <p className="font-medium text-white">{festivals[selectedShareMedia.item.festivalId] || 'Loading...'}</p>
+                  <p className="text-sm text-white/60 mt-1">Category</p>
+                  <p className="font-medium text-white">{categories[selectedShareMedia.item.categoryId || ''] || 'Uncategorized'}</p>
                 </div>
               </div>
 
-              {/* User List Section */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-gray-900">Share Details</h3>
-                {/* ... existing user list code ... */}
+              {/* Users List */}
+              <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                {isLoadingUsers ? (
+                  <div className="text-center py-8">
+                    <p className="text-white/60">Loading users...</p>
+                  </div>
+                ) : selectedShareMedia.shares.length > 0 ? (
+                  selectedShareMedia.shares.map((share, index) => (
+                    <div 
+                      key={`${share.userId}-${index}`}
+                      className="flex items-center gap-4 p-4 bg-white/5 rounded-lg border border-white/10"
+                    >
+                      {share.photoURL ? (
+                        <img 
+                          src={share.photoURL} 
+                          alt={share.displayName || 'User'} 
+                          className="w-10 h-10 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                          <span className="text-white font-medium">
+                            {(share.displayName || 'U')[0].toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-grow">
+                        <p className="font-medium text-white">{share.displayName || 'Anonymous User'}</p>
+                        {share.username && (
+                          <p className="text-sm text-white/60">@{share.username}</p>
+                        )}
+                        <div className="mt-1 space-y-1">
+                          {share.age && (
+                            <p className="text-sm text-white/60">
+                              Age: {share.age}
+                            </p>
+                          )}
+                          {share.gender && (
+                            <p className="text-sm text-white/60">
+                              Gender: {share.gender}
+                            </p>
+                          )}
+                          {share.favoriteGenre && (
+                            <p className="text-sm text-white/60">
+                              Favorite Genre: {share.favoriteGenre}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-sm text-white/60">
+                        {share.sharedAt?.toDate().toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-white/60">No share details available</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
