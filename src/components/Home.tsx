@@ -8,6 +8,10 @@ import { Menu, KeyRound, User, Sparkles, Search as SearchIcon, Star, Package, Do
 import { User as FirebaseUser } from "firebase/auth";
 import Sidebar from "./Sidebar";
 import { Html5Qrcode } from 'html5-qrcode';
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
+import * as THREE from 'three';
+import { Suspense } from 'react';
 
 interface Post {
   id: string;
@@ -60,6 +64,41 @@ interface AccessCode {
   code: string;
   categoryIds: string[];
   createdAt: any;
+}
+
+// Add the Loader component
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-white text-xl">
+        {progress.toFixed(0)}% loaded
+      </div>
+    </Html>
+  )
+}
+
+// Add the InnerSphere component
+function InnerSphere() {
+  return (
+    <>
+      <Environment preset="sunset" />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      
+      <mesh scale={[-15, -15, -15]}> {/* Negative scale to see inside */}
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          side={THREE.BackSide}
+          color="#1a1a1a"
+          metalness={0.9}
+          roughness={0.1}
+          envMapIntensity={1}
+        />
+      </mesh>
+    </>
+  )
 }
 
 const Home: React.FC = () => {
@@ -305,37 +344,40 @@ const Home: React.FC = () => {
 
   const handleDownload = async (url: string, mediaType: string, postId: string, festivalId: string, categoryId?: string, mediaIndex?: number) => {
     try {
-      // Create download record with media index
-      await addDoc(collection(db, "downloads"), {
-        postId,
-        mediaType,
-        mediaIndex,
-        downloadedAt: serverTimestamp(),
-        userId: auth.currentUser?.uid,
-        festivalId,
-        categoryId,
-        url
-      });
+      // Create download record
+      if (auth.currentUser) {
+        await addDoc(collection(db, "downloads"), {
+          postId,
+          mediaType,
+          mediaIndex: mediaIndex || 0,
+          downloadedAt: serverTimestamp(),
+          userId: auth.currentUser.uid,
+          festivalId,
+          categoryId,
+          url
+        });
+      }
 
-      // Fetch the file
+      // Start the download
       const response = await fetch(url);
       const blob = await response.blob();
       
-      // Create download link
+      // Create a temporary URL for the blob
       const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create and trigger download link
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `post_${postId}.${mediaType === 'image' ? 'jpg' : 'mp4'}`;
-      
-      // Trigger download
+      link.download = `media_${postId}_${mediaIndex || 0}.${mediaType === 'video' ? 'mp4' : 'jpg'}`;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
       
       // Cleanup
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Error handling download:', error);
+      console.error('Error downloading media:', error);
+      alert('Failed to download media. Please try again.');
     }
   };
 
@@ -571,23 +613,35 @@ const Home: React.FC = () => {
     // Get user's accessible categories for this festival
     const userAccessibleCategories = accessibleCategories[post.festivalId] || [];
 
-    // Filter media files based on category access
+    // Filter media files based on category and media type
     const hasAccessibleMedia = post.mediaFiles.some(media => {
-      // If media has no category, treat it as accessible
-      if (!media.categoryId) return true;
-      
-      // Check if user has access to this media's category
-      return userAccessibleCategories.includes(media.categoryId);
+      // Check category access
+      if (selectedCategory && media.categoryId !== selectedCategory) return false;
+      if (!media.categoryId) return false; // Skip media without category
+      if (!userAccessibleCategories.includes(media.categoryId)) return false;
+
+      // Check media type
+      if (selectedMediaType !== "all" && media.type !== selectedMediaType) return false;
+
+      return true;
     });
 
     return hasAccessibleMedia;
   }).map(post => ({
     ...post,
-    // Filter out media files that user doesn't have access to
+    // Filter out media files that don't match the criteria
     mediaFiles: post.mediaFiles.filter(media => {
-      if (!media.categoryId) return true;
+      // Check category access
+      if (selectedCategory && media.categoryId !== selectedCategory) return false;
+      if (!media.categoryId) return false; // Skip media without category
+      
       const userAccessibleCategories = accessibleCategories[post.festivalId] || [];
-      return userAccessibleCategories.includes(media.categoryId);
+      if (!userAccessibleCategories.includes(media.categoryId)) return false;
+
+      // Check media type
+      if (selectedMediaType !== "all" && media.type !== selectedMediaType) return false;
+
+      return true;
     })
   }));
 
@@ -644,483 +698,552 @@ const Home: React.FC = () => {
   };
 
   const processQRCodeContent = async (cleanedCode: string) => {
-    // Find matching festival and QR code
-    let matchingFestival: Festival | undefined;
-    let matchingQRCode: any;
+    try {
+      // Find matching festival and QR code
+      let matchingFestival: Festival | undefined;
+      let matchingQRCode: any;
 
-    for (const festival of festivals) {
-      const qrCode = festival.qrCodes?.find(qr => {
-        if (!qr?.code) return false;
-        const qrCodeClean = qr.code.trim().toLowerCase();
-        return qrCodeClean === cleanedCode;
-      });
-      
-      if (qrCode) {
-        matchingFestival = festival;
-        matchingQRCode = qrCode;
-        break;
-      }
-    }
-
-    if (matchingFestival && matchingQRCode && user) {
-      // Update user's access
-      const userRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userRef);
-      const userData = userDoc.data();
-
-      await updateDoc(userRef, {
-        accessibleFestivals: arrayUnion(matchingFestival.id),
-        accessibleCategories: {
-          ...(userData?.accessibleCategories || {}),
-          [matchingFestival.id]: matchingQRCode.linkedCategories
+      for (const festival of festivals) {
+        const qrCode = festival.qrCodes?.find(qr => {
+          if (!qr?.code) return false;
+          const qrCodeClean = qr.code.trim().toLowerCase();
+          return qrCodeClean === cleanedCode;
+        });
+        
+        if (qrCode) {
+          matchingFestival = festival;
+          matchingQRCode = qrCode;
+          break;
         }
-      });
-
-      // Update local state and navigate directly
-      setAccessibleFestivals(prev => new Set([...prev, matchingFestival.id]));
-      setAccessibleCategories(prev => ({
-        ...prev,
-        [matchingFestival.id]: matchingQRCode.linkedCategories
-      }));
-
-      // Navigate directly to content view
-      setSelectedFestival(matchingFestival.id);
-      setShowFestivalList(false);
-      setShowAccessInput(false);
-      if (matchingQRCode.linkedCategories.length > 0) {
-        setSelectedCategory(matchingQRCode.linkedCategories[0]);
       }
-    } else {
-      setGeneralAccessError("Invalid QR code");
+
+      if (matchingFestival && matchingQRCode && user) {
+        // Update user's access
+        const userRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data();
+
+        await updateDoc(userRef, {
+          accessibleFestivals: arrayUnion(matchingFestival.id),
+          accessibleCategories: {
+            ...(userData?.accessibleCategories || {}),
+            [matchingFestival.id]: matchingQRCode.linkedCategories
+          }
+        });
+
+        // Update local state
+        setAccessibleFestivals(prev => new Set([...prev, matchingFestival.id]));
+        setAccessibleCategories(prev => ({
+          ...prev,
+          [matchingFestival.id]: matchingQRCode.linkedCategories
+        }));
+
+        // Navigate directly to content view
+        setSelectedFestival(matchingFestival.id);
+        setShowFestivalList(false);
+        setShowAccessInput(false);
+        setShowQRScanner(false); // Close the scanner
+        if (matchingQRCode.linkedCategories.length > 0) {
+          setSelectedCategory(matchingQRCode.linkedCategories[0]);
+        }
+      } else {
+        setGeneralAccessError("Invalid QR code");
+      }
+    } catch (error) {
+      console.error("Error processing QR code:", error);
+      setGeneralAccessError("Error processing QR code");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
-      {/* Navigation */}
-      <div className="flex justify-between items-center p-4">
-        <button
-          onClick={() => setIsNavOpen(!isNavOpen)}
-          className="text-purple-600 hover:text-purple-700 transition-colors duration-300"
-          aria-label="Toggle navigation menu"
+    <div className="min-h-screen w-full overflow-y-auto relative">
+      {/* Three.js Background - Make it fixed */}
+      <div className="fixed inset-0">
+        <Canvas
+          className="w-full h-full"
+          gl={{ antialias: true, alpha: true }}
         >
-          <Menu size={28} />
-        </button>
-        
-        {/* Only show Sparkles button when viewing festival content */}
-        {selectedFestival && (
-          <button
-            onClick={() => {
-              setSelectedFestival("");
-              setShowFestivalList(true);
-              setShowAccessInput(false);
-            }}
-            className="text-purple-600 hover:text-purple-700 transition-colors duration-300 p-2 rounded-full hover:bg-purple-50"
-            aria-label="Return to festivals"
-          >
-            <Sparkles size={28} />
-          </button>
-        )}
+          <Suspense fallback={<Loader />}>
+            <InnerSphere />
+          </Suspense>
+        </Canvas>
       </div>
 
-      <Sidebar
-        isNavOpen={isNavOpen}
-        setIsNavOpen={setIsNavOpen}
-        user={auth.currentUser}
-        userProfile={userProfile}
-        setSelectedFestival={setSelectedFestival}
-      />
+      {/* Content - Add padding bottom for scrolling space */}
+      <div className="relative z-10 min-h-screen pb-20">
+        {/* Navigation - Position back button */}
+        <div className="w-full px-8 mt-8">
+          {selectedFestival && (
+            <button
+              onClick={() => {
+                setSelectedFestival("");
+                setShowFestivalList(true);
+                setShowAccessInput(false);
+              }}
+              className="text-white/40 hover:text-white/90 
+                        transition-all duration-300
+                        text-sm font-['Space_Grotesk']"
+              aria-label="Return to festivals overview"
+            >
+              ← Back
+            </button>
+          )}
+        </div>
 
-      {!selectedFestival ? (
-        <div className="max-w-5xl mx-auto px-4 mt-8 md:mt-16">
-          {/* Header Section */}
-          <div className="text-center mb-12 relative z-10">
-            <h1 className="text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-700 mb-4">
-              Your Festivals
-            </h1>
-            <p className="text-xl text-gray-600 font-light">
-              Access or select a festival to view content
-            </p>
-          </div>
+        <Sidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={auth.currentUser}
+          userProfile={userProfile}
+          setSelectedFestival={setSelectedFestival}
+        />
 
-          <div className="grid md:grid-cols-2 gap-6 relative z-10">
-            {/* Access New Festival Card */}
-            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.05)] 
-                          transform transition-all duration-300 hover:shadow-[0_4px_25px_rgba(0,0,0,0.07)]">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <KeyRound className="text-purple-500" size={24} />
-                Access New Festival
-              </h2>
-              <form onSubmit={handleAccessCodeSubmit} className="space-y-5">
-                <div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={generalAccessCode}
-                      onChange={(e) => setGeneralAccessCode(e.target.value)}
-                      placeholder="Enter access code"
-                      className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-100 rounded-xl
-                               text-gray-800 placeholder-gray-400
-                               focus:outline-none focus:border-purple-300 focus:ring-2 focus:ring-purple-100
-                               transition-all duration-300"
-                    />
-                  </div>
+        {!selectedFestival ? (
+          <div className="max-w-5xl mx-auto px-4 mt-8 md:mt-16">
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Access New Festival Card */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                            p-8 border border-white/20">
+                <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] mb-6 text-white/90 
+                             flex items-center gap-2">
+                  <KeyRound className="text-white/80" size={24} />
+                  Access New Festival
+                </h2>
+                <form onSubmit={handleAccessCodeSubmit} className="space-y-4">
+                  <input
+                    type="text"
+                    value={generalAccessCode}
+                    onChange={(e) => setGeneralAccessCode(e.target.value)}
+                    placeholder="Enter access code"
+                    className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                             text-white placeholder-white/50 font-['Space_Grotesk']
+                             focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                  />
                   {generalAccessError && (
-                    <p className="mt-2 text-red-500 text-sm flex items-center gap-1">
-                      <span className="inline-block w-1 h-1 bg-red-500 rounded-full"></span>
-                      {generalAccessError}
-                    </p>
+                    <p className="text-red-400 text-sm">{generalAccessError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="flex-1 px-8 py-3 border-2 border-white/30 rounded-full
+                               text-white text-lg font-['Space_Grotesk'] tracking-[0.2em]
+                               transition-all duration-300 
+                               hover:border-white/60 hover:scale-105
+                               hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                               active:scale-95"
+                    >
+                      JOIN FESTIVAL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowQRScanner(true)}
+                      className="aspect-square bg-white/10 text-white p-4 rounded-full
+                               border-2 border-white/30
+                               hover:border-white/60 hover:bg-white/20
+                               transition-all duration-300"
+                    >
+                      <QrCode size={24} />
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Your Accessible Festivals Card */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                            p-8 border border-white/20">
+                <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] mb-6 text-white/90 
+                             flex items-center gap-2">
+                  <Star className="text-white/80" size={24} />
+                  Your Accessible Festivals
+                </h2>
+                <div className="space-y-3">
+                  {festivals
+                    .filter(festival => accessibleFestivals.has(festival.id))
+                    .map((festival) => (
+                      <button
+                        key={festival.id}
+                        onClick={() => {
+                          setSelectedFestival(festival.id);
+                          setShowFestivalList(false);
+                          setIsNavOpen(false);
+                        }}
+                        className="w-full text-left p-5 rounded-xl bg-white/10 
+                                 border border-white/20
+                                 hover:border-white/40 hover:bg-white/20
+                                 transition-all duration-300 group"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-lg font-['Space_Grotesk'] text-white/90 group-hover:text-white 
+                                       transition-colors mb-1">
+                              {festival.name}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                              <span className="inline-block w-2 h-2 bg-white/40 rounded-full"></span>
+                              <p className="text-sm text-white/60 font-['Space_Grotesk']">
+                                {festival.categories?.length || 0} Categories Available
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-white/60 opacity-0 group-hover:opacity-100 
+                                       transition-all duration-300 transform translate-x-2 group-hover:translate-x-0
+                                       font-['Space_Grotesk']">
+                            View Content →
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                
+                  {festivals.filter(festival => accessibleFestivals.has(festival.id)).length === 0 && (
+                    <div className="text-center py-8 px-4 bg-white/10 rounded-xl border border-white/20">
+                      <div className="mb-3 text-white/40">
+                        <Package size={32} className="mx-auto" />
+                      </div>
+                      <p className="text-white/80 font-['Space_Grotesk']">
+                        No festivals accessed yet
+                      </p>
+                      <p className="text-sm text-white/60 mt-1 font-['Space_Grotesk']">
+                        Enter an access code to join your first festival
+                      </p>
+                    </div>
                   )}
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-purple-600 text-white px-8 py-4 rounded-xl
-                             font-medium text-lg
-                             hover:bg-purple-700 active:bg-purple-800
-                             transform transition-all duration-300
-                             hover:shadow-[0_4px_20px_rgba(168,85,247,0.3)]
-                             focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                  >
-                    Join Festival
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowQRScanner(true)}
-                    className="aspect-square bg-purple-100 text-purple-600 p-4 rounded-xl
-                             hover:bg-purple-200 active:bg-purple-300
-                             transform transition-all duration-300
-                             focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                  >
-                    <QrCode size={24} />
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Your Accessible Festivals Card */}
-            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.05)]
-                          transform transition-all duration-300 hover:shadow-[0_4px_25px_rgba(0,0,0,0.07)]">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                <Star className="text-purple-500" size={24} />
-                Your Accessible Festivals
-              </h2>
-              <div className="space-y-3">
-                {festivals
-                  .filter(festival => accessibleFestivals.has(festival.id))
-                  .map((festival) => (
-                    <button
-                      key={festival.id}
-                      onClick={() => {
-                        setSelectedFestival(festival.id);
-                        setShowFestivalList(false);
-                        setIsNavOpen(false);
-                      }}
-                      className="w-full text-left p-5 rounded-xl bg-gray-50
-                               border-2 border-transparent
-                               hover:border-purple-200 hover:bg-purple-50
-                               transition-all duration-300 group"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-700 
-                                     transition-colors mb-1">
-                            {festival.name}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <span className="inline-block w-2 h-2 bg-purple-500 rounded-full"></span>
-                            <p className="text-sm text-gray-500">
-                              {festival.categories?.length || 0} Categories Available
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-purple-600 opacity-0 group-hover:opacity-100 
-                                     transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-                          View Content →
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                
-                {festivals.filter(festival => accessibleFestivals.has(festival.id)).length === 0 && (
-                  <div className="text-center py-8 px-4 bg-gray-50 rounded-xl">
-                    <div className="mb-3 text-gray-400">
-                      <Package size={32} className="mx-auto" />
-                    </div>
-                    <p className="text-gray-600">
-                      No festivals accessed yet
-                    </p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Enter an access code to join your first festival
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
-          </div>
 
-          {/* Background Decorative Elements */}
-          <div className="fixed inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute w-[500px] h-[500px] bg-purple-100 rounded-full 
-                          blur-3xl opacity-20 -top-40 -left-40 animate-pulse"></div>
-            <div className="absolute w-[500px] h-[500px] bg-rose-100 rounded-full 
-                          blur-3xl opacity-20 -bottom-40 -right-40 animate-pulse"
-                 style={{ animationDelay: '1s' }}></div>
+            <p className="text-center text-white/60 mt-8 font-['Space_Grotesk'] tracking-wider
+                         hover:text-white/90 transition-colors duration-300">
+              Experience the moment. Cherish forever.
+            </p>
           </div>
-        </div>
-      ) : (
-        <div className="max-w-6xl mx-auto px-4">
-          {/* Festival Name Display */}
-          <div className="mb-12">
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 
-                          border border-gray-100 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-50/50 to-rose-50/50"></div>
-              <div className="relative">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 text-center">
+        ) : (
+          // Festival content view
+          <div className="max-w-6xl mx-auto px-4 pb-20">
+            {/* Back button - Positioned above festival name */}
+            <div className="mb-4">
+              <button
+                onClick={() => {
+                  setSelectedFestival("");
+                  setShowFestivalList(true);
+                  setShowAccessInput(false);
+                }}
+                className="backdrop-blur-xl bg-white/5 rounded-full 
+                          px-6 py-2.5 border border-white/10
+                          text-white/50 hover:text-white/90 
+                          transition-all duration-300
+                          text-sm font-['Space_Grotesk'] tracking-wider
+                          hover:bg-white/10 hover:border-white/20"
+                aria-label="Return to festivals overview"
+              >
+                Back
+              </button>
+            </div>
+
+            {/* Festival Header Section */}
+            <div className="mb-12 grid grid-cols-1 md:grid-cols-[1fr,auto] gap-8 items-stretch">
+              {/* Festival Name */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                            p-8 border border-white/20
+                            flex flex-col justify-center">
+                <h1 className="text-4xl md:text-5xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
                   {festivals.find(f => f.id === selectedFestival)?.name}
                 </h1>
-                <div className="mt-2 text-center">
-                  <span className="text-gray-500 text-sm">
+                <div className="mt-2">
+                  <span className="text-white/60 text-sm font-['Space_Grotesk']">
                     View and filter your festival content below
                   </span>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Filters Section */}
-          <div className="mb-8 bg-white rounded-2xl shadow-md p-6">
-            <div className="space-y-6">
-              {/* Category Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filter by Category
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setSelectedCategory("")}
-                    className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 ${
-                      selectedCategory === ""
-                        ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                        : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-                    }`}
-                  >
-                    All Categories
-                  </button>
-                  {festivals
-                    .find(f => f.id === selectedFestival)
-                    ?.categories?.map((category) => (
+              {/* Filters Section - Moved to right */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                            p-6 border border-white/20
+                            md:min-w-[300px]">
+                <div className="space-y-6">
+                  {/* Category Filter */}
+                  <div>
+                    <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                      Filter by Category
+                    </label>
+                    <div className="flex flex-wrap gap-2">
                       <button
-                        key={category.id}
-                        onClick={() => setSelectedCategory(category.id)}
-                        className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 ${
-                          selectedCategory === category.id
-                            ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                            : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-                        }`}
-                      >
-                        {category.name}
-                      </button>
-                    ))}
-                </div>
-              </div>
-
-              {/* Media Type Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Media Type
-                </label>
-                <div className="inline-flex bg-gray-100 p-1 rounded-full">
-                  {["all", "image", "video"].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setSelectedMediaType(type as "all" | "image" | "video")}
-                      className={`px-6 py-2 rounded-full transition-all duration-200 ${
-                        selectedMediaType === type
-                          ? "bg-purple-600 text-white shadow-lg transform scale-105"
-                          : "text-gray-600 hover:text-gray-900"
+                        onClick={() => setSelectedCategory("")}
+                        className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 
+                                  font-['Space_Grotesk'] ${
+                        selectedCategory === ""
+                          ? "bg-white/20 text-white border-2 border-white/40"
+                          : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
                       }`}
-                    >
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </button>
-                  ))}
+                      >
+                        All Categories
+                      </button>
+                      {festivals
+                        .find(f => f.id === selectedFestival)
+                        ?.categories?.map((category) => (
+                          <button
+                            key={category.id}
+                            onClick={() => setSelectedCategory(category.id)}
+                            className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 
+                                      font-['Space_Grotesk'] ${
+                              selectedCategory === category.id
+                                ? "bg-white/20 text-white border-2 border-white/40"
+                                : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
+                            }`}
+                          >
+                            {category.name}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* Media Type Filter */}
+                  <div>
+                    <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                      Media Type
+                    </label>
+                    <div className="inline-flex bg-white/5 p-1 rounded-full border border-white/10">
+                      {["all", "image", "video"].map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setSelectedMediaType(type as "all" | "image" | "video")}
+                          className={`px-6 py-2 rounded-full transition-all duration-200 
+                                    font-['Space_Grotesk'] ${
+                            selectedMediaType === type
+                              ? "bg-white/20 text-white"
+                              : "text-white/60 hover:text-white"
+                          }`}
+                        >
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Media Grid */}
-          {loadingError && (
-            <div className="text-red-500 text-center mb-4">{loadingError}</div>
-          )}
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredPosts.flatMap((post, postIndex) => 
-              post.mediaFiles.map((media, mediaIndex) => (
-                <div key={`${post.id}-${mediaIndex}`} className="relative group">
-                  {media.type === 'video' ? (
-                    <div className="aspect-[9/16] rounded-2xl overflow-hidden">
-                      <video
-                        src={media.url}
-                        className="w-full h-full object-cover"
-                        controls
-                        onError={(e) => {
-                          console.error("Video failed to load:", media.url);
-                          (e.target as HTMLVideoElement).style.display = 'none';
-                        }}
-                      />
-                      <div className="absolute bottom-2 right-2 flex gap-2">
-                        <button
-                          onClick={() => handleInstagramShare(
-                            media.url, 
-                            media.type, 
-                            post.id, 
-                            post.festivalId, 
-                            media.categoryId, 
-                            mediaIndex
-                          )}
-                          className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity hover:from-purple-700 hover:to-pink-600"
-                        >
-                          <Share className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDownload(media.url, media.type, post.id, post.festivalId, media.categoryId, mediaIndex)}
-                          className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="aspect-[9/16] rounded-2xl overflow-hidden">
-                      <img
-                        src={media.url}
-                        alt={`Post content ${mediaIndex + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          console.error("Image failed to load:", media.url);
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                      <div className="absolute bottom-2 right-2 flex gap-2">
-                        <button
-                          onClick={() => handleInstagramShare(
-                            media.url, 
-                            media.type, 
-                            post.id, 
-                            post.festivalId, 
-                            media.categoryId, 
-                            mediaIndex
-                          )}
-                          className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity hover:from-purple-700 hover:to-pink-600"
-                        >
-                          <Share className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDownload(media.url, media.type, post.id, post.festivalId, media.categoryId, mediaIndex)}
-                          className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {post.text && (
-                    <p className="text-gray-800 mt-2 text-sm text-center">{post.text}</p>
-                  )}
-                </div>
-              ))
+            {/* Media Grid */}
+            {loadingError && (
+              <div className="text-red-400 text-center mb-4 font-['Space_Grotesk']">
+                {loadingError}
+              </div>
             )}
-          </div>
-          
-          {filteredPosts.length === 0 && !loadingError && (
-            <div className="text-center text-gray-500 mt-12">
-              <p className="text-xl">
-                {posts.length === 0 ? "No posts yet" : "No posts match the selected filters"}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* QR Scanner Modal */}
-      {showQRScanner && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full mx-4 relative shadow-2xl">
-            <button
-              onClick={() => setShowQRScanner(false)}
-              className="absolute -top-4 -right-4 p-2 rounded-full bg-white shadow-lg 
-                         hover:bg-gray-50 transition-colors duration-200"
-              aria-label="Close scanner"
-            >
-              <X size={24} className="text-gray-600" />
-            </button>
             
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-semibold text-gray-800">
-                Scan Festival QR Code
-              </h3>
-              <p className="text-gray-500 text-sm mt-2">
-                Use your camera or upload a QR code image
-              </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {filteredPosts.flatMap((post, postIndex) => 
+                post.mediaFiles.map((media, mediaIndex) => (
+                  <div key={`${post.id}-${mediaIndex}`} className="relative group">
+                    {media.type === 'video' ? (
+                      <div className="aspect-[9/16] rounded-2xl overflow-hidden 
+                                    backdrop-blur-xl bg-white/10 border border-white/20">
+                        <video
+                          src={media.url}
+                          className="w-full h-full object-cover"
+                          controls
+                          onError={(e) => {
+                            console.error("Video failed to load:", media.url);
+                            (e.target as HTMLVideoElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="absolute bottom-2 right-2 flex gap-2">
+                          <button
+                            onClick={() => handleInstagramShare(
+                              media.url, 
+                              media.type, 
+                              post.id, 
+                              post.festivalId, 
+                              media.categoryId, 
+                              mediaIndex
+                            )}
+                            className="bg-white/10 text-white p-2 rounded-full opacity-0 
+                                     group-hover:opacity-100 transition-all duration-300
+                                     hover:bg-white/20 border border-white/20"
+                          >
+                            <Share className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDownload(
+                              media.url, 
+                              media.type, 
+                              post.id, 
+                              post.festivalId, 
+                              media.categoryId, 
+                              mediaIndex
+                            )}
+                            className="bg-white/10 text-white p-2 rounded-full opacity-0 
+                                     group-hover:opacity-100 transition-all duration-300
+                                     hover:bg-white/20 border border-white/20"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-[9/16] rounded-2xl overflow-hidden 
+                                    backdrop-blur-xl bg-white/10 border border-white/20">
+                        <img
+                          src={media.url}
+                          alt={`Post content ${mediaIndex + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error("Image failed to load:", media.url);
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <div className="absolute bottom-2 right-2 flex gap-2">
+                          <button
+                            onClick={() => handleInstagramShare(
+                              media.url, 
+                              media.type, 
+                              post.id, 
+                              post.festivalId, 
+                              media.categoryId, 
+                              mediaIndex
+                            )}
+                            className="bg-white/10 text-white p-2 rounded-full opacity-0 
+                                     group-hover:opacity-100 transition-all duration-300
+                                     hover:bg-white/20 border border-white/20"
+                          >
+                            <Share className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDownload(
+                              media.url, 
+                              media.type, 
+                              post.id, 
+                              post.festivalId, 
+                              media.categoryId, 
+                              mediaIndex
+                            )}
+                            className="bg-white/10 text-white p-2 rounded-full opacity-0 
+                                     group-hover:opacity-100 transition-all duration-300
+                                     hover:bg-white/20 border border-white/20"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {post.text && (
+                      <p className="text-white/80 mt-2 text-sm text-center font-['Space_Grotesk']">
+                        {post.text}
+                      </p>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
             
-            <div className="relative rounded-2xl overflow-hidden bg-gray-50 shadow-inner">
-              <div id="qr-reader" className="w-full max-w-sm mx-auto"></div>
-              <div className="absolute inset-0 border-2 border-purple-500/50 rounded-2xl pointer-events-none">
-                <div className="absolute inset-12 border-2 border-dashed border-purple-500/30 rounded-xl"></div>
-              </div>
-            </div>
-            
-            {scanError && (
-              <div className="mt-4 p-3 bg-red-50 rounded-xl">
-                <p className="text-red-600 text-sm text-center flex items-center justify-center gap-2">
-                  <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                  {scanError}
+            {filteredPosts.length === 0 && !loadingError && (
+              <div className="text-center text-white/60 mt-12 font-['Space_Grotesk']">
+                <p className="text-xl">
+                  {posts.length === 0 ? "No posts yet" : "No posts match the selected filters"}
                 </p>
               </div>
             )}
-            
-            <div className="mt-6 space-y-3">
-              {/* Camera controls */}
-              <button
-                onClick={toggleScanning}
-                className="w-full py-3 px-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 
-                           transition-colors duration-200 font-medium flex items-center justify-center gap-2"
-              >
-                <Camera size={20} />
-                {isScanning ? "Stop Scanning" : "Start Camera Scanning"}
-              </button>
+          </div>
+        )}
 
-              {/* File upload option */}
-              <div className="relative">
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={handleQRFileUpload}
-                  className="hidden"
-                  id="qr-file-input"
-                />
-                <label
-                  htmlFor="qr-file-input"
-                  className="w-full py-3 px-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 
-                           transition-colors duration-200 font-medium cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Upload size={20} />
-                  Upload QR Code Image or PDF
-                </label>
+        {/* QR Scanner Modal with updated styling */}
+        {showQRScanner && (
+          <div className="fixed inset-0 backdrop-blur-xl bg-black/90 flex items-center justify-center z-50 p-4">
+            <div className="bg-white/10 rounded-3xl p-6 max-w-md w-full mx-4 relative 
+                           border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+              <button
+                onClick={() => {
+                  setShowQRScanner(false);
+                  setIsScanning(false);
+                }}
+                className="absolute -top-4 -right-4 p-2 rounded-full bg-white/10 
+                           border border-white/20 hover:bg-white/20 
+                           transition-colors duration-200"
+                aria-label="Close scanner"
+              >
+                <X size={24} className="text-white" />
+              </button>
+              
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
+                  Scan Festival QR Code
+                </h3>
+                <p className="text-white/60 text-sm mt-2 font-['Space_Grotesk']">
+                  Use your camera or upload a QR code image
+                </p>
               </div>
+              
+              <div className="relative rounded-2xl overflow-hidden bg-black/30 
+                              border border-white/10 shadow-inner">
+                <div id="qr-reader" className="w-full max-w-sm mx-auto"></div>
+                <div className="absolute inset-0 border-2 border-white/20 rounded-2xl pointer-events-none">
+                  <div className="absolute inset-12 border-2 border-dashed border-white/10 rounded-xl"></div>
+                </div>
+              </div>
+              
+              {scanError && (
+                <div className="mt-4 p-3 bg-white/5 rounded-xl border border-red-500/20">
+                  <p className="text-red-400 text-sm text-center font-['Space_Grotesk'] flex items-center justify-center gap-2">
+                    <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                    {scanError}
+                  </p>
+                </div>
+              )}
+              
+              <div className="mt-6 space-y-3">
+                {/* Camera controls */}
+                <button
+                  onClick={toggleScanning}
+                  className="w-full py-3 px-4 border-2 border-white/30 rounded-full
+                            text-white font-['Space_Grotesk'] tracking-[0.2em]
+                            transition-all duration-300 
+                            hover:border-white/60 hover:scale-105
+                            hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                            active:scale-95
+                            flex items-center justify-center gap-2"
+                >
+                  <Camera size={20} />
+                  {isScanning ? "STOP SCANNING" : "START CAMERA"}
+                </button>
 
-              <button
-                onClick={() => setShowQRScanner(false)}
-                className="w-full py-3 text-gray-500 text-sm hover:text-gray-700 transition-colors duration-200"
-              >
-                Cancel
-              </button>
+                {/* File upload option */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleQRFileUpload}
+                    className="hidden"
+                    id="qr-file-input"
+                  />
+                  <label
+                    htmlFor="qr-file-input"
+                    className="w-full py-3 px-4 bg-white/10 text-white/90 rounded-full 
+                             border border-white/20 hover:bg-white/20 
+                             transition-all duration-200 font-['Space_Grotesk'] tracking-[0.1em]
+                             cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Upload size={20} />
+                    UPLOAD QR CODE
+                  </label>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setShowQRScanner(false);
+                    setIsScanning(false);
+                  }}
+                  className="w-full py-3 text-white/60 text-sm hover:text-white/90 
+                             transition-colors duration-200 font-['Space_Grotesk'] tracking-wider"
+                >
+                  CANCEL
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

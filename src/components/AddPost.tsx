@@ -854,21 +854,13 @@ const AddPost: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Check if the file is an image or PDF
-      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-        showToast("Please upload only image or PDF files for QR codes", "error");
+      if (!file.type.startsWith('image/')) {
+        showToast("Please upload only image files for QR codes", "error");
         return;
       }
 
       setQRCodeFile(file);
-      
-      // Only create preview URL for images
-      if (file.type.startsWith('image/')) {
-        setQRCodePreview(URL.createObjectURL(file));
-      } else {
-        // For PDFs, show a placeholder preview
-        setQRCodePreview('/pdf-icon.png'); // You'll need to add this image to your public folder
-      }
+      setQRCodePreview(URL.createObjectURL(file));
     }
   };
 
@@ -896,82 +888,63 @@ const AddPost: React.FC = () => {
 
     try {
       if (!qrCodeFile) {
-        showToast("Please upload a QR code image or PDF", "error");
+        showToast("Please upload a QR code image", "error");
         return;
       }
 
-      let qrCodeContent = '';
+      // Create a hidden div for the QR reader
+      const qrReaderDiv = document.createElement('div');
+      qrReaderDiv.id = 'qr-reader';
+      qrReaderDiv.style.display = 'none';
+      document.body.appendChild(qrReaderDiv);
 
-      // If it's an image, try to scan it for QR code content
-      if (qrCodeFile.type.startsWith('image/')) {
-        // Create a hidden div for the QR reader
-        const qrReaderDiv = document.createElement('div');
-        qrReaderDiv.id = 'qr-reader';
-        qrReaderDiv.style.display = 'none';
-        document.body.appendChild(qrReaderDiv);
+      try {
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        const qrCodeContent = await html5QrCode.scanFile(qrCodeFile, true);
+        console.log("Uploaded QR code content:", qrCodeContent);
 
-        try {
-          const html5QrCode = new Html5Qrcode("qr-reader");
-          qrCodeContent = await html5QrCode.scanFile(qrCodeFile, true);
-          console.log("Uploaded QR code content:", qrCodeContent);
-        } catch (error) {
-          console.error("Error scanning QR code:", error);
-          qrCodeContent = 'Unable to scan QR code content';
-        } finally {
-          // Clean up the temporary div
-          qrReaderDiv.remove();
-        }
-      } else {
-        // For PDFs, use the filename as the content or generate a unique identifier
-        qrCodeContent = `PDF-${crypto.randomUUID()}`;
-      }
-
-      // Create a safe filename
-      const fileExtension = qrCodeFile.type === 'application/pdf' ? '.pdf' : '.png';
-      const safeFileName = `${crypto.randomUUID()}${fileExtension}`;
-      
-      // Upload the file
-      const qrCodeRef = ref(storage, `qrcodes/${selectedFestival}/${safeFileName}`);
-      
-      // Use different upload settings for PDFs vs images
-      if (qrCodeFile.type === 'application/pdf') {
-        // For PDFs, use regular upload
-        await uploadBytes(qrCodeRef, qrCodeFile, {
-          contentType: 'application/pdf'
-        });
-      } else {
-        // For images, you might want to compress or resize before upload
+        // Create a safe filename
+        const safeFileName = `${crypto.randomUUID()}.png`;
+        
+        // Upload the file
+        const qrCodeRef = ref(storage, `qrcodes/${selectedFestival}/${safeFileName}`);
         await uploadBytes(qrCodeRef, qrCodeFile, {
           contentType: qrCodeFile.type
         });
+
+        const imageUrl = await getDownloadURL(qrCodeRef);
+
+        const newQRCode = {
+          id: crypto.randomUUID(),
+          code: qrCodeContent.trim(),
+          imageUrl,
+          linkedCategories: selectedQRCategories,
+          createdAt: new Date().toISOString(),
+          name: qrCodeName.trim()
+        };
+
+        const festivalRef = doc(db, "festivals", selectedFestival);
+        await updateDoc(festivalRef, {
+          qrCodes: arrayUnion(newQRCode)
+        });
+
+        // Fetch updated festivals data
+        await fetchFestivals();
+
+        setQRCodeFile(null);
+        setQRCodeName("");
+        setQRCodePreview("");
+        setSelectedQRCategories([]);
+        setShowQRCodeModal(false);
+        showToast("QR code added successfully! ✨", "success");
+
+      } catch (error) {
+        console.error("Error scanning QR code:", error);
+        showToast("Failed to read QR code from image", "error");
+      } finally {
+        // Clean up the temporary div
+        qrReaderDiv.remove();
       }
-
-      const imageUrl = await getDownloadURL(qrCodeRef);
-
-      const newQRCode = {
-        id: crypto.randomUUID(),
-        code: qrCodeContent,
-        imageUrl,
-        linkedCategories: selectedQRCategories,
-        createdAt: new Date().toISOString(),
-        name: qrCodeName.trim(),
-        fileType: qrCodeFile.type // Add this to track the file type
-      };
-
-      const festivalRef = doc(db, "festivals", selectedFestival);
-      await updateDoc(festivalRef, {
-        qrCodes: arrayUnion(newQRCode)
-      });
-
-      // Fetch updated festivals data
-      await fetchFestivals();
-
-      setQRCodeFile(null);
-      setQRCodeName("");
-      setQRCodePreview("");
-      setSelectedQRCategories([]);
-      setShowQRCodeModal(false);
-      showToast("QR code added successfully! ✨", "success");
 
     } catch (error) {
       console.error("Error adding QR code:", error);
@@ -1593,7 +1566,7 @@ const AddPost: React.FC = () => {
                 <div className="relative">
                   <input
                     type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf"
+                    accept="image/*"
                     onChange={handleQRCodeFileChange}
                     className="hidden"
                     id="qr-code-upload"
@@ -1603,25 +1576,16 @@ const AddPost: React.FC = () => {
                     className="w-full h-48 border-2 border-dashed border-purple-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition-colors"
                   >
                     {qrCodePreview ? (
-                      qrCodeFile?.type === 'application/pdf' ? (
-                        <div className="flex flex-col items-center justify-center">
-                          <svg className="w-12 h-12 text-purple-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                          </svg>
-                          <span className="text-sm text-purple-600">{qrCodeFile.name}</span>
-                        </div>
-                      ) : (
-                        <img
-                          src={qrCodePreview}
-                          alt="QR Code Preview"
-                          className="h-full object-contain p-2"
-                        />
-                      )
+                      <img
+                        src={qrCodePreview}
+                        alt="QR Code Preview"
+                        className="h-full object-contain p-2"
+                      />
                     ) : (
                       <>
                         <Upload size={24} className="text-purple-400 mb-2" />
-                        <span className="text-sm text-purple-600">Upload QR Code Image or PDF</span>
-                        <span className="text-xs text-gray-500 mt-1">Supported formats: PNG, JPEG, GIF, WebP, PDF</span>
+                        <span className="text-sm text-purple-600">Upload QR Code Image</span>
+                        <span className="text-xs text-gray-500 mt-1">Supported formats: PNG, JPEG, GIF, WebP</span>
                       </>
                     )}
                   </label>
@@ -1702,19 +1666,11 @@ const AddPost: React.FC = () => {
                       </div>
                       
                       <div className="flex items-center gap-4">
-                        {qrCode.fileType === 'application/pdf' ? (
-                          <div className="w-24 h-24 flex items-center justify-center bg-white rounded-lg">
-                            <svg className="w-12 h-12 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                        ) : (
-                          <img
-                            src={qrCode.imageUrl}
-                            alt={`QR Code - ${qrCode.name}`}
-                            className="w-24 h-24 object-contain bg-white rounded-lg"
-                          />
-                        )}
+                        <img
+                          src={qrCode.imageUrl}
+                          alt={`QR Code - ${qrCode.name}`}
+                          className="w-24 h-24 object-contain bg-white rounded-lg"
+                        />
                         <div className="flex-1">
                           <span className="text-xs font-medium text-gray-600 block mb-2">
                             Linked Categories:
