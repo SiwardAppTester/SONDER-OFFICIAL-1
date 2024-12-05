@@ -278,11 +278,11 @@ const Calendar: React.FC = () => {
         />
 
         {/* Main Calendar Content */}
-        <div className="max-w-[1400px] mx-auto px-4 mt-1 flex gap-6">
+        <div className="max-w-[1200px] mx-auto px-4 mt-1 flex gap-6">
           {/* Calendar Section */}
           <div className="flex-1">
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                         p-8 border border-white/20">
+                         p-6 border border-white/20">
               {/* Month Navigation */}
               <div className="flex justify-between items-center mb-6">
                 <button
@@ -311,9 +311,9 @@ const Calendar: React.FC = () => {
               </div>
 
               {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-3">
+              <div className="grid grid-cols-7 gap-2">
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                  <div key={day} className="text-center font-['Space_Grotesk'] tracking-wider text-white/70 py-2">
+                  <div key={day} className="text-center font-['Space_Grotesk'] tracking-wider text-white/70 py-1">
                     {day}
                   </div>
                 ))}
@@ -328,7 +328,7 @@ const Calendar: React.FC = () => {
                   return (
                     <div
                       key={index}
-                      className={`min-h-[100px] border rounded-xl p-3 transition-all duration-300 
+                      className={`min-h-[90px] border rounded-xl p-3 transition-all duration-300 
                         ${day ? 'cursor-pointer hover:scale-[1.02]' : ''}
                         ${selectedDate === date ? 'bg-white/20 border-white/40' : 'border-white/20'}
                         ${!day ? 'bg-transparent border-transparent' : 'bg-white/10'}
@@ -357,7 +357,7 @@ const Calendar: React.FC = () => {
           </div>
 
           {/* Filters Section - moved to right side */}
-          <div className="w-80 space-y-3">
+          <div className="w-72 space-y-3">
             {/* Genre Filter */}
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
                       border border-white/20 overflow-hidden sticky top-4">
