@@ -155,6 +155,9 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
       return;
     }
 
+    // Close modal immediately to prevent multiple submissions
+    setShowCreatePost(false);
+
     try {
       setUploadProgress(0);
       const mediaFiles: MediaFile[] = [];
@@ -194,11 +197,11 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
       setSelectedFiles([]);
       setPreviewUrls([]);
       setUploadProgress(0);
-      setShowCreatePost(false); // Close the modal after posting
 
       console.log("Post created successfully");
     } catch (error) {
       console.error("Error creating post:", error);
+      // Optionally show error message to user
     }
   };
 
@@ -421,6 +424,29 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
     }
   }, [showShareModal]);
 
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    if (!user) return;
+
+    try {
+      const postRef = doc(db, "discover_posts", postId);
+      const postDoc = await getDoc(postRef);
+      
+      if (!postDoc.exists()) {
+        console.error("Post not found");
+        return;
+      }
+
+      const post = postDoc.data();
+      const updatedComments = post.comments.filter((c: Comment) => c.id !== commentId);
+
+      await updateDoc(postRef, {
+        comments: updatedComments
+      });
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Three.js Background */}
@@ -548,125 +574,125 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
                     </div>
                   </div>
 
-                  {/* Post Content */}
-                  <p className="text-white/90 mb-4">{post.text}</p>
-
-                  {/* Media Content */}
-                  {post.mediaFiles && post.mediaFiles.length > 0 && (
-                    <div className="mb-4 grid gap-2 grid-cols-2">
-                      {post.mediaFiles.map((media, index) => (
-                        <div key={index} className="relative rounded-lg overflow-hidden 
-                                                  border border-white/20">
-                          {media.type === 'image' ? (
-                            <img
-                              src={media.url}
-                              alt="Post content"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <video
-                              src={media.url}
-                              controls
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Post Actions */}
-                  <div className="flex items-center gap-6 mb-4">
-                    <button
-                      onClick={() => handleLike(post.id)}
-                      className="flex items-center gap-2 text-white/60 hover:text-white 
-                               transition-colors duration-300"
-                    >
-                      <Heart
-                        size={20}
-                        className={user && post.likes.includes(user.uid) ? 
-                                 "fill-white text-white" : ""}
-                      />
-                      <span>{post.likes.length}</span>
-                    </button>
-                    <button
-                      onClick={() => setShowComments(prev => ({ ...prev, [post.id]: !prev[post.id] }))}
-                      className="flex items-center gap-2 text-white/60 hover:text-white 
-                               transition-colors duration-300"
-                    >
-                      <MessageCircle size={20} />
-                      <span>{post.comments.length}</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        fetchChatUsers();
-                        setShowShareModal(post.id);
-                      }}
-                      className="flex items-center gap-2 text-white/60 hover:text-white 
-                               transition-colors duration-300 ml-auto"
-                    >
-                      <ShareIcon size={20} />
-                      <span>Share</span>
-                    </button>
-                  </div>
-
-                  {/* Comments Section */}
-                  {showComments[post.id] && (
-                    <div className="mt-4 space-y-4 border-t border-white/10 pt-4">
-                      {/* Existing Comments */}
-                      {post.comments.map((comment) => (
-                        <div key={comment.id} className="flex items-start gap-3 bg-white/5 p-3 rounded-lg
-                                                   backdrop-blur-sm border border-white/10">
-                          {comment.userPhotoURL ? (
-                            <img
-                              src={comment.userPhotoURL}
-                              alt={comment.userDisplayName}
-                              className="w-8 h-8 rounded-full border border-white/20"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 bg-white/10 rounded-full 
-                                           border border-white/20
-                                           flex items-center justify-center">
-                              <span className="text-white/90 text-sm font-medium">
-                                {comment.userDisplayName[0].toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex-grow">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-medium text-sm text-white/90">{comment.userDisplayName}</p>
-                                <p className="text-white/80">{comment.text}</p>
-                              </div>
-                              <button
-                                onClick={() => handleCommentLike(post.id, comment.id)}
-                                className="flex items-center gap-1 text-sm text-white/60 hover:text-white 
-                                          transition-colors ml-4 flex-shrink-0"
-                              >
-                                <Heart
-                                  size={14}
-                                  className={user && comment.likes?.includes(user.uid) ? 
-                                           "fill-white text-white" : ""}
+                  {/* Post Content with New Layout */}
+                  <div className="flex gap-4">
+                    {/* Left Side - Media Content and Like Button */}
+                    <div className="relative flex-1 max-w-[800px]">
+                      {/* Text Content */}
+                      <p className="text-white/90 mb-4">{post.text}</p>
+                      
+                      {/* Media Content with Like Button */}
+                      {post.mediaFiles && post.mediaFiles.length > 0 && (
+                        <div className="relative rounded-lg overflow-hidden border border-white/20">
+                          {post.mediaFiles.map((media, index) => (
+                            <div key={index} className="relative">
+                              {media.type === 'image' ? (
+                                <img
+                                  src={media.url}
+                                  alt="Post content"
+                                  className="w-full object-cover rounded-lg"
                                 />
-                                <span>{comment.likes?.length || 0}</span>
-                              </button>
+                              ) : (
+                                <video
+                                  src={media.url}
+                                  controls
+                                  className="w-full object-cover rounded-lg"
+                                />
+                              )}
                             </div>
+                          ))}
+                          
+                          {/* Like Button */}
+                          <div className="absolute bottom-4 right-4 backdrop-blur-md bg-black/30 
+                                        rounded-lg p-2 flex items-center gap-2 
+                                        border border-white/10">
+                            <span className="text-sm text-white/80">{post.likes.length}</span>
+                            <button
+                              onClick={() => handleLike(post.id)}
+                              className="flex items-center"
+                            >
+                              <Heart
+                                size={20}
+                                className={`${user && post.likes.includes(user.uid) ? 
+                                          "fill-white text-white" : "text-white/60"} 
+                                          hover:text-white transition-colors`}
+                              />
+                            </button>
                           </div>
                         </div>
-                      ))}
+                      )}
+                    </div>
 
-                      {/* Add Comment Input */}
-                      <div className="flex gap-2 mt-3">
+                    {/* Right Side - Comments Section and Input */}
+                    <div className="w-72 border-l border-white/10 pl-4 flex flex-col">
+                      {/* Comments Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-white/90 font-medium">Comments</h3>
+                        <span className="text-white/60 text-sm">{post.comments.length}</span>
+                      </div>
+
+                      {/* Comments List - Scrollable with space for input */}
+                      <div className="overflow-y-auto pr-2 space-y-4" style={{ height: 'calc(100% - 120px)' }}>
+                        {post.comments.map((comment) => (
+                          <div key={comment.id} className="bg-white/5 p-3 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              {comment.userPhotoURL ? (
+                                <img
+                                  src={comment.userPhotoURL}
+                                  alt={comment.userDisplayName}
+                                  className="w-8 h-8 rounded-full border border-white/20"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                                  <span className="text-white/90 text-sm">
+                                    {comment.userDisplayName[0].toUpperCase()}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                  <p className="text-sm font-medium text-white/90">
+                                    {comment.userDisplayName}
+                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => handleCommentLike(post.id, comment.id)}
+                                      className="text-white/60 hover:text-white"
+                                    >
+                                      <Heart
+                                        size={14}
+                                        className={user && comment.likes?.includes(user.uid) ? 
+                                                 "fill-white" : ""}
+                                      />
+                                    </button>
+                                    {/* Only show delete button if comment belongs to current user */}
+                                    {user && comment.userId === user.uid && (
+                                      <button
+                                        onClick={() => handleDeleteComment(post.id, comment.id)}
+                                        className="text-white/60 hover:text-red-500 transition-colors"
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-white/80 text-sm mt-1">{comment.text}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Add Comment Input - Fixed at bottom of comments section */}
+                      <div className="mt-auto pt-4 border-t border-white/10">
                         <input
                           type="text"
                           value={commentText[post.id] || ''}
                           onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
                           placeholder="Add a comment..."
-                          className="flex-grow p-2 rounded-lg 
-                                   bg-white/10 border border-white/20
+                          className="w-full p-3 rounded-lg bg-white/5 border border-white/20
                                    text-white placeholder-white/50
-                                   focus:outline-none focus:ring-2 focus:ring-white/30
-                                   transition-all duration-300"
+                                   focus:outline-none focus:ring-2 focus:ring-white/30"
                           onKeyPress={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
@@ -674,17 +700,9 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
                             }
                           }}
                         />
-                        <button
-                          onClick={() => handleComment(post.id)}
-                          disabled={!commentText[post.id]?.trim()}
-                          className="p-2 text-white/60 hover:text-white disabled:opacity-50
-                                   transition-colors duration-300"
-                        >
-                          <Send size={20} />
-                        </button>
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               ))
             ) : (
@@ -703,13 +721,16 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
 
       {/* Create Post Modal */}
       {showCreatePost && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-800">Create Post</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                        shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                        border border-white/20 
+                        w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-white/10 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-white">Create Post</h2>
               <button
                 onClick={() => setShowCreatePost(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-white/60 hover:text-white transition-colors"
               >
                 <X size={24} />
               </button>
@@ -720,7 +741,10 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
                 value={newPost}
                 onChange={(e) => setNewPost(e.target.value)}
                 placeholder="What's on your mind?"
-                className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full p-3 bg-white/5 border border-white/20 rounded-lg 
+                          resize-none text-white placeholder-white/50
+                          focus:outline-none focus:ring-2 focus:ring-white/30
+                          transition-all duration-300"
                 rows={3}
               />
               
@@ -733,18 +757,20 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
                         <img
                           src={url}
                           alt="Preview"
-                          className="w-20 h-20 object-cover rounded-lg"
+                          className="w-20 h-20 object-cover rounded-lg border border-white/20"
                         />
                       ) : (
                         <video
                           src={url}
-                          className="w-20 h-20 object-cover rounded-lg"
+                          className="w-20 h-20 object-cover rounded-lg border border-white/20"
                         />
                       )}
                       <button
                         type="button"
                         onClick={() => removeFile(index)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                        className="absolute -top-2 -right-2 bg-red-500/80 text-white 
+                               rounded-full p-1 backdrop-blur-sm
+                               hover:bg-red-500 transition-colors"
                       >
                         <X size={14} />
                       </button>
@@ -755,9 +781,9 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
 
               {/* Upload Progress */}
               {uploadProgress > 0 && uploadProgress < 100 && (
-                <div className="mt-3 w-full bg-gray-200 rounded-full h-2.5">
+                <div className="mt-3 w-full bg-white/10 rounded-full h-2.5">
                   <div
-                    className="bg-purple-600 h-2.5 rounded-full transition-all duration-300"
+                    className="bg-white/30 h-2.5 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
                 </div>
@@ -765,7 +791,9 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
 
               <div className="mt-3 flex justify-between items-center">
                 <div className="flex gap-2">
-                  <label className="cursor-pointer text-purple-600 hover:text-purple-700 p-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2">
+                  <label className="cursor-pointer text-white/80 hover:text-white 
+                                p-2 rounded-lg hover:bg-white/10 transition-colors 
+                                flex items-center gap-2 border border-white/20">
                     <input
                       type="file"
                       accept="image/*,video/*"
@@ -780,7 +808,10 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
                 <button
                   type="submit"
                   disabled={!newPost.trim() && selectedFiles.length === 0}
-                  className="px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 bg-white/10 text-white rounded-full 
+                           hover:bg-white/20 transition-all duration-300
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           border border-white/20"
                 >
                   Post
                 </button>
