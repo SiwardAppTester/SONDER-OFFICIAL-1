@@ -21,6 +21,7 @@ import SinglePostView from "./SinglePostView";
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import '../styles/chat.css';
 
 interface Message {
   id: string;
@@ -509,168 +510,173 @@ const Chat: React.FC = () => {
         )}
 
         {/* Chat Layout */}
-        <div className="flex flex-col md:flex-row flex-1 overflow-hidden px-4 pb-4 h-[calc(100vh-8rem)] space-y-4 md:space-y-0">
-          {/* Users sidebar */}
-          <div className={`w-full md:w-1/4 md:mr-4 h-full ${selectedUser ? 'hidden md:block' : 'block'}`}>
-            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                          border border-white/20 p-6 h-full">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">Chats</h2>
-                <button
-                  onClick={() => setIsSearchModalOpen(true)}
-                  className="p-2 text-white/90 hover:text-white rounded-full 
-                           hover:bg-white/10 transition-all duration-300"
-                  aria-label="New chat"
-                >
-                  <Plus size={20} />
-                </button>
-              </div>
-
-              {/* Search input */}
-              <div className="mb-6">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search chats..."
-                  className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
-                           text-white placeholder-white/50 font-['Space_Grotesk']
-                           focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
-                />
-              </div>
-
-              {/* Chats list */}
-              <div className="space-y-3 overflow-y-auto">
-                {filteredChats.map((chat) => (
-                  <div
-                    key={chat.uid}
-                    onClick={() => handleUserSelect(chat)}
-                    className={`flex items-center p-4 cursor-pointer rounded-xl 
-                              transition-all duration-300 transform hover:scale-[1.02]
-                              ${selectedUser?.uid === chat.uid
-                                ? "bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                                : "hover:bg-white/10"}`}
+        <div className="flex justify-center w-full">
+          <div className="flex flex-col md:flex-row justify-center gap-4 overflow-hidden px-4 pb-4 h-[calc(100vh-12rem)] 
+                        max-w-7xl mx-auto w-full">
+            {/* Users sidebar */}
+            <div className={`w-full md:w-80 h-full ${selectedUser ? 'hidden md:block' : 'block'}`}>
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                            border border-white/20 p-6 h-full flex flex-col">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">Chats</h2>
+                  <button
+                    onClick={() => setIsSearchModalOpen(true)}
+                    className="p-2 text-white/90 hover:text-white rounded-full 
+                             hover:bg-white/10 transition-all duration-300"
+                    aria-label="New chat"
                   >
-                    <ChatAvatar user={chat} />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-['Space_Grotesk'] text-white/90">{chat.displayName}</div>
-                      <div className="text-sm text-white/60 truncate">
-                        {chat.isGroup ? `Group: ${chat.email}` : chat.email}
-                      </div>
-                      {chat.lastMessage && (
-                        <div className="text-sm text-white/60 truncate">
-                          {chat.lastMessage}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+                    <Plus size={20} />
+                  </button>
+                </div>
 
-          {/* Chat area */}
-          <div className={`flex-1 h-full ${selectedUser ? 'block' : 'hidden md:block'}`}>
-            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                          border border-white/20 flex flex-col h-full">
-              {selectedUser ? (
-                <>
-                  {/* Chat header */}
-                  <div className="p-4 md:p-6 border-b border-white/20">
-                    <div className="flex items-center">
-                      <button
-                        onClick={() => setSelectedUser(null)}
-                        className="mr-2 p-2 text-white/90 hover:text-white 
-                                 hover:bg-white/10 rounded-full transition-colors md:hidden"
-                      >
-                        <X size={20} />
-                      </button>
-                      <ChatAvatar user={selectedUser} />
-                      <div>
-                        <div className="font-['Space_Grotesk'] text-white/90">
-                          {selectedUser.displayName}
-                        </div>
-                        <div className="text-sm text-white/60">{selectedUser.email}</div>
-                      </div>
-                    </div>
-                  </div>
+                {/* Search input */}
+                <div className="mb-6">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search chats..."
+                    className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                             text-white placeholder-white/50 font-['Space_Grotesk']
+                             focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                  />
+                </div>
 
-                  {/* Messages area */}
-                  <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-                    {messages.map((message) => (
+                {/* Chats list */}
+                <div className="flex-1 overflow-y-auto hide-scrollbar">
+                  <div className="space-y-3">
+                    {filteredChats.map((chat) => (
                       <div
-                        key={message.id}
-                        className={`flex ${
-                          message.senderId === currentUser?.uid ? "justify-end" : "justify-start"
-                        } mb-4`}
+                        key={chat.uid}
+                        onClick={() => handleUserSelect(chat)}
+                        className={`flex items-center p-4 cursor-pointer rounded-xl 
+                                  transition-all duration-300 transform hover:scale-[1.02]
+                                  ${selectedUser?.uid === chat.uid
+                                    ? "bg-white/20 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                                    : "hover:bg-white/10"}`}
                       >
-                        <div
-                          className={`max-w-[70%] rounded-2xl px-4 py-3 
-                                    ${message.senderId === currentUser?.uid
-                                      ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white/90"
-                                      : "bg-white/10 backdrop-blur-sm border border-white/20 text-white/90"}`}
-                        >
-                          {message.type === "shared_post" ? (
-                            <div className="cursor-pointer">
-                              <div 
-                                onClick={() => setSelectedPostId(message.postId)}
-                                className="hover:opacity-90 transition-opacity"
-                              >
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Share size={16} />
-                                  <span className="font-['Space_Grotesk'] tracking-wider">Shared a post</span>
-                                </div>
-                                <span className="text-sm underline font-['Space_Grotesk']">Click to view post</span>
-                              </div>
+                        <ChatAvatar user={chat} />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-['Space_Grotesk'] text-white/90">{chat.displayName}</div>
+                          <div className="text-sm text-white/60 truncate">
+                            {chat.isGroup ? `Group: ${chat.email}` : chat.email}
+                          </div>
+                          {chat.lastMessage && (
+                            <div className="text-sm text-white/60 truncate">
+                              {chat.lastMessage}
                             </div>
-                          ) : (
-                            <p className="font-['Space_Grotesk'] tracking-wider">{message.text}</p>
                           )}
-                          <p className="text-xs mt-1 opacity-70 font-['Space_Grotesk']">
-                            {message.timestamp?.toDate().toLocaleTimeString()}
-                          </p>
                         </div>
                       </div>
                     ))}
-                    <div ref={messagesEndRef} />
                   </div>
-
-                  {/* Message input */}
-                  <div className="p-4 md:p-6 border-t border-white/20">
-                    <form onSubmit={handleSendMessage} className="flex gap-3">
-                      <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Type a message..."
-                        className="flex-1 p-3 rounded-lg bg-white/10 border border-white/20 
-                                 text-white placeholder-white/50 font-['Space_Grotesk']
-                                 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!newMessage.trim()}
-                        className="relative px-8 py-3 border-2 border-white/30 rounded-full
-                                  text-white font-['Space_Grotesk'] tracking-[0.2em]
-                                  transition-all duration-300 
-                                  hover:border-white/60 hover:scale-105
-                                  hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                                  active:scale-95
-                                  disabled:opacity-50 disabled:hover:scale-100 
-                                  disabled:hover:border-white/30 disabled:hover:bg-transparent
-                                  disabled:hover:shadow-none"
-                      >
-                        SEND
-                      </button>
-                    </form>
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-white/60 
-                               font-['Space_Grotesk'] tracking-wider">
-                  Select a chat to start messaging
                 </div>
-              )}
+              </div>
+            </div>
+
+            {/* Chat area */}
+            <div className={`flex-1 h-full max-w-3xl ${selectedUser ? 'block' : 'hidden md:block'}`}>
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                            border border-white/20 flex flex-col h-full">
+                {selectedUser ? (
+                  <>
+                    {/* Chat header */}
+                    <div className="p-4 md:p-6 border-b border-white/20">
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => setSelectedUser(null)}
+                          className="mr-2 p-2 text-white/90 hover:text-white 
+                                   hover:bg-white/10 rounded-full transition-colors md:hidden"
+                        >
+                          <X size={20} />
+                        </button>
+                        <ChatAvatar user={selectedUser} />
+                        <div>
+                          <div className="font-['Space_Grotesk'] text-white/90">
+                            {selectedUser.displayName}
+                          </div>
+                          <div className="text-sm text-white/60">{selectedUser.email}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Messages area */}
+                    <div className="flex-1 overflow-y-auto hide-scrollbar p-4 md:p-6 space-y-4">
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${
+                            message.senderId === currentUser?.uid ? "justify-end" : "justify-start"
+                          } mb-4`}
+                        >
+                          <div
+                            className={`max-w-[70%] rounded-2xl px-4 py-3 
+                                      ${message.senderId === currentUser?.uid
+                                        ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white/90"
+                                        : "bg-white/10 backdrop-blur-sm border border-white/20 text-white/90"}`}
+                          >
+                            {message.type === "shared_post" ? (
+                              <div className="cursor-pointer">
+                                <div 
+                                  onClick={() => setSelectedPostId(message.postId)}
+                                  className="hover:opacity-90 transition-opacity"
+                                >
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Share size={16} />
+                                    <span className="font-['Space_Grotesk'] tracking-wider">Shared a post</span>
+                                  </div>
+                                  <span className="text-sm underline font-['Space_Grotesk']">Click to view post</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="font-['Space_Grotesk'] tracking-wider">{message.text}</p>
+                            )}
+                            <p className="text-xs mt-1 opacity-70 font-['Space_Grotesk']">
+                              {message.timestamp?.toDate().toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Message input */}
+                    <div className="p-4 md:p-6 border-t border-white/20">
+                      <form onSubmit={handleSendMessage} className="flex gap-3">
+                        <input
+                          type="text"
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          placeholder="Type a message..."
+                          className="flex-1 p-3 rounded-lg bg-white/10 border border-white/20 
+                                   text-white placeholder-white/50 font-['Space_Grotesk']
+                                   focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!newMessage.trim()}
+                          className="relative px-8 py-3 border-2 border-white/30 rounded-full
+                                    text-white font-['Space_Grotesk'] tracking-[0.2em]
+                                    transition-all duration-300 
+                                    hover:border-white/60 hover:scale-105
+                                    hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                                    active:scale-95
+                                    disabled:opacity-50 disabled:hover:scale-100 
+                                    disabled:hover:border-white/30 disabled:hover:bg-transparent
+                                    disabled:hover:shadow-none"
+                        >
+                          SEND
+                        </button>
+                      </form>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-white/60 
+                                 font-['Space_Grotesk'] tracking-wider">
+                    Select a chat to start messaging
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
