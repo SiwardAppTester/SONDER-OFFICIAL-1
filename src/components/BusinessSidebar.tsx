@@ -195,7 +195,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      navigate("/signin");
+      navigate("/");
     } catch (error) {
       console.error("Error signing out:", error);
     }
