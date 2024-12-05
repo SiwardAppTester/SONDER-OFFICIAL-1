@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { db, storage, auth } from "../firebase";
 import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } from "firebase/storage";
-import { Plus, Share, Trash2, Upload } from "lucide-react";
+import { Plus, Share, Trash2, Upload, QrCode, Key } from "lucide-react";
 import BusinessSidebar from "./BusinessSidebar";
 import { getAuth } from "firebase/auth";
 
@@ -31,6 +31,16 @@ interface Festival {
   name: string;
   description: string;
   categories?: Category[];
+  accessCode?: string;
+  categoryAccessCodes?: AccessCode[];
+  qrCodes?: {
+    id: string;
+    code: string;
+    linkedCategories: string[];
+    imageUrl: string;
+    name: string;
+    createdAt: any;
+  }[];
 }
 
 interface Post {
@@ -44,6 +54,11 @@ interface Post {
   userId: string;
   createdAt: any;
   festivalId: string;
+}
+
+interface AccessCode {
+  code: string;
+  categoryIds: string[];
 }
 
 const FestivalDetails: React.FC = () => {
@@ -60,6 +75,12 @@ const FestivalDetails: React.FC = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const auth = getAuth();
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [showAccessCodeModal, setShowAccessCodeModal] = useState(false);
+  const [newAccessCode, setNewAccessCode] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isCreatingAccessCode, setIsCreatingAccessCode] = useState(false);
+  const [showCreateAccessCodeModal, setShowCreateAccessCodeModal] = useState(false);
 
   useEffect(() => {
     if (festivalId) {
@@ -289,6 +310,46 @@ const FestivalDetails: React.FC = () => {
     }
   };
 
+  const handleCreateAccessCode = async () => {
+    if (!newAccessCode.trim() || selectedCategories.length === 0) {
+      alert("Please enter an access code and select at least one category");
+      return;
+    }
+
+    try {
+      const festivalRef = doc(db, "festivals", festivalId!);
+      
+      const newCode = {
+        code: newAccessCode.trim(),
+        categoryIds: selectedCategories,
+        createdAt: new Date().toISOString()
+      };
+
+      // First get the current categoryAccessCodes array
+      const festivalDoc = await getDoc(festivalRef);
+      const currentCodes = festivalDoc.data()?.categoryAccessCodes || [];
+
+      // Update with the new array
+      await updateDoc(festivalRef, {
+        categoryAccessCodes: [...currentCodes, newCode]
+      });
+
+      // Update local state
+      setFestival(prev => prev ? {
+        ...prev,
+        categoryAccessCodes: [...(prev.categoryAccessCodes || []), newCode]
+      } : null);
+
+      // Reset form
+      setNewAccessCode("");
+      setSelectedCategories([]);
+      setIsCreatingAccessCode(false);
+    } catch (error) {
+      console.error("Error creating access code:", error);
+      alert("Failed to create access code. Please try again.");
+    }
+  };
+
   return (
     <>
       <BusinessSidebar
@@ -316,6 +377,220 @@ const FestivalDetails: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Management Buttons */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowQRModal(true)}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
+              >
+                <QrCode size={20} className="text-purple-600" />
+                <span className="font-medium">QR Codes</span>
+              </button>
+              <button
+                onClick={() => setShowAccessCodeModal(true)}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
+              >
+                <Key size={20} className="text-purple-600" />
+                <span className="font-medium">Access Codes</span>
+              </button>
+              <button
+                onClick={() => navigate(`/festival/${festivalId}/add-qr`)}
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors"
+              >
+                <Plus size={20} />
+                <span className="font-medium">Add QR Code</span>
+              </button>
+            </div>
+          </div>
+
+          {/* QR Codes Modal */}
+          {showQRModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">QR Codes</h2>
+                  <button
+                    onClick={() => setShowQRModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {festival?.qrCodes?.map((qr) => (
+                    <div key={qr.id} className="bg-gray-50 rounded-lg p-4">
+                      <img src={qr.imageUrl} alt={qr.name} className="w-full aspect-square object-contain mb-2" />
+                      <h3 className="font-medium">{qr.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        Linked Categories: {qr.linkedCategories.length}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {(!festival?.qrCodes || festival.qrCodes.length === 0) && (
+                  <p className="text-center text-gray-500 py-8">No QR codes yet</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Access Codes Modal */}
+          {showAccessCodeModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">Access Codes</h2>
+                  <button
+                    onClick={() => setShowAccessCodeModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {/* Create Access Code Button */}
+                <button
+                  onClick={() => setShowCreateAccessCodeModal(true)}
+                  className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 
+                            transition-colors mb-6 flex items-center justify-center gap-2"
+                >
+                  <Plus size={18} />
+                  Create Access Code
+                </button>
+
+                <div className="space-y-6">
+                  {/* Category Access Codes */}
+                  <div>
+                    <h3 className="font-medium mb-3 text-gray-900">Category Access Codes</h3>
+                    <div className="space-y-3">
+                      {festival?.categoryAccessCodes?.map((ac, index) => (
+                        <div key={index} className="bg-white p-4 rounded-xl border border-gray-200">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-medium text-gray-900">{ac.code}</p>
+                              <div className="mt-2 space-y-1">
+                                <p className="text-sm text-gray-500">Linked Categories:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {ac.categoryIds.map(catId => {
+                                    const category = festival.categories?.find(c => c.id === catId);
+                                    return category ? (
+                                      <span key={catId} className="inline-flex items-center px-2.5 py-0.5 
+                                                         rounded-full text-xs font-medium bg-purple-100 
+                                                         text-purple-800">
+                                        {category.name}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {(!festival?.categoryAccessCodes || festival.categoryAccessCodes.length === 0) && (
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-xl">
+                          No category access codes
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Create Access Code Modal */}
+          {showCreateAccessCodeModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">Create Access Code</h2>
+                  <button
+                    onClick={() => {
+                      setShowCreateAccessCodeModal(false);
+                      setNewAccessCode("");
+                      setSelectedCategories([]);
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Access Code
+                    </label>
+                    <input
+                      type="text"
+                      value={newAccessCode}
+                      onChange={(e) => setNewAccessCode(e.target.value)}
+                      className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 
+                                focus:border-purple-500 outline-none transition-all"
+                      placeholder="Enter access code"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Link Categories
+                    </label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto bg-white p-3 rounded-lg border">
+                      {festival?.categories?.map(category => (
+                        <label key={category.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 
+                                                  rounded-lg cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.includes(category.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCategories(prev => [...prev, category.id]);
+                              } else {
+                                setSelectedCategories(prev => 
+                                  prev.filter(id => id !== category.id)
+                                );
+                              }
+                            }}
+                            className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
+                          />
+                          <span className="text-sm text-gray-700">{category.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => {
+                        setShowCreateAccessCodeModal(false);
+                        setNewAccessCode("");
+                        setSelectedCategories([]);
+                      }}
+                      className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg 
+                                hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await handleCreateAccessCode();
+                        setShowCreateAccessCodeModal(false);
+                      }}
+                      className="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg 
+                                hover:bg-purple-700 transition-colors flex items-center 
+                                justify-center gap-2"
+                    >
+                      <Plus size={18} />
+                      Create
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Categories Section */}
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-8 mb-8">
