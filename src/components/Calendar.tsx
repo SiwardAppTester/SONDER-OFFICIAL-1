@@ -278,327 +278,332 @@ const Calendar: React.FC = () => {
         />
 
         {/* Main Calendar Content */}
-        <div className="max-w-4xl mx-auto px-4 mt-1">
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                         p-6 border border-white/20">
-            {/* Filters Section */}
-            <div className="space-y-3 mb-6">
-              {/* Genre Filter */}
-              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                      border border-white/20 overflow-hidden">
+        <div className="max-w-[1400px] mx-auto px-4 mt-1 flex gap-6">
+          {/* Calendar Section */}
+          <div className="flex-1">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                         p-8 border border-white/20">
+              {/* Month Navigation */}
+              <div className="flex justify-between items-center mb-6">
                 <button
-                  onClick={() => setIsGenreFilterOpen(!isGenreFilterOpen)}
-                  className="w-full px-4 py-3 flex justify-between items-center 
-                            hover:bg-white/10 transition-colors"
+                  onClick={handlePreviousMonth}
+                  className="px-6 py-2 border-2 border-white/30 rounded-full
+                           text-white font-['Space_Grotesk'] tracking-wider
+                           transition-all duration-300 
+                           hover:border-white/60 hover:scale-105
+                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                 >
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-white/90 font-['Space_Grotesk'] tracking-wider">Filter by Genre</h3>
-                    {selectedGenres.size > 0 && (
-                      <span className="bg-white/10 text-white/90 px-2 py-0.5 rounded-full text-sm">
-                        {selectedGenres.size}
-                      </span>
-                    )}
-                  </div>
-                  <svg 
-                    className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
-                      isGenreFilterOpen ? 'transform rotate-180' : ''
-                    }`}
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  Previous
                 </button>
-                
-                {isGenreFilterOpen && (
-                  <div className="p-4 border-t border-white/10">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          value={genreSearch}
-                          onChange={(e) => setGenreSearch(e.target.value)}
-                          placeholder="Search genres..."
-                          className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 
-                                   text-white placeholder-white/50 font-['Space_Grotesk']
-                                   focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
-                        />
-                        {genreSearch && (
-                          <button
-                            onClick={() => setGenreSearch('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
-                          >
-                            <X size={16} />
-                          </button>
-                        )}
-                      </div>
+                <h2 className="text-2xl font-['Space_Grotesk'] tracking-wider text-white/90">
+                  {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                </h2>
+                <button
+                  onClick={handleNextMonth}
+                  className="px-6 py-2 border-2 border-white/30 rounded-full
+                           text-white font-['Space_Grotesk'] tracking-wider
+                           transition-all duration-300 
+                           hover:border-white/60 hover:scale-105
+                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                >
+                  Next
+                </button>
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-3">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                  <div key={day} className="text-center font-['Space_Grotesk'] tracking-wider text-white/70 py-2">
+                    {day}
+                  </div>
+                ))}
+                {getMonthData().map((day, index) => {
+                  const date = day ? formatDate(
+                    currentMonth.getFullYear(),
+                    currentMonth.getMonth(),
+                    day
+                  ) : '';
+                  const dayEvents = filterEvents(events.filter(event => event.date === date));
+
+                  return (
+                    <div
+                      key={index}
+                      className={`min-h-[100px] border rounded-xl p-3 transition-all duration-300 
+                        ${day ? 'cursor-pointer hover:scale-[1.02]' : ''}
+                        ${selectedDate === date ? 'bg-white/20 border-white/40' : 'border-white/20'}
+                        ${!day ? 'bg-transparent border-transparent' : 'bg-white/10'}
+                        hover:bg-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]`}
+                      onClick={() => day && handleDayClick(date)}
+                    >
+                      {day && (
+                        <>
+                          <div className="font-['Space_Grotesk'] tracking-wider text-white/90">{day}</div>
+                          {dayEvents.length > 0 && (
+                            <div className="mt-1">
+                              <span className="inline-flex items-center justify-center 
+                                             bg-white/10 text-white/90 text-xs font-medium 
+                                             px-2 py-0.5 rounded-full">
+                                {dayEvents.length}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Filters Section - moved to right side */}
+          <div className="w-80 space-y-3">
+            {/* Genre Filter */}
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                      border border-white/20 overflow-hidden sticky top-4">
+              <div className="max-h-[calc(100vh-2rem)] overflow-y-auto">
+                <div className="border-b border-white/10">
+                  <button
+                    onClick={() => setIsGenreFilterOpen(!isGenreFilterOpen)}
+                    className="w-full px-4 py-3 flex justify-between items-center 
+                            hover:bg-white/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-white/90 font-['Space_Grotesk'] tracking-wider">Filter by Genre</h3>
                       {selectedGenres.size > 0 && (
-                        <button
-                          onClick={() => setSelectedGenres(new Set())}
-                          className="text-white/60 hover:text-white/90 text-sm font-['Space_Grotesk'] tracking-wider"
-                        >
-                          Clear
-                        </button>
+                        <span className="bg-white/10 text-white/90 px-2 py-0.5 rounded-full text-sm">
+                          {selectedGenres.size}
+                        </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {filteredGenres.map(genre => (
-                        <button
-                          key={genre}
-                          onClick={() => toggleGenre(genre)}
-                          className={`px-3 py-1.5 rounded-full text-sm transition-all transform hover:scale-105
-                                     font-['Space_Grotesk'] tracking-wider ${
-                            selectedGenres.has(genre)
-                              ? "bg-white/20 text-white border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                              : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
-                          }`}
-                        >
-                          {genre}
-                        </button>
-                      ))}
-                      {filteredGenres.length === 0 && (
-                        <p className="text-white/50 text-sm font-['Space_Grotesk'] py-1">No matching genres found</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Artist Filter */}
-              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                      border border-white/20 overflow-hidden">
-                <button
-                  onClick={() => setIsArtistFilterOpen(!isArtistFilterOpen)}
-                  className="w-full px-4 py-3 flex justify-between items-center 
-                            hover:bg-white/10 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-white/90 font-['Space_Grotesk'] tracking-wider">Filter by Artist</h3>
-                    {selectedArtists.size > 0 && (
-                      <span className="bg-white/10 text-white/90 px-2 py-0.5 rounded-full text-sm">
-                        {selectedArtists.size}
-                      </span>
-                    )}
-                  </div>
-                  <svg 
-                    className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
-                      isArtistFilterOpen ? 'transform rotate-180' : ''
-                    }`}
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {isArtistFilterOpen && (
-                  <div className="p-4 border-t border-white/10">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          value={artistSearch}
-                          onChange={(e) => setArtistSearch(e.target.value)}
-                          placeholder="Search artists..."
-                          className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 
+                    <svg 
+                      className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
+                        isGenreFilterOpen ? 'transform rotate-180' : ''
+                      }`}
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {isGenreFilterOpen && (
+                    <div className="p-4">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={genreSearch}
+                            onChange={(e) => setGenreSearch(e.target.value)}
+                            placeholder="Search genres..."
+                            className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 
                                    text-white placeholder-white/50 font-['Space_Grotesk']
                                    focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
-                        />
-                        {artistSearch && (
+                          />
+                          {genreSearch && (
+                            <button
+                              onClick={() => setGenreSearch('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
+                        {selectedGenres.size > 0 && (
                           <button
-                            onClick={() => setArtistSearch('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
+                            onClick={() => setSelectedGenres(new Set())}
+                            className="text-white/60 hover:text-white/90 text-sm font-['Space_Grotesk'] tracking-wider"
                           >
-                            <X size={16} />
+                            Clear
                           </button>
                         )}
                       </div>
-                      {selectedArtists.size > 0 && (
-                        <button
-                          onClick={() => setSelectedArtists(new Set())}
-                          className="text-white/60 hover:text-white/90 text-sm font-['Space_Grotesk'] tracking-wider"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {filteredArtists.map(artist => (
-                        <button
-                          key={artist}
-                          onClick={() => toggleArtist(artist)}
-                          className={`px-3 py-1.5 rounded-full text-sm transition-all transform hover:scale-105
-                                     font-['Space_Grotesk'] tracking-wider ${
-                            selectedArtists.has(artist)
-                              ? "bg-white/20 text-white border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                              : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
-                          }`}
-                        >
-                          {artist}
-                        </button>
-                      ))}
-                      {filteredArtists.length === 0 && (
-                        <p className="text-white/50 text-sm font-['Space_Grotesk'] py-1">No matching artists found</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Location Filter */}
-              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                      border border-white/20 overflow-hidden">
-                <button
-                  onClick={() => setIsLocationFilterOpen(!isLocationFilterOpen)}
-                  className="w-full px-4 py-3 flex justify-between items-center 
-                            hover:bg-white/10 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-white/90 font-['Space_Grotesk'] tracking-wider">Filter by Location</h3>
-                    {selectedLocations.size > 0 && (
-                      <span className="bg-white/10 text-white/90 px-2 py-0.5 rounded-full text-sm">
-                        {selectedLocations.size}
-                      </span>
-                    )}
-                  </div>
-                  <svg 
-                    className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
-                      isLocationFilterOpen ? 'transform rotate-180' : ''
-                    }`}
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {isLocationFilterOpen && (
-                  <div className="p-4 border-t border-white/10">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          value={locationSearch}
-                          onChange={(e) => setLocationSearch(e.target.value)}
-                          placeholder="Search locations..."
-                          className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 
-                                   text-white placeholder-white/50 font-['Space_Grotesk']
-                                   focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
-                        />
-                        {locationSearch && (
+                      <div className="flex flex-wrap gap-2">
+                        {filteredGenres.map(genre => (
                           <button
-                            onClick={() => setLocationSearch('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
+                            key={genre}
+                            onClick={() => toggleGenre(genre)}
+                            className={`px-3 py-1.5 rounded-full text-sm transition-all transform hover:scale-105
+                                       font-['Space_Grotesk'] tracking-wider ${
+                              selectedGenres.has(genre)
+                                ? "bg-white/20 text-white border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                                : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
+                            }`}
                           >
-                            <X size={16} />
+                            {genre}
                           </button>
+                        ))}
+                        {filteredGenres.length === 0 && (
+                          <p className="text-white/50 text-sm font-['Space_Grotesk'] py-1">No matching genres found</p>
                         )}
                       </div>
-                      {selectedLocations.size > 0 && (
-                        <button
-                          onClick={() => setSelectedLocations(new Set())}
-                          className="text-white/60 hover:text-white/90 text-sm font-['Space_Grotesk'] tracking-wider"
-                        >
-                          Clear
-                        </button>
-                      )}
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {filteredLocations.map(({ city }) => (
-                        <button
-                          key={city}
-                          onClick={() => toggleLocation(city)}
-                          className={`px-3 py-1.5 rounded-full text-sm transition-all transform hover:scale-105
-                                     font-['Space_Grotesk'] tracking-wider ${
-                            selectedLocations.has(city)
-                              ? "bg-white/20 text-white border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                              : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
-                          }`}
-                        >
-                          {city}
-                        </button>
-                      ))}
-                      {filteredLocations.length === 0 && (
-                        <p className="text-white/50 text-sm font-['Space_Grotesk'] py-1">No matching locations found</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Month Navigation */}
-            <div className="flex justify-between items-center mb-6">
-              <button
-                onClick={handlePreviousMonth}
-                className="px-6 py-2 border-2 border-white/30 rounded-full
-                         text-white font-['Space_Grotesk'] tracking-wider
-                         transition-all duration-300 
-                         hover:border-white/60 hover:scale-105
-                         hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-              >
-                Previous
-              </button>
-              <h2 className="text-2xl font-['Space_Grotesk'] tracking-wider text-white/90">
-                {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-              </h2>
-              <button
-                onClick={handleNextMonth}
-                className="px-6 py-2 border-2 border-white/30 rounded-full
-                         text-white font-['Space_Grotesk'] tracking-wider
-                         transition-all duration-300 
-                         hover:border-white/60 hover:scale-105
-                         hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-              >
-                Next
-              </button>
-            </div>
-
-            {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-2">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                <div key={day} className="text-center font-['Space_Grotesk'] tracking-wider text-white/70 py-2">
-                  {day}
+                  )}
                 </div>
-              ))}
-              {getMonthData().map((day, index) => {
-                const date = day ? formatDate(
-                  currentMonth.getFullYear(),
-                  currentMonth.getMonth(),
-                  day
-                ) : '';
-                const dayEvents = filterEvents(events.filter(event => event.date === date));
 
-                return (
-                  <div
-                    key={index}
-                    className={`min-h-[80px] border rounded-xl p-3 transition-all duration-300 
-                      ${day ? 'cursor-pointer hover:scale-[1.02]' : ''}
-                      ${selectedDate === date ? 'bg-white/20 border-white/40' : 'border-white/20'}
-                      ${!day ? 'bg-transparent border-transparent' : 'bg-white/10'}
-                      hover:bg-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]`}
-                    onClick={() => day && handleDayClick(date)}
+                {/* Artist Filter */}
+                <div className="border-b border-white/10">
+                  <button
+                    onClick={() => setIsArtistFilterOpen(!isArtistFilterOpen)}
+                    className="w-full px-4 py-3 flex justify-between items-center 
+                            hover:bg-white/10 transition-colors"
                   >
-                    {day && (
-                      <>
-                        <div className="font-['Space_Grotesk'] tracking-wider text-white/90">{day}</div>
-                        {dayEvents.length > 0 && (
-                          <div className="mt-1">
-                            <span className="inline-flex items-center justify-center 
-                                           bg-white/10 text-white/90 text-xs font-medium 
-                                           px-2 py-0.5 rounded-full">
-                              {dayEvents.length}
-                            </span>
-                          </div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-white/90 font-['Space_Grotesk'] tracking-wider">Filter by Artist</h3>
+                      {selectedArtists.size > 0 && (
+                        <span className="bg-white/10 text-white/90 px-2 py-0.5 rounded-full text-sm">
+                          {selectedArtists.size}
+                        </span>
+                      )}
+                    </div>
+                    <svg 
+                      className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
+                        isArtistFilterOpen ? 'transform rotate-180' : ''
+                      }`}
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {isArtistFilterOpen && (
+                    <div className="p-4">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={artistSearch}
+                            onChange={(e) => setArtistSearch(e.target.value)}
+                            placeholder="Search artists..."
+                            className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 
+                                   text-white placeholder-white/50 font-['Space_Grotesk']
+                                   focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                          />
+                          {artistSearch && (
+                            <button
+                              onClick={() => setArtistSearch('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
+                        {selectedArtists.size > 0 && (
+                          <button
+                            onClick={() => setSelectedArtists(new Set())}
+                            className="text-white/60 hover:text-white/90 text-sm font-['Space_Grotesk'] tracking-wider"
+                          >
+                            Clear
+                          </button>
                         )}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {filteredArtists.map(artist => (
+                          <button
+                            key={artist}
+                            onClick={() => toggleArtist(artist)}
+                            className={`px-3 py-1.5 rounded-full text-sm transition-all transform hover:scale-105
+                                       font-['Space_Grotesk'] tracking-wider ${
+                              selectedArtists.has(artist)
+                                ? "bg-white/20 text-white border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                                : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
+                            }`}
+                          >
+                            {artist}
+                          </button>
+                        ))}
+                        {filteredArtists.length === 0 && (
+                          <p className="text-white/50 text-sm font-['Space_Grotesk'] py-1">No matching artists found</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Location Filter */}
+                <div>
+                  <button
+                    onClick={() => setIsLocationFilterOpen(!isLocationFilterOpen)}
+                    className="w-full px-4 py-3 flex justify-between items-center 
+                            hover:bg-white/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-white/90 font-['Space_Grotesk'] tracking-wider">Filter by Location</h3>
+                      {selectedLocations.size > 0 && (
+                        <span className="bg-white/10 text-white/90 px-2 py-0.5 rounded-full text-sm">
+                          {selectedLocations.size}
+                        </span>
+                      )}
+                    </div>
+                    <svg 
+                      className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
+                        isLocationFilterOpen ? 'transform rotate-180' : ''
+                      }`}
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {isLocationFilterOpen && (
+                    <div className="p-4">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={locationSearch}
+                            onChange={(e) => setLocationSearch(e.target.value)}
+                            placeholder="Search locations..."
+                            className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 
+                                   text-white placeholder-white/50 font-['Space_Grotesk']
+                                   focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                          />
+                          {locationSearch && (
+                            <button
+                              onClick={() => setLocationSearch('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
+                        {selectedLocations.size > 0 && (
+                          <button
+                            onClick={() => setSelectedLocations(new Set())}
+                            className="text-white/60 hover:text-white/90 text-sm font-['Space_Grotesk'] tracking-wider"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {filteredLocations.map(({ city }) => (
+                          <button
+                            key={city}
+                            onClick={() => toggleLocation(city)}
+                            className={`px-3 py-1.5 rounded-full text-sm transition-all transform hover:scale-105
+                                       font-['Space_Grotesk'] tracking-wider ${
+                              selectedLocations.has(city)
+                                ? "bg-white/20 text-white border border-white/30 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                                : "bg-white/5 text-white/80 border border-white/10 hover:bg-white/10"
+                            }`}
+                          >
+                            {city}
+                          </button>
+                        ))}
+                        {filteredLocations.length === 0 && (
+                          <p className="text-white/50 text-sm font-['Space_Grotesk'] py-1">No matching locations found</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
