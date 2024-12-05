@@ -175,7 +175,18 @@ function Loader() {
 
 const NewWelcomeScreen: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAnimating, setIsAnimating] = React.useState(false);
+  const [isTransitioningToAbout, setIsTransitioningToAbout] = React.useState(false);
+  const isTransitioningFromAbout = location.state?.transitioningFromAbout;
+
+  // Add this useEffect to handle the transition state
+  React.useEffect(() => {
+    if (isTransitioningFromAbout) {
+      // Clear the transition state
+      window.history.replaceState({}, document.title);
+    }
+  }, [isTransitioningFromAbout]);
 
   const handleClick = () => {
     setIsAnimating(true);
@@ -189,9 +200,40 @@ const NewWelcomeScreen: React.FC = () => {
 
     // Navigate after animation but keep the component mounted
     setTimeout(() => {
-      document.body.style.backgroundColor = '#000'; // Ensure black background
+      document.body.style.backgroundColor = '#000';
       navigate('/signin', { state: { transitioning: true } });
     }, 1500);
+  };
+
+  const handleAboutClick = () => {
+    setIsTransitioningToAbout(true);
+    
+    // Animate content with a slight delay and faster timing
+    gsap.to('.welcome-content', {
+      y: '-100%',
+      duration: 0.6,
+      ease: "power2.inOut"
+    });
+
+    // Animate video with a slight delay for smoother transition
+    gsap.to('.background-video', {
+      y: '-100%',
+      duration: 0.6,
+      ease: "power2.inOut",
+      delay: 0.1
+    });
+
+    // Fade out content slightly faster than the slide
+    gsap.to(['.welcome-content', '.background-video'], {
+      opacity: 0,
+      duration: 0.4,
+      ease: "power2.inOut"
+    });
+
+    // Navigate after animation
+    setTimeout(() => {
+      navigate('/about', { state: { transitioning: true } });
+    }, 600);
   };
 
   // Add cleanup effect
@@ -205,16 +247,21 @@ const NewWelcomeScreen: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-screen w-full relative bg-black">
-      {/* Video background - lowest layer */}
+    <div className={`h-screen w-full relative bg-black transform transition-transform duration-700
+                    ${isTransitioningToAbout ? '-translate-y-full' : 'translate-y-0'}
+                    ${isTransitioningFromAbout ? 'translate-y-0' : 'translate-y-full'}`}>
+      {/* Update video class */}
       <video 
         autoPlay 
         loop 
         muted 
         playsInline
-        className="absolute inset-0 w-full h-full object-cover z-0 content-fade"
+        className="absolute inset-0 w-full h-full object-cover z-0 content-fade background-video"
         style={{
-          filter: "brightness(0.5)"
+          filter: "brightness(0.5)",
+          transform: isTransitioningToAbout ? 'translateY(-100%)' : 'translateY(0)',
+          transition: 'transform 0.6s ease-in-out, opacity 0.4s ease-in-out',
+          opacity: isTransitioningToAbout ? 0 : 1
         }}
       >
         <source src="/videos/background.mp4" type="video/mp4" />
@@ -222,7 +269,7 @@ const NewWelcomeScreen: React.FC = () => {
       </video>
       
       {/* Text layer with mobile-only responsive changes */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-30 content-fade">
+      <div className="absolute inset-0 flex flex-col items-center justify-center z-30 content-fade welcome-content">
         <h1 className="md:text-[160px] text-[70px] font-[500] md:mb-12 mb-6 tracking-[0.12em]
                       text-white/95 font-['Outfit']
                       drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
@@ -231,19 +278,34 @@ const NewWelcomeScreen: React.FC = () => {
                       hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]">
           SONDER
         </h1>
-        <button 
-          onClick={handleClick}
-          className="relative px-16 py-4 border-2 border-white/30 rounded-full
-                    text-white text-lg font-['Space_Grotesk'] tracking-[0.2em]
-                    transform md:translate-y-32 translate-y-32
-                    transition-all duration-300 
-                    hover:border-white/60 hover:scale-105
-                    hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                    active:scale-95
-                    cursor-pointer"
-        >
-          JOIN THE REVOLUTION
-        </button>
+        
+        {/* Buttons Container - adjusted translate-y values */}
+        <div className="flex flex-col gap-4 transform md:translate-y-48 translate-y-48">
+          <button 
+            onClick={handleClick}
+            className="relative px-16 py-4 border-2 border-white/30 rounded-full
+                      text-white text-lg font-['Space_Grotesk'] tracking-[0.2em]
+                      transition-all duration-300 
+                      hover:border-white/60 hover:scale-105
+                      hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                      active:scale-95
+                      cursor-pointer"
+          >
+            JOIN THE REVOLUTION
+          </button>
+          
+          <button 
+            onClick={handleAboutClick}
+            className="relative px-12 py-2 border border-white/20 rounded-full
+                      text-white text-sm font-['Space_Grotesk'] tracking-[0.2em]
+                      transition-all duration-300 
+                      hover:border-white/40 hover:scale-105
+                      hover:bg-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                      active:scale-95"
+          >
+            ABOUT US
+          </button>
+        </div>
       </div>
 
       {/* Canvas (black sphere) */}

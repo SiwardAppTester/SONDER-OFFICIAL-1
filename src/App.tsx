@@ -23,6 +23,7 @@ import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/
 import * as THREE from 'three';
 import { Suspense } from 'react';
 import FestivalDetails from './components/FestivalDetails';
+import AboutUs from "./components/AboutUs";
 
 // Add Loader component
 function Loader() {
@@ -116,7 +117,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-black min-h-screen">
+    <div className="bg-black min-h-screen overflow-hidden">
       <div className="fixed inset-0">
         <Canvas
           className="w-full h-full"
@@ -132,8 +133,9 @@ const App: React.FC = () => {
         <main className="flex-grow">
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={!user ? <NewWelcomeScreen /> : <Navigate to="/home" />} />
+            <Route path="/" element={!user ? <Navigate to="/signin" /> : <Navigate to="/home" />} />
             <Route path="/signin" element={!user ? <SignIn /> : <Navigate to="/home" />} />
+            <Route path="/about" element={<AboutUs />} />
             
             {/* Protected routes */}
             <Route path="/complete-profile" element={user ? <CompleteProfile /> : <Navigate to="/signin" />} />
