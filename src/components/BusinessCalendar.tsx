@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { collection, addDoc, query, getDocs, deleteDoc, doc, updateDoc, getDoc, where } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { User } from 'firebase/auth';
 import { Menu, Plus, X } from "lucide-react";
 import BusinessSidebar from "./BusinessSidebar";
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface Event {
   id: string;
@@ -86,6 +89,39 @@ const topDanceArtists = [
   "Illenium",
   "Carl Cox"
 ];
+
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-white text-xl">
+        {progress.toFixed(0)}% loaded
+      </div>
+    </Html>
+  )
+}
+
+function InnerSphere() {
+  return (
+    <>
+      <Environment preset="sunset" />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      
+      <mesh scale={[-15, -15, -15]}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          side={THREE.BackSide}
+          color="#1a1a1a"
+          metalness={0.9}
+          roughness={0.1}
+          envMapIntensity={1}
+        />
+      </mesh>
+    </>
+  )
+}
 
 const BusinessCalendar: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -207,7 +243,7 @@ const BusinessCalendar: React.FC = () => {
         artists: []
       });
       setShowAddEvent(false);
-      fetchBusinessEvents();
+      await fetchBusinessEvents();
     } catch (error) {
       console.error('Error adding event:', error);
       alert('Failed to add event. Please try again.');
@@ -278,163 +314,281 @@ const BusinessCalendar: React.FC = () => {
     : topDanceArtists;
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="p-4">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setIsNavOpen(!isNavOpen)}
-            className="text-gray-700 hover:text-gray-900"
-            aria-label="Toggle navigation menu"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* Three.js Background */}
+      <div className="absolute inset-0">
+        <Canvas
+          className="w-full h-full"
+          gl={{ antialias: true, alpha: true }}
+        >
+          <Suspense fallback={<Loader />}>
+            <InnerSphere />
+          </Suspense>
+        </Canvas>
       </div>
 
-      <BusinessSidebar
-        isNavOpen={isNavOpen}
-        setIsNavOpen={setIsNavOpen}
-        user={currentUser}
-        userProfile={userProfile}
-        accessibleFestivalsCount={0}
-      />
-
-      <div className="max-w-6xl mx-auto p-2 md:p-4 w-full">
-        <div className="bg-white rounded-lg shadow-lg p-3 md:p-6">
-          {/* Month Navigation - make buttons and text smaller on mobile */}
-          <div className="flex justify-between items-center mb-4 md:mb-6">
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen">
+        <div className="p-4">
+          <div className="flex items-center gap-4">
             <button
-              onClick={handlePreviousMonth}
-              className="px-3 md:px-6 py-1.5 md:py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 text-sm md:text-base"
+              onClick={() => setIsNavOpen(!isNavOpen)}
+              className="text-white/90 hover:text-white"
+              aria-label="Toggle navigation menu"
             >
-              Previous
-            </button>
-            <h2 className="text-lg md:text-xl font-medium">
-              {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' }).toLowerCase()}
-            </h2>
-            <button
-              onClick={handleNextMonth}
-              className="px-3 md:px-6 py-1.5 md:py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 text-sm md:text-base"
-            >
-              Next
+              <Menu size={24} />
             </button>
           </div>
+        </div>
 
-          {/* Calendar Grid - adjust spacing and text sizes */}
-          <div className="grid grid-cols-7 gap-1 md:gap-2">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center font-medium p-1 md:p-2 text-xs md:text-base">
-                {day}
-              </div>
-            ))}
-            {getMonthData().map((day, index) => {
-              const date = day ? formatDate(
-                currentMonth.getFullYear(),
-                currentMonth.getMonth(),
-                day
-              ) : '';
-              const dayEvents = events.filter(event => event.date === date);
+        <BusinessSidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={currentUser}
+          userProfile={userProfile}
+          accessibleFestivalsCount={0}
+        />
 
-              return (
-                <div
-                  key={index}
-                  className={`min-h-[60px] md:min-h-[100px] border rounded-lg p-1 md:p-2 ${
-                    day ? 'cursor-pointer hover:bg-gray-50' : ''
-                  } ${selectedDate === date ? 'bg-purple-50' : ''}`}
-                  onClick={() => day && setSelectedDate(date)}
+        <div className="max-w-[1200px] mx-auto px-4 mt-1 flex gap-6">
+          {/* Calendar Section */}
+          <div className="flex-1">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                         p-6 border border-white/20">
+              {/* Month Navigation */}
+              <div className="flex justify-between items-center mb-6">
+                <button
+                  onClick={handlePreviousMonth}
+                  className="px-6 py-2 border-2 border-white/30 rounded-full
+                           text-white font-['Space_Grotesk'] tracking-wider
+                           transition-all duration-300 
+                           hover:border-white/60 hover:scale-105
+                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
                 >
-                  {day && (
-                    <>
-                      <div className="font-medium text-sm md:text-base">{day}</div>
-                      {dayEvents.length > 0 && (
-                        <div className="mt-0.5 md:mt-1">
-                          <span className="text-xs md:text-sm text-purple-600">
-                            {dayEvents.length} event{dayEvents.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                  Previous
+                </button>
+                <h2 className="text-2xl font-['Space_Grotesk'] tracking-wider text-white/90">
+                  {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' }).toLowerCase()}
+                </h2>
+                <button
+                  onClick={handleNextMonth}
+                  className="px-6 py-2 border-2 border-white/30 rounded-full
+                           text-white font-['Space_Grotesk'] tracking-wider
+                           transition-all duration-300 
+                           hover:border-white/60 hover:scale-105
+                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                >
+                  Next
+                </button>
+              </div>
 
-          {/* Add Event Button - adjust spacing */}
-          <div className="mt-4 md:mt-6 mb-2 md:mb-4">
-            <button
-              onClick={() => setShowAddEvent(true)}
-              className="flex items-center gap-2 px-4 md:px-6 py-1.5 md:py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 text-xs md:text-sm transition-colors"
-            >
-              <Plus size={14} className="md:w-4 md:h-4" />
-              Add Event
-            </button>
-          </div>
-
-          {/* Event List - adjust spacing and text sizes */}
-          <div className="mt-4 md:mt-6">
-            <h3 className="text-lg md:text-xl font-medium mb-3 md:mb-4">
-              Events for {selectedDate}
-            </h3>
-            <div className="space-y-2 md:space-y-3">
-              {events
-                .filter(event => event.date === selectedDate)
-                .map(event => (
-                  <div
-                    key={event.id}
-                    className="bg-white border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-sm transition-shadow"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-base md:text-lg font-medium">{event.title}</h4>
-                        <p className="text-gray-600 mt-1 text-sm md:text-base">{event.description}</p>
-                        <div className="mt-2 space-y-0.5 md:space-y-1 text-gray-500 text-xs md:text-sm">
-                          <p>Time: {event.startTime || '-'}</p>
-                          <p>Genre: {event.genre}</p>
-                          <p>Location: {event.city}, {event.country}</p>
-                          {event.artists && event.artists.length > 0 && (
-                            <p>Artists: {event.artists.join(', ')}</p>
-                          )}
-                          <p className="text-gray-400">{event.isPublic ? 'Public Event' : 'Private Event'}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteEvent(event.id)}
-                        className="text-red-500 hover:text-red-600 text-xs md:text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-2">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                  <div key={day} className="text-center font-['Space_Grotesk'] tracking-wider text-white/70 py-1">
+                    {day}
                   </div>
                 ))}
+                {getMonthData().map((day, index) => {
+                  const date = day ? formatDate(
+                    currentMonth.getFullYear(),
+                    currentMonth.getMonth(),
+                    day
+                  ) : '';
+                  const dayEvents = events.filter(event => event.date === date);
+
+                  return (
+                    <div
+                      key={index}
+                      className={`min-h-[90px] border rounded-xl p-3 transition-all duration-300 
+                        ${day ? 'cursor-pointer hover:scale-[1.02]' : ''}
+                        ${selectedDate === date ? 'bg-white/20 border-white/40' : 'border-white/20'}
+                        ${!day ? 'bg-transparent border-transparent' : 'bg-white/10'}
+                        hover:bg-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]`}
+                      onClick={() => day && setSelectedDate(date)}
+                    >
+                      {day && (
+                        <>
+                          <div className="font-['Space_Grotesk'] tracking-wider text-white/90">{day}</div>
+                          {dayEvents.length > 0 && (
+                            <div className="mt-1">
+                              <span className="inline-flex items-center justify-center 
+                                             bg-white/10 text-white/90 text-xs font-medium 
+                                             px-2 py-0.5 rounded-full">
+                                {dayEvents.length}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Add Event Button */}
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowAddEvent(true)}
+                  className="px-6 py-2 border-2 border-white/30 rounded-full
+                           text-white font-['Space_Grotesk'] tracking-wider
+                           transition-all duration-300 flex items-center gap-2
+                           hover:border-white/60 hover:scale-105
+                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                >
+                  <Plus size={18} />
+                  Add Event
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Add Event Modal - adjust for mobile */}
-          {showAddEvent && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl p-5 w-full max-w-lg mx-auto max-h-[85vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-4 border-b pb-3">
-                  <h2 className="text-lg font-semibold text-gray-800">Add New Event</h2>
+          {/* Events Display Section */}
+          <div className="w-72 space-y-3">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                          border border-white/20 overflow-hidden sticky top-4">
+              <div className="p-4 border-b border-white/20">
+                <h3 className="text-lg font-['Space_Grotesk'] tracking-wider text-white/90">
+                  Events for {new Date(selectedDate).toLocaleDateString('default', { 
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </h3>
+              </div>
+
+              <div className="max-h-[calc(100vh-8rem)] overflow-y-auto p-4 space-y-4">
+                {events
+                  .filter(event => event.date === selectedDate)
+                  .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
+                  .map(event => (
+                    <div
+                      key={event.id}
+                      className="backdrop-blur-xl bg-white/5 rounded-xl p-4 
+                               border border-white/10 hover:border-white/20 
+                               transition-all duration-300 hover:scale-[1.02]
+                               hover:bg-white/10"
+                    >
+                      {/* Event Time */}
+                      {(event.startTime || event.endTime) && (
+                        <div className="mb-2">
+                          <span className="text-white/80 text-sm font-['Space_Grotesk'] tracking-wider">
+                            {event.startTime} - {event.endTime}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Event Title */}
+                      <h4 className="text-white/90 text-lg font-['Space_Grotesk'] tracking-wider mb-2">
+                        {event.title}
+                      </h4>
+
+                      {/* Event Description */}
+                      <p className="text-white/70 text-sm mb-3 font-['Space_Grotesk']">
+                        {event.description}
+                      </p>
+
+                      {/* Event Details */}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {/* Location */}
+                        {event.city && (
+                          <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full
+                                        border border-white/10">
+                            <span className="text-xs text-white/80 font-['Space_Grotesk'] tracking-wide">
+                              📍 {event.city}, {event.country}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Genre */}
+                        {event.genre && (
+                          <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full
+                                        border border-white/10">
+                            <span className="text-xs text-white/80 font-['Space_Grotesk'] tracking-wide">
+                              🎵 {event.genre}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Artists */}
+                      {event.artists && event.artists.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {event.artists.map(artist => (
+                            <span
+                              key={artist}
+                              className="bg-white/5 text-white/80 px-2.5 py-1 rounded-full text-xs
+                                       border border-white/10 font-['Space_Grotesk'] tracking-wide"
+                            >
+                              👤 {artist}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Event Type & Actions */}
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-['Space_Grotesk'] tracking-wide
+                                      ${event.isPublic 
+                                        ? 'bg-white/10 text-white/90' 
+                                        : 'bg-white/5 text-white/70'}`}>
+                          {event.isPublic ? 'Public' : 'Private'}
+                        </span>
+                        
+                        <button
+                          onClick={() => handleDeleteEvent(event.id)}
+                          className="text-white/60 hover:text-white/90 transition-colors text-sm
+                                    font-['Space_Grotesk'] tracking-wider"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                {events.filter(event => event.date === selectedDate).length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-white/60 text-sm font-['Space_Grotesk'] tracking-wider">
+                      No events scheduled for this day
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Event Modal */}
+        {showAddEvent && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl w-full max-w-lg
+                           shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20
+                           max-h-[70vh] flex flex-col">
+              <div className="p-4 border-b border-white/20">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-['Space_Grotesk'] tracking-wider text-white/90">Add New Event</h2>
                   <button
                     onClick={() => setShowAddEvent(false)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-white/60 hover:text-white/90 transition-colors"
                   >
                     <X size={18} />
                   </button>
                 </div>
+              </div>
 
-                <form onSubmit={handleAddEvent} className="space-y-4">
+              <div className="p-4 overflow-y-auto">
+                <form id="addEventForm" onSubmit={handleAddEvent} className="space-y-3">
                   {/* Title Input */}
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-['Space_Grotesk'] tracking-wider text-white/90">
                       Event Title *
                     </label>
                     <input
                       type="text"
                       value={newEvent.title}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg 
+                                text-white placeholder-white/50 font-['Space_Grotesk']
+                                focus:outline-none focus:ring-2 focus:ring-white/30"
                       placeholder="Enter event title"
                       required
                     />
@@ -443,19 +597,21 @@ const BusinessCalendar: React.FC = () => {
                   {/* Date and Time Section */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-gray-700">
+                      <label className="text-sm font-['Space_Grotesk'] tracking-wider text-white/90">
                         Date *
                       </label>
                       <input
                         type="date"
                         value={newEvent.date}
                         onChange={(e) => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg 
+                                  text-white font-['Space_Grotesk']
+                                  focus:outline-none focus:ring-2 focus:ring-white/30"
                         required
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-gray-700">
+                      <label className="text-sm font-['Space_Grotesk'] tracking-wider text-white/90">
                         Time *
                       </label>
                       <div className="flex gap-2">
@@ -463,15 +619,19 @@ const BusinessCalendar: React.FC = () => {
                           type="time"
                           value={newEvent.startTime}
                           onChange={(e) => setNewEvent(prev => ({ ...prev, startTime: e.target.value }))}
-                          className="w-full px-2 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                          className="w-full px-2 py-2 bg-white/10 border border-white/20 rounded-lg 
+                                    text-white font-['Space_Grotesk']
+                                    focus:outline-none focus:ring-2 focus:ring-white/30"
                           required
                         />
-                        <span className="text-gray-400 flex items-center">-</span>
+                        <span className="text-white/60 flex items-center">-</span>
                         <input
                           type="time"
                           value={newEvent.endTime}
                           onChange={(e) => setNewEvent(prev => ({ ...prev, endTime: e.target.value }))}
-                          className="w-full px-2 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 text-sm"
+                          className="w-full px-2 py-2 bg-white/10 border border-white/20 rounded-lg 
+                                    text-white font-['Space_Grotesk']
+                                    focus:outline-none focus:ring-2 focus:ring-white/30"
                           required
                         />
                       </div>
@@ -480,34 +640,34 @@ const BusinessCalendar: React.FC = () => {
 
                   {/* Genre Selector */}
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-['Space_Grotesk'] tracking-wider text-white/90">
                       Genre *
                     </label>
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setIsGenreOpen(!isGenreOpen)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white 
-                                 focus:ring-1 focus:ring-purple-500 focus:border-transparent
-                                 flex justify-between items-center text-sm"
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg
+                                 text-white font-['Space_Grotesk'] flex justify-between items-center
+                                 focus:outline-none focus:ring-2 focus:ring-white/30"
                       >
-                        <span className={newEvent.genre ? "text-gray-900" : "text-gray-400"}>
+                        <span className={newEvent.genre ? "text-white" : "text-white/50"}>
                           {newEvent.genre || "Select a genre"}
                         </span>
                         <svg 
-                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                          className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
                             isGenreOpen ? 'transform rotate-180' : ''
                           }`}
                           fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
                         </svg>
                       </button>
                       {isGenreOpen && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 
-                                      rounded-lg shadow-lg max-h-48 overflow-auto">
+                        <div className="absolute z-50 w-full mt-1 bg-white/10 border border-white/20 
+                                      rounded-lg shadow-lg max-h-48 overflow-auto backdrop-blur-xl">
                           {danceGenres.map((genre) => (
                             <button
                               key={genre}
@@ -516,9 +676,8 @@ const BusinessCalendar: React.FC = () => {
                                 setNewEvent(prev => ({ ...prev, genre }));
                                 setIsGenreOpen(false);
                               }}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 
-                                       transition-colors duration-150 ease-in-out
-                                       text-gray-700 hover:text-purple-700"
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-white/20 
+                                       transition-colors text-white/90 font-['Space_Grotesk']"
                             >
                               {genre}
                             </button>
@@ -530,42 +689,43 @@ const BusinessCalendar: React.FC = () => {
 
                   {/* Location Selector */}
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-['Space_Grotesk'] tracking-wider text-white/90">
                       Location *
                     </label>
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setIsLocationOpen(!isLocationOpen)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white 
-                                 focus:ring-1 focus:ring-purple-500 focus:border-transparent
-                                 flex justify-between items-center text-sm"
+                        className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg
+                                 text-white font-['Space_Grotesk'] flex justify-between items-center
+                                 focus:outline-none focus:ring-2 focus:ring-white/30"
                       >
-                        <span className={newEvent.city ? "text-gray-900" : "text-gray-400"}>
+                        <span className={newEvent.city ? "text-white" : "text-white/50"}>
                           {newEvent.city ? `${newEvent.city}, ${newEvent.country}` : "Select a location"}
                         </span>
                         <svg 
-                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                          className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
                             isLocationOpen ? 'transform rotate-180' : ''
                           }`}
                           fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
                         </svg>
                       </button>
                       {isLocationOpen && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 
-                                      rounded-lg shadow-lg max-h-48 overflow-auto">
-                          <div className="sticky top-0 bg-white border-b p-2">
+                        <div className="absolute z-50 w-full mt-1 bg-white/10 border border-white/20 
+                                      rounded-lg shadow-lg max-h-48 overflow-auto backdrop-blur-xl">
+                          <div className="sticky top-0 p-2 bg-white/10 backdrop-blur-xl border-b border-white/20">
                             <input
                               type="text"
                               placeholder="Search locations..."
                               value={locationSearch}
                               onChange={(e) => setLocationSearch(e.target.value)}
-                              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm
-                                       focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg
+                                       text-white placeholder-white/50 font-['Space_Grotesk']
+                                       focus:outline-none focus:ring-2 focus:ring-white/30"
                               onClick={(e) => e.stopPropagation()}
                             />
                           </div>
@@ -582,9 +742,8 @@ const BusinessCalendar: React.FC = () => {
                                 setIsLocationOpen(false);
                                 setLocationSearch('');
                               }}
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 
-                                       transition-colors duration-150 ease-in-out
-                                       text-gray-700 hover:text-purple-700"
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-white/20 
+                                       transition-colors text-white/90 font-['Space_Grotesk']"
                             >
                               {location.city}, {location.country}
                             </button>
@@ -596,24 +755,24 @@ const BusinessCalendar: React.FC = () => {
 
                   {/* Artists Selector */}
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-['Space_Grotesk'] tracking-wider text-white/90">
                       Artists
                     </label>
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setIsArtistOpen(!isArtistOpen)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white 
-                                 focus:ring-1 focus:ring-purple-500 focus:border-transparent
-                                 flex justify-between items-center text-sm min-h-[40px]"
+                        className="w-full min-h-[40px] px-3 py-2 bg-white/10 border border-white/20 rounded-lg
+                                 text-white font-['Space_Grotesk'] flex justify-between items-center
+                                 focus:outline-none focus:ring-2 focus:ring-white/30"
                       >
                         <div className="flex flex-wrap gap-1.5 pr-6">
                           {newEvent.artists.length > 0 ? (
                             newEvent.artists.map((artist) => (
                               <span
                                 key={artist}
-                                className="inline-flex items-center px-2 py-0.5 bg-purple-50 
-                                         text-purple-700 rounded-full text-xs font-medium"
+                                className="inline-flex items-center px-2 py-0.5 bg-white/20 
+                                         text-white rounded-full text-xs font-medium"
                               >
                                 {artist}
                                 <button
@@ -624,38 +783,39 @@ const BusinessCalendar: React.FC = () => {
                                       artists: prev.artists.filter(a => a !== artist)
                                     }));
                                   }}
-                                  className="ml-1 hover:text-purple-900"
+                                  className="ml-1 hover:text-white/60"
                                 >
                                   ×
                                 </button>
                               </span>
                             ))
                           ) : (
-                            <span className="text-gray-400">Select artists</span>
+                            <span className="text-white/50">Select artists</span>
                           )}
                         </div>
                         <svg 
-                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 absolute right-3 ${
+                          className={`w-4 h-4 text-white/60 transition-transform duration-200 absolute right-3 ${
                             isArtistOpen ? 'transform rotate-180' : ''
                           }`}
                           fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
                         </svg>
                       </button>
                       {isArtistOpen && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 
-                                      rounded-lg shadow-lg max-h-48 overflow-auto">
-                          <div className="sticky top-0 bg-white border-b p-2">
+                        <div className="absolute z-50 w-full mt-1 bg-white/10 border border-white/20 
+                                      rounded-lg shadow-lg max-h-48 overflow-auto backdrop-blur-xl">
+                          <div className="sticky top-0 p-2 bg-white/10 backdrop-blur-xl border-b border-white/20">
                             <input
                               type="text"
                               placeholder="Search artists..."
                               value={artistSearch}
                               onChange={(e) => setArtistSearch(e.target.value)}
-                              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm
-                                       focus:outline-none focus:ring-1 focus:ring-purple-500"
+                              className="w-full px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg
+                                       text-white placeholder-white/50 font-['Space_Grotesk']
+                                       focus:outline-none focus:ring-2 focus:ring-white/30"
                               onClick={(e) => e.stopPropagation()}
                             />
                           </div>
@@ -672,10 +832,9 @@ const BusinessCalendar: React.FC = () => {
                                 }
                                 setArtistSearch('');
                               }}
-                              className={`w-full px-3 py-2 text-left text-sm hover:bg-purple-50 
-                                       transition-colors duration-150 ease-in-out
-                                       text-gray-700 hover:text-purple-700 ${
-                                         newEvent.artists.includes(artist) ? 'bg-purple-50' : ''
+                              className={`w-full px-3 py-2 text-left text-sm hover:bg-white/20 
+                                       transition-colors text-white/90 font-['Space_Grotesk'] ${
+                                         newEvent.artists.includes(artist) ? 'bg-white/20' : ''
                                        }`}
                             >
                               {artist}
@@ -688,14 +847,15 @@ const BusinessCalendar: React.FC = () => {
 
                   {/* Description */}
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-['Space_Grotesk'] tracking-wider text-white/90">
                       Description *
                     </label>
                     <textarea
                       value={newEvent.description}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm
-                               focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg 
+                                text-white placeholder-white/50 font-['Space_Grotesk']
+                                focus:outline-none focus:ring-2 focus:ring-white/30"
                       rows={3}
                       placeholder="Enter event description"
                       required
@@ -708,63 +868,76 @@ const BusinessCalendar: React.FC = () => {
                       type="checkbox"
                       checked={newEvent.isPublic}
                       onChange={(e) => setNewEvent(prev => ({ ...prev, isPublic: e.target.checked }))}
-                      className="w-4 h-4 rounded border-gray-300 text-purple-600 
-                               focus:ring-purple-500 cursor-pointer"
+                      className="w-4 h-4 bg-white/10 border-white/30 text-white/90 
+                                rounded focus:ring-white/30 cursor-pointer"
                     />
-                    <label className="text-sm text-gray-600 cursor-pointer">
+                    <label className="text-sm text-white/80 font-['Space_Grotesk'] tracking-wider cursor-pointer">
                       Show on public calendar
                     </label>
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 justify-end pt-4 border-t">
-                    <button
-                      type="button"
-                      onClick={() => setShowAddEvent(false)}
-                      className="px-4 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 
-                               transition-colors text-sm font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 
-                               transition-colors text-sm font-medium"
-                    >
-                      Add Event
-                    </button>
-                  </div>
                 </form>
               </div>
-            </div>
-          )}
 
-          {/* Delete Confirmation Modal - adjust for mobile */}
-          {eventToDelete && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl p-4 md:p-6 max-w-[280px] w-full mx-2 md:mx-4">
-                <p className="text-lg mb-6">
-                  Are you sure you want to delete this event?
-                </p>
-                
+              <div className="p-4 border-t border-white/20 mt-auto">
                 <div className="flex gap-2 justify-end">
                   <button
-                    onClick={() => setEventToDelete(null)}
-                    className="px-6 py-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors"
+                    type="button"
+                    onClick={() => setShowAddEvent(false)}
+                    className="px-3 py-1.5 bg-white/10 text-white/80 rounded-lg 
+                              hover:bg-white/20 transition-colors text-sm 
+                              font-['Space_Grotesk'] tracking-wider"
                   >
                     Cancel
                   </button>
                   <button
-                    onClick={confirmDelete}
-                    className="px-6 py-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                    form="addEventForm"
+                    type="submit"
+                    className="px-3 py-1.5 bg-white/20 text-white rounded-lg 
+                              hover:bg-white/30 transition-colors text-sm 
+                              font-['Space_Grotesk'] tracking-wider"
                   >
-                    Delete
+                    Add Event
                   </button>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {eventToDelete && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 max-w-[280px] w-full
+                           shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20">
+              <h3 className="text-lg font-['Space_Grotesk'] tracking-wider text-white/90 mb-4">
+                Delete Event
+              </h3>
+              
+              <p className="text-white/70 text-sm font-['Space_Grotesk'] tracking-wide mb-6">
+                Are you sure you want to delete this event? This action cannot be undone.
+              </p>
+              
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setEventToDelete(null)}
+                  className="px-4 py-2 bg-white/10 text-white/80 rounded-lg 
+                            hover:bg-white/20 transition-colors text-sm 
+                            font-['Space_Grotesk'] tracking-wider"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-white/20 text-white rounded-lg 
+                            hover:bg-white/30 transition-colors text-sm 
+                            font-['Space_Grotesk'] tracking-wider"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

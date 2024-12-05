@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon, Plus, Settings, ChevronDown, ChevronUp, Camera } from "lucide-react";
+import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon, Plus, Settings, ChevronDown, ChevronUp, Camera, Compass } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
@@ -215,65 +215,55 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Top Bar */}
-      <div className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-rose-50 to-rose-100 shadow-lg z-50">
+      {/* Desktop Top Bar - Matching Screenshot */}
+      <div className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-black shadow-lg z-50">
         <div className="container mx-auto px-4 flex items-center justify-between">
           {/* Logo/Brand */}
-          <div className="flex items-center space-x-4">
-            <span className="text-xl font-bold text-purple-600">Business Dashboard</span>
+          <div className="flex items-center">
+            <span className="text-2xl font-bold text-white">SONDER</span>
           </div>
 
-          {/* Navigation Links */}
+          {/* Right Side Navigation */}
           <div className="flex items-center space-x-6">
-            {[
-              { to: "/add-post", icon: Plus, label: "Create Post" },
-              { to: "/discover", icon: SearchIcon, label: "Discover" },
-              { to: "/business-dashboard", icon: HomeIcon, label: "Dashboard" },
-              { to: "/chat", icon: MessageCircle, label: "Messages" },
-              { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" }
-            ].map(({ to, icon: Icon, label }) => (
-              <Link
-                key={to}
-                to={to}
-                className="flex items-center space-x-2 p-2 rounded-lg
-                  hover:bg-white/70 transition-all duration-300 group"
-              >
-                <Icon size={18} className="text-purple-600 group-hover:scale-110 transition-transform duration-300" />
-                <span className="text-gray-800 font-medium">{label}</span>
-              </Link>
-            ))}
-          </div>
+            <Link to="/" className="flex items-center space-x-2 p-2 rounded-lg
+              text-white/80 hover:text-white transition-all duration-300 group">
+              <HomeIcon size={18} className="group-hover:scale-110 transition-transform duration-300" />
+            </Link>
+            
+            <Link to="/discover" className="flex items-center space-x-2 p-2 rounded-lg
+              text-white/80 hover:text-white transition-all duration-300 group">
+              <Compass size={18} className="group-hover:scale-110 transition-transform duration-300" />
+            </Link>
+            
+            <Link to="/chat" className="flex items-center space-x-2 p-2 rounded-lg
+              text-white/80 hover:text-white transition-all duration-300 group">
+              <MessageCircle size={18} className="group-hover:scale-110 transition-transform duration-300" />
+            </Link>
+            
+            <Link to="/business-calendar" className="flex items-center space-x-2 p-2 rounded-lg
+              text-white/80 hover:text-white transition-all duration-300 group">
+              <CalendarIcon size={18} className="group-hover:scale-110 transition-transform duration-300" />
+            </Link>
 
-          {/* Profile Section */}
-          <div className="flex items-center space-x-4">
-            <div className="relative group">
-              <div 
-                className="cursor-pointer flex items-center space-x-2"
-                onClick={() => toggleDropdown('followers')}
-              >
-                {localPhotoURL ? (
-                  <img
-                    src={localPhotoURL}
-                    alt="Profile"
-                    className="w-10 h-10 rounded-full shadow-lg hover:shadow-purple-500/50 
-                             transition-all duration-300 object-cover border-2 border-white"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-purple-500/50 
-                                transition-all duration-300 flex items-center justify-center
-                                text-xl font-semibold text-purple-600">
-                    {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
-                  </div>
-                )}
-                <span className="text-gray-800 font-medium">
-                  {userProfile?.displayName || 'Business Account'}
-                </span>
+            {/* Profile Section */}
+            {localPhotoURL ? (
+              <img
+                src={localPhotoURL}
+                alt="Profile"
+                className="w-10 h-10 rounded-full object-cover cursor-pointer"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center
+                            text-sm font-medium text-white cursor-pointer">
+                {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
               </div>
-            </div>
+            )}
+
+            {/* Sign Out Button */}
             <button
               onClick={handleSignOut}
-              className="px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold
-                transition-all duration-300 hover:bg-purple-700 active:scale-95"
+              className="px-4 py-2 rounded-lg bg-zinc-800 text-white font-medium
+                hover:bg-zinc-700 transition-all duration-300"
             >
               Sign Out
             </button>
@@ -281,8 +271,9 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Sidebar - keeping the existing sidebar code but only showing on mobile */}
-      <div className={`md:hidden business-sidebar fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-rose-50 to-rose-100 shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+      {/* Mobile Sidebar - Updated Styling */}
+      <div className={`md:hidden fixed top-0 left-0 h-full w-80 bg-black shadow-lg transform 
+                      transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
       } overflow-y-auto overflow-x-hidden`}>
         {/* Close button */}
@@ -290,13 +281,12 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
           <button
             onClick={() => setIsNavOpen(false)}
             className="relative group w-10 h-10 flex items-center justify-center 
-                      bg-white/60 backdrop-blur-sm rounded-xl
+                      bg-white/10 backdrop-blur-sm rounded-xl
                       transition-all duration-300 transform
-                      hover:scale-105 hover:bg-white/80
-                      hover:shadow-lg hover:shadow-purple-500/20"
+                      hover:scale-105 hover:bg-white/20"
           >
             <svg 
-              className="w-5 h-5 text-purple-600 transition-transform duration-300 
+              className="w-5 h-5 text-white transition-transform duration-300 
                         group-hover:rotate-180" 
               fill="none" 
               stroke="currentColor" 
@@ -312,7 +302,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
           </button>
         </div>
 
-        {/* Enhanced Profile Section */}
+        {/* Profile Section */}
         <div className="px-6 -mt-2">
           <div className="flex flex-col items-center mb-6">
             <div className="relative transform hover:scale-105 transition-all duration-300">
@@ -320,20 +310,20 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
                 <img
                   src={localPhotoURL}
                   alt="Profile"
-                  className="w-24 h-24 rounded-full mb-3 shadow-lg hover:shadow-purple-500/50 
-                           transition-all duration-300 object-cover border-2 border-white"
+                  className="w-24 h-24 rounded-full mb-3 border-2 border-white/20
+                           hover:border-white/40 transition-all duration-300 object-cover"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-white shadow-lg hover:shadow-purple-500/50 
+                <div className="w-24 h-24 rounded-full bg-white/10 
                               transition-all duration-300 flex items-center justify-center mb-3
-                              text-2xl font-semibold text-purple-600">
+                              text-2xl font-semibold text-white border-2 border-white/20">
                   {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
                 </div>
               )}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-3 right-0 bg-purple-600 rounded-full p-2 
-                         hover:bg-purple-700 transition-colors shadow-lg
+                className="absolute bottom-3 right-0 bg-white/20 rounded-full p-2 
+                         hover:bg-white/30 transition-colors
                          hover:scale-110 transform duration-300"
                 aria-label="Change profile picture"
               >
@@ -347,13 +337,13 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
                 className="hidden"
               />
             </div>
-            <span className="text-gray-800 font-semibold text-lg">
+            <span className="text-white/90 font-semibold text-lg">
               {userProfile?.displayName || 'Business Account'}
             </span>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-2 text-center mb-4 stats-grid px-4">
+          <div className="grid grid-cols-3 gap-2 text-center mb-4 stats-grid">
             {[
               { label: 'Followers', count: userProfile?.followers?.length || 0, type: 'followers' as const },
               { label: 'Following', count: userProfile?.following?.length || 0, type: 'following' as const },
@@ -361,31 +351,31 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
             ].map(({ label, count, type }) => (
               <div 
                 key={type}
-                className={`stats-grid-item bg-white/80 backdrop-blur-sm p-2 rounded-lg cursor-pointer
-                  transition-all duration-300 border border-transparent
+                className={`stats-grid-item bg-white/10 backdrop-blur-sm p-2 rounded-lg cursor-pointer
+                  transition-all duration-300 border border-white/20
                   ${openDropdown === type 
-                    ? 'shadow-md shadow-purple-500/20 scale-105 border-purple-200' 
-                    : 'hover:scale-105 hover:shadow-md hover:shadow-purple-500/10'}
+                    ? 'bg-white/20 scale-105' 
+                    : 'hover:scale-105 hover:bg-white/15'}
                   transform`}
                 onClick={() => toggleDropdown(type)}
               >
                 <div className="flex flex-col items-center">
-                  <span className="text-base font-bold text-gray-800">{count}</span>
-                  <span className="text-xs text-gray-600 font-medium">{label}</span>
+                  <span className="text-base font-bold text-white">{count}</span>
+                  <span className="text-xs text-white/70 font-medium">{label}</span>
                   <div className="mt-0.5">
                     {openDropdown === type 
-                      ? <ChevronUp size={12} className="text-purple-500" /> 
-                      : <ChevronDown size={12} className="text-purple-500" />}
+                      ? <ChevronUp size={12} className="text-white/70" /> 
+                      : <ChevronDown size={12} className="text-white/70" />}
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Enhanced Dropdown Content */}
+          {/* Dropdown Content */}
           {openDropdown && (
             <div 
-              className="dropdown-content h-28 border border-purple-100 bg-white/40 backdrop-blur-sm 
+              className="dropdown-content h-28 border border-white/20 bg-white/10 backdrop-blur-sm 
                         rounded-xl mb-4 shadow-inner overflow-hidden"
             >
               <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 
@@ -487,41 +477,38 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
             </div>
           )}
 
-          {/* Navigation Links for Mobile */}
-          <div className="px-6 mt-4">
-            <div className="space-y-2">
-              {[
-                { to: "/add-post", icon: Plus, label: "Create Post" },
-                { to: "/discover", icon: SearchIcon, label: "Discover" },
-                { to: "/business-dashboard", icon: HomeIcon, label: "Dashboard" },
-                { to: "/chat", icon: MessageCircle, label: "Messages" },
-                { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" }
-              ].map(({ to, icon: Icon, label }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={() => setIsNavOpen(false)}
-                  className="flex items-center space-x-3 p-3 rounded-xl
-                    bg-white/60 backdrop-blur-sm
-                    hover:bg-white/80 transition-all duration-300 group
-                    border border-purple-100/50"
-                >
-                  <Icon size={18} className="text-purple-600 group-hover:scale-110 transition-transform duration-300" />
-                  <span className="text-gray-800 font-medium">{label}</span>
-                </Link>
-              ))}
-            </div>
+          {/* Navigation Links */}
+          <div className="space-y-2 mt-4">
+            {[
+              { to: "/add-post", icon: Plus, label: "Create Post" },
+              { to: "/discover", icon: Compass, label: "Discover" },
+              { to: "/business-dashboard", icon: HomeIcon, label: "Dashboard" },
+              { to: "/chat", icon: MessageCircle, label: "Messages" },
+              { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" }
+            ].map(({ to, icon: Icon, label }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setIsNavOpen(false)}
+                className="flex items-center space-x-3 p-3 rounded-xl
+                  bg-white/10 backdrop-blur-sm hover:bg-white/20 
+                  transition-all duration-300 group"
+              >
+                <Icon size={20} className="text-white group-hover:scale-110 transition-transform duration-300" />
+                <span className="text-white/90 font-medium">{label}</span>
+              </Link>
+            ))}
           </div>
 
-          {/* Sign Out Button for Mobile */}
-          <div className="px-6 mt-6 mb-8">
+          {/* Sign Out Button */}
+          <div className="mt-6 mb-8">
             <button
               onClick={handleSignOut}
-              className="w-full px-4 py-3 rounded-xl bg-purple-600 text-white font-semibold
-                transition-all duration-300 hover:bg-purple-700 active:scale-95
-                flex items-center justify-center space-x-2"
+              className="w-full px-4 py-3 rounded-xl bg-white/10 text-white/90 font-medium
+                transition-all duration-300 hover:bg-white/20 active:scale-95
+                border border-white/20"
             >
-              <span>Sign Out</span>
+              Sign Out
             </button>
           </div>
         </div>
@@ -535,7 +522,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
         />
       )}
 
-      {/* Spacer for content below the fixed top bar on desktop */}
+      {/* Spacer */}
       <div className="hidden md:block h-16" />
     </>
   );
