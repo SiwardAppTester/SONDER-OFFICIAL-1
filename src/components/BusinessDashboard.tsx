@@ -7,6 +7,7 @@ import BusinessSidebar from './BusinessSidebar';
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import FilterPopup from './FilterPopup';
 
 interface Download {
   postId: string;
@@ -140,6 +141,17 @@ interface UserShareDetails {
   age?: number;
 }
 
+// Add these types near the top of the file with other interfaces
+interface ColumnFilter {
+  value: string;
+  operator: 'equals' | 'contains' | 'greater' | 'less';
+}
+
+interface FilterPopup {
+  column: string;
+  anchorEl: HTMLElement | null;
+}
+
 function Loader() {
   const { progress } = useProgress()
   return (
@@ -229,6 +241,13 @@ const BusinessDashboard: React.FC = () => {
     genderDistribution: {},
     genrePreferences: {}
   });
+  const [filters, setFilters] = useState({
+    mediaType: 'all',
+    festivalId: 'all',
+    categoryId: 'all'
+  });
+  const [filterPopup, setFilterPopup] = useState<FilterPopup | null>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, ColumnFilter>>({});
 
   // Modify the useEffect for fetching posts and initializing metrics
   useEffect(() => {
@@ -981,6 +1000,65 @@ const BusinessDashboard: React.FC = () => {
     fetchShareUserDetails(mediaKey, item);
   };
 
+  const handleColumnHeaderClick = (header: string, event: React.MouseEvent<HTMLElement>) => {
+    setFilterPopup({
+      column: header,
+      anchorEl: event.currentTarget
+    });
+  };
+
+  const handleApplyFilter = (column: string, filter: { value: string; operator: string }) => {
+    setColumnFilters(prev => ({
+      ...prev,
+      [column]: filter as ColumnFilter
+    }));
+  };
+
+  const getFilteredItems = (items: [string, any][]) => {
+    return items.filter(([_, item]) => {
+      const matchesMediaType = filters.mediaType === 'all' || item.mediaType === filters.mediaType;
+      const matchesFestival = filters.festivalId === 'all' || item.festivalId === filters.festivalId;
+      const matchesCategory = filters.categoryId === 'all' || item.categoryId === filters.categoryId;
+
+      // Apply column filters
+      const matchesColumnFilters = Object.entries(columnFilters).every(([column, filter]) => {
+        let value = '';
+        switch (column) {
+          case 'Media Type':
+            value = item.mediaType;
+            break;
+          case 'Category':
+            value = categories[item.categoryId || ''] || 'Uncategorized';
+            break;
+          case 'Festival':
+            value = festivals[item.festivalId] || '';
+            break;
+          case 'Shares':
+            value = item.shareCount.toString();
+            break;
+          case 'Last Shared':
+            value = item.sharedAt?.toDate().toLocaleDateString() || '';
+            break;
+        }
+
+        switch (filter.operator) {
+          case 'equals':
+            return value.toLowerCase() === filter.value.toLowerCase();
+          case 'contains':
+            return value.toLowerCase().includes(filter.value.toLowerCase());
+          case 'greater':
+            return parseFloat(value) > parseFloat(filter.value);
+          case 'less':
+            return parseFloat(value) < parseFloat(filter.value);
+          default:
+            return true;
+        }
+      });
+
+      return matchesMediaType && matchesFestival && matchesCategory && matchesColumnFilters;
+    });
+  };
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Three.js Background */}
@@ -1183,7 +1261,65 @@ const BusinessDashboard: React.FC = () => {
                             shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20
                             overflow-hidden">
                 <div className="p-6 border-b border-white/10">
-                  <h2 className="text-xl font-bold text-white">Downloads by Media</h2>
+                  <h2 className="text-xl font-bold text-white mb-6">
+                    Downloads by Media
+                  </h2>
+                  
+                  {/* Filters */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    {/* Media Type Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-white/60 mb-2">
+                        Media Type
+                      </label>
+                      <select
+                        value={filters.mediaType}
+                        onChange={(e) => setFilters(prev => ({ ...prev, mediaType: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white
+                                  focus:outline-none focus:ring-2 focus:ring-white/20"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="image">Images</option>
+                        <option value="video">Videos</option>
+                      </select>
+                    </div>
+
+                    {/* Festival Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-white/60 mb-2">
+                        Festival
+                      </label>
+                      <select
+                        value={filters.festivalId}
+                        onChange={(e) => setFilters(prev => ({ ...prev, festivalId: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white
+                                  focus:outline-none focus:ring-2 focus:ring-white/20"
+                      >
+                        <option value="all">All Festivals</option>
+                        {Object.entries(festivals).map(([id, name]) => (
+                          <option key={id} value={id}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Category Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-white/60 mb-2">
+                        Category
+                      </label>
+                      <select
+                        value={filters.categoryId}
+                        onChange={(e) => setFilters(prev => ({ ...prev, categoryId: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white
+                                  focus:outline-none focus:ring-2 focus:ring-white/20"
+                      >
+                        <option value="all">All Categories</option>
+                        {Object.entries(categories).map(([id, name]) => (
+                          <option key={id} value={id}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="overflow-x-auto">
@@ -1192,14 +1328,22 @@ const BusinessDashboard: React.FC = () => {
                       <tr className="bg-white/5">
                         {['Preview', 'Media Type', 'Category', 'Festival', 'Downloads', 'Last Downloaded'].map((header) => (
                           <th key={header} 
-                              className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">
-                            {header}
+                              className={`px-6 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider
+                                         ${header !== 'Preview' ? 'cursor-pointer hover:text-white' : ''}`}
+                              onClick={header !== 'Preview' ? (e) => handleColumnHeaderClick(header, e) : undefined}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <span>{header}</span>
+                              {columnFilters[header] && (
+                                <div className="w-2 h-2 rounded-full bg-white/60" />
+                              )}
+                            </div>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10">
-                      {sortedMediaItems.map(([key, item]) => (
+                      {getFilteredItems(sortedMediaItems).map(([key, item]) => (
                         <tr 
                           key={key} 
                           className="hover:bg-white/5 transition-colors duration-200 cursor-pointer" 
@@ -1255,7 +1399,7 @@ const BusinessDashboard: React.FC = () => {
                     </tbody>
                   </table>
 
-                  {sortedMediaItems.length === 0 && (
+                  {getFilteredItems(sortedMediaItems).length === 0 && (
                     <div className="text-center py-12">
                       <p className="text-white/60">No downloads to display yet</p>
                     </div>
@@ -1402,7 +1546,65 @@ const BusinessDashboard: React.FC = () => {
                             shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20
                             overflow-hidden">
                 <div className="p-6 border-b border-white/10">
-                  <h2 className="text-xl font-bold text-white">Shares by Media</h2>
+                  <h2 className="text-xl font-bold text-white mb-6">
+                    Shares by Media
+                  </h2>
+                  
+                  {/* Filters */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    {/* Media Type Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-white/60 mb-2">
+                        Media Type
+                      </label>
+                      <select
+                        value={filters.mediaType}
+                        onChange={(e) => setFilters(prev => ({ ...prev, mediaType: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white
+                                  focus:outline-none focus:ring-2 focus:ring-white/20"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="image">Images</option>
+                        <option value="video">Videos</option>
+                      </select>
+                    </div>
+
+                    {/* Festival Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-white/60 mb-2">
+                        Festival
+                      </label>
+                      <select
+                        value={filters.festivalId}
+                        onChange={(e) => setFilters(prev => ({ ...prev, festivalId: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white
+                                  focus:outline-none focus:ring-2 focus:ring-white/20"
+                      >
+                        <option value="all">All Festivals</option>
+                        {Object.entries(festivals).map(([id, name]) => (
+                          <option key={id} value={id}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Category Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-white/60 mb-2">
+                        Category
+                      </label>
+                      <select
+                        value={filters.categoryId}
+                        onChange={(e) => setFilters(prev => ({ ...prev, categoryId: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white
+                                  focus:outline-none focus:ring-2 focus:ring-white/20"
+                      >
+                        <option value="all">All Categories</option>
+                        {Object.entries(categories).map(([id, name]) => (
+                          <option key={id} value={id}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="overflow-x-auto">
@@ -1411,72 +1613,84 @@ const BusinessDashboard: React.FC = () => {
                       <tr className="bg-white/5">
                         {['Preview', 'Media Type', 'Category', 'Festival', 'Shares', 'Last Shared'].map((header) => (
                           <th key={header} 
-                              className="px-6 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">
-                            {header}
+                              className={`px-6 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider
+                                         ${header !== 'Preview' ? 'cursor-pointer hover:text-white' : ''}`}
+                              onClick={header !== 'Preview' ? (e) => handleColumnHeaderClick(header, e) : undefined}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <span>{header}</span>
+                              {columnFilters[header] && (
+                                <div className="w-2 h-2 rounded-full bg-white/60" />
+                              )}
+                            </div>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10">
-                      {Object.entries(shareMetrics.sharesByMedia)
-                        .sort(([, a], [, b]) => b.shareCount - a.shareCount)
-                        .map(([key, item]) => (
-                          <tr 
-                            key={key} 
-                            className="hover:bg-white/5 transition-colors duration-200 cursor-pointer"
-                            onClick={() => handleShareRowClick(key, item)}
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
-                                {item.mediaType === 'video' ? (
-                                  <video
-                                    src={item.url}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      (e.target as HTMLVideoElement).style.display = 'none';
-                                    }}
-                                  />
-                                ) : (
-                                  <img
-                                    src={item.url}
-                                    alt="Media preview"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).style.display = 'none';
-                                    }}
-                                  />
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                item.mediaType === 'image' 
-                                  ? 'bg-white/10 text-white' 
-                                  : 'bg-white/20 text-white'
-                              }`}>
-                                {item.mediaType}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
-                              {categories[item.categoryId || ''] || 'Uncategorized'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
-                              {festivals[item.festivalId] || 'Loading...'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-semibold text-white">
-                                {Math.round(item.shareCount)}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
-                              {item.sharedAt?.toDate().toLocaleDateString()}
-                            </td>
-                          </tr>
-                        ))}
+                      {getFilteredItems(
+                        Object.entries(shareMetrics.sharesByMedia)
+                          .sort(([, a], [, b]) => b.shareCount - a.shareCount)
+                      ).map(([key, item]) => (
+                        <tr 
+                          key={key} 
+                          className="hover:bg-white/5 transition-colors duration-200 cursor-pointer"
+                          onClick={() => handleShareRowClick(key, item)}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/5 border border-white/10">
+                              {item.mediaType === 'video' ? (
+                                <video
+                                  src={item.url}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLVideoElement).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <img
+                                  src={item.url}
+                                  alt="Media preview"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.mediaType === 'image' 
+                                ? 'bg-white/10 text-white' 
+                                : 'bg-white/20 text-white'
+                            }`}>
+                              {item.mediaType}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
+                            {categories[item.categoryId || ''] || 'Uncategorized'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
+                            {festivals[item.festivalId] || 'Loading...'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-semibold text-white">
+                              {Math.round(item.shareCount)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
+                            {item.sharedAt?.toDate().toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
 
-                  {Object.keys(shareMetrics.sharesByMedia).length === 0 && (
+                  {getFilteredItems(
+                    Object.entries(shareMetrics.sharesByMedia)
+                      .sort(([, a], [, b]) => b.shareCount - a.shareCount)
+                  ).length === 0 && (
                     <div className="text-center py-12">
                       <p className="text-white/60">No shares to display yet</p>
                     </div>
@@ -1708,6 +1922,17 @@ const BusinessDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Filter Popup */}
+      {filterPopup && (
+        <FilterPopup
+          column={filterPopup.column}
+          anchorEl={filterPopup.anchorEl}
+          onClose={() => setFilterPopup(null)}
+          onApplyFilter={(filter) => handleApplyFilter(filterPopup.column, filter)}
+          currentFilter={columnFilters[filterPopup.column]}
+        />
       )}
     </div>
   );
