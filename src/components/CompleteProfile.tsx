@@ -3,11 +3,50 @@ import { useNavigate } from "react-router-dom";
 import { doc, updateDoc, query, collection, where, getDocs } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { ChevronDownIcon } from '@heroicons/react/24/solid';
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
+import * as THREE from 'three';
+import { Suspense } from 'react';
 
 const musicGenres = [
   "House", "Techno", "Trance", "Drum & Bass", "Dubstep", "EDM", 
   "Garage", "Breakbeat", "Hardstyle", "Ambient", "Other"
 ];
+
+// Add the Loader component
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-white text-xl">
+        {progress.toFixed(0)}% loaded
+      </div>
+    </Html>
+  )
+}
+
+// Add the InnerSphere component
+function InnerSphere() {
+  return (
+    <>
+      <Environment preset="sunset" />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      
+      <mesh scale={[-15, -15, -15]}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          side={THREE.BackSide}
+          color="#1a1a1a"
+          metalness={0.9}
+          roughness={0.1}
+          envMapIntensity={1}
+        />
+      </mesh>
+    </>
+  )
+}
 
 const CompleteProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -80,184 +119,195 @@ const CompleteProfile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100 flex flex-col justify-center items-center relative overflow-hidden py-8 md:py-0">
-      {/* Animated background elements - adjusted for mobile */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute w-64 md:w-96 h-64 md:h-96 bg-white rounded-full blur-3xl opacity-20 -top-20 -left-20 animate-pulse"></div>
-        <div className="absolute w-64 md:w-96 h-64 md:h-96 bg-white rounded-full blur-3xl opacity-20 -bottom-20 -right-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+    <div className="min-h-screen w-full overflow-y-auto relative">
+      {/* Three.js Background */}
+      <div className="fixed inset-0">
+        <Canvas
+          className="w-full h-full"
+          gl={{ antialias: true, alpha: true }}
+        >
+          <Suspense fallback={<Loader />}>
+            <InnerSphere />
+          </Suspense>
+        </Canvas>
       </div>
 
-      <div className="w-full max-w-md mx-auto px-4 relative z-10">
-        {/* Logo - adjusted for mobile */}
-        <div className="text-4xl md:text-6xl font-bold mb-8 md:mb-12 transform hover:scale-105 transition-transform duration-300 cursor-default flex justify-center">
-          <span className="text-purple-600">S</span>
-          <span style={{ color: '#DC2626' }}>o</span>
-          <span className="text-purple-600">nder</span>
-        </div>
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md">
+          {/* Profile Form */}
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                         p-6 border border-white/20">
+            <h2 className="text-2xl text-white/90 mb-6 text-center tracking-[0.2em]">
+              Complete Your Profile
+            </h2>
 
-        {/* Profile Form - adjusted padding and spacing for mobile */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg p-6 md:p-8">
-          <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center text-gray-900">
-            Complete Your Profile
-          </h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-            {/* Form fields - adjusted for mobile */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full p-2.5 md:p-3 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-base md:text-lg"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full p-2.5 md:p-3 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-base md:text-lg"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                className="w-full p-2.5 md:p-3 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-base md:text-lg"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Favorite Music Genre
-              </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsGenreOpen(!isGenreOpen)}
-                  className="w-full p-2.5 md:p-3 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm 
-                           focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200
-                           flex justify-between items-center text-left text-base md:text-lg"
-                >
-                  <span className={favoriteGenre ? "text-gray-900" : "text-gray-500"}>
-                    {favoriteGenre || "Select a genre"}
-                  </span>
-                  <ChevronDownIcon 
-                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
-                      isGenreOpen ? 'transform rotate-180' : ''
-                    }`}
-                  />
-                </button>
-
-                {isGenreOpen && (
-                  <div className="absolute z-20 w-full mt-1 bg-white/95 backdrop-blur-sm border 
-                                border-gray-200 rounded-lg shadow-lg max-h-40 overflow-auto">
-                    {musicGenres.map((genre) => (
-                      <button
-                        key={genre}
-                        type="button"
-                        onClick={() => {
-                          setFavoriteGenre(genre);
-                          setIsGenreOpen(false);
-                        }}
-                        className="w-full px-4 py-2 md:py-1.5 text-left hover:bg-purple-50 transition-colors
-                                 duration-150 ease-in-out focus:outline-none focus:bg-purple-50
-                                 text-gray-700 hover:text-purple-700 text-base md:text-lg"
-                      >
-                        {genre}
-                      </button>
-                    ))}
-                  </div>
-                )}
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {/* Full Name Input */}
+              <div>
+                <label className="block text-sm text-white/60 mb-1 tracking-[0.15em]">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-white/5 border border-white/20
+                           text-sm text-white placeholder-white/40 tracking-[0.15em]
+                           focus:outline-none focus:ring-2 focus:ring-white/20
+                           focus:border-transparent transition-all duration-200"
+                  required
+                />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Gender
-              </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsGenderOpen(!isGenderOpen)}
-                  className="w-full p-2.5 md:p-3 border border-gray-300 rounded-lg bg-white/50 backdrop-blur-sm 
-                           focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200
-                           flex justify-between items-center text-left text-base md:text-lg"
-                >
-                  <span className={gender ? "text-gray-900" : "text-gray-500"}>
-                    {gender || "Select gender"}
-                  </span>
-                  <ChevronDownIcon 
-                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${
-                      isGenderOpen ? 'transform rotate-180' : ''
-                    }`}
-                  />
-                </button>
-                {isGenderOpen && (
-                  <div className="absolute z-20 w-full mt-1 bg-white/95 backdrop-blur-sm border 
-                                border-gray-200 rounded-lg shadow-lg">
-                    {genderOptions.map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => {
-                          setGender(option);
-                          setIsGenderOpen(false);
-                        }}
-                        className="w-full px-4 py-2 text-left hover:bg-purple-50 transition-colors
-                                 duration-150 ease-in-out focus:outline-none focus:bg-purple-50
-                                 text-gray-700 hover:text-purple-700"
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
+              {/* Username Input */}
+              <div>
+                <label className="block text-sm text-white/60 mb-1 tracking-[0.15em]">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-white/5 border border-white/20
+                           text-sm text-white placeholder-white/40 tracking-[0.15em]
+                           focus:outline-none focus:ring-2 focus:ring-white/20
+                           focus:border-transparent transition-all duration-200"
+                  required
+                />
               </div>
-            </div>
 
-            {error && (
-              <p className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">
-                {error}
-              </p>
-            )}
+              {/* Date of Birth Input */}
+              <div>
+                <label className="block text-sm text-white/60 mb-1 tracking-[0.15em]">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="w-full p-2.5 rounded-lg bg-white/5 border border-white/20
+                           text-sm text-white placeholder-white/40 tracking-[0.15em]
+                           focus:outline-none focus:ring-2 focus:ring-white/20
+                           focus:border-transparent transition-all duration-200"
+                  required
+                />
+              </div>
 
-            {/* Submit button - adjusted padding for mobile */}
-            <button
-              type="submit"
-              className="w-full px-6 md:px-8 py-3.5 md:py-4 rounded-full bg-purple-600 text-white font-semibold text-lg md:text-xl 
-                       transition-all duration-300 
-                       shadow-[0_0_20px_rgba(168,85,247,0.5)] 
-                       hover:shadow-[0_0_30px_rgba(168,85,247,0.8)]
-                       relative overflow-hidden mt-4 md:mt-6"
-            >
-              <span className="relative z-10">Complete Profile</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-purple-500 transition-opacity duration-300"/>
-            </button>
-          </form>
+              {/* Favorite Genre Dropdown */}
+              <div>
+                <label className="block text-sm text-white/60 mb-1 tracking-[0.15em]">
+                  Favorite Music Genre
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsGenreOpen(!isGenreOpen)}
+                    className="w-full p-2.5 rounded-lg bg-white/5 border border-white/20
+                             text-sm text-white flex justify-between items-center tracking-[0.15em]
+                             focus:outline-none focus:ring-2 focus:ring-white/20
+                             hover:bg-white/10 transition-all duration-200"
+                  >
+                    <span className={favoriteGenre ? "text-white" : "text-white/40"}>
+                      {favoriteGenre || "Select a genre"}
+                    </span>
+                    <ChevronDownIcon className={`w-4 h-4 text-white/60 transition-transform duration-200 
+                                             ${isGenreOpen ? 'transform rotate-180' : ''}`}
+                    />
+                  </button>
+
+                  {isGenreOpen && (
+                    <div className="absolute z-20 w-full mt-1 bg-white/10 backdrop-blur-xl
+                                  border border-white/20 rounded-lg shadow-lg max-h-40 overflow-auto">
+                      {musicGenres.map((genre) => (
+                        <button
+                          key={genre}
+                          type="button"
+                          onClick={() => {
+                            setFavoriteGenre(genre);
+                            setIsGenreOpen(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-white/90 hover:bg-white/10
+                                   text-sm transition-colors duration-200 tracking-[0.15em]"
+                        >
+                          {genre}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Gender Dropdown */}
+              <div>
+                <label className="block text-sm text-white/60 mb-1 tracking-[0.15em]">
+                  Gender
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsGenderOpen(!isGenderOpen)}
+                    className="w-full p-2.5 rounded-lg bg-white/5 border border-white/20
+                             text-sm text-white flex justify-between items-center tracking-[0.15em]
+                             focus:outline-none focus:ring-2 focus:ring-white/20
+                             hover:bg-white/10 transition-all duration-200"
+                  >
+                    <span className={gender ? "text-white" : "text-white/40"}>
+                      {gender || "Select gender"}
+                    </span>
+                    <ChevronDownIcon className={`w-4 h-4 text-white/60 transition-transform duration-200 
+                                             ${isGenderOpen ? 'transform rotate-180' : ''}`}
+                    />
+                  </button>
+
+                  {isGenderOpen && (
+                    <div className="absolute z-20 w-full mt-1 bg-white/10 backdrop-blur-xl
+                                  border border-white/20 rounded-lg shadow-lg">
+                      {genderOptions.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => {
+                            setGender(option);
+                            setIsGenderOpen(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-white/90 hover:bg-white/10
+                                   text-sm transition-colors duration-200 tracking-[0.15em]"
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-2.5 bg-white/5 border border-white/20 rounded-lg">
+                  <p className="text-white/90 text-xs tracking-[0.1em]">{error}</p>
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="w-full mt-4 px-6 py-3 rounded-full bg-white/10 text-white
+                         border border-white/20 hover:bg-white/20
+                         transition-all duration-300 text-base tracking-[0.2em]
+                         hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+              >
+                Complete Profile
+              </button>
+            </form>
+          </div>
+
+          {/* Footer */}
+          <footer className="text-center text-white/60 mt-6 text-sm tracking-[0.15em]">
+            <p className="hover:text-white/90 transition-colors duration-300 cursor-default">
+              Experience the moment. Cherish forever.
+            </p>
+          </footer>
         </div>
-
-        {/* Footer - adjusted for mobile */}
-        <footer className="text-center text-gray-600 mt-6 md:mt-8 px-4">
-          <p className="text-lg md:text-xl hover:text-gray-900 transition-colors duration-300 cursor-default">
-            Experience the moment. Cherish forever.
-          </p>
-        </footer>
       </div>
     </div>
   );
