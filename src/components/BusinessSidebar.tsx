@@ -8,6 +8,7 @@ import { doc, updateDoc, getDoc, getDocs, query, where, collection } from "fireb
 import { db } from "../firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateProfile } from "firebase/auth";
+import { useUserProfile } from '../contexts/UserProfileContext';
 
 interface UserProfile {
   email: string;
@@ -22,7 +23,6 @@ interface BusinessSidebarProps {
   isNavOpen: boolean;
   setIsNavOpen: (isOpen: boolean) => void;
   user: FirebaseUser | null;
-  userProfile: UserProfile | null;
   accessibleFestivalsCount: number;
 }
 
@@ -44,9 +44,9 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
   isNavOpen,
   setIsNavOpen,
   user,
-  userProfile,
   accessibleFestivalsCount,
 }) => {
+  const { userProfile, setUserProfile } = useUserProfile();
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [localPhotoURL, setLocalPhotoURL] = useState<string | undefined>(userProfile?.photoURL);
@@ -176,6 +176,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
       });
 
       setLocalPhotoURL(downloadURL);
+      setUserProfile(userProfile ? { ...userProfile, photoURL: downloadURL } : null);
 
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, {

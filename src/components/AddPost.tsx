@@ -17,6 +17,7 @@ import { OrbitControls } from '@react-three/drei';
 import { TextureLoader } from 'three';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { useUserProfile } from '../contexts/UserProfileContext';
 
 interface MediaFile {
   file: File;
@@ -155,12 +156,12 @@ function InnerSphere() {
 
 const AddPost: React.FC = () => {
   const navigate = useNavigate();
+  const { userProfile } = useUserProfile();
   const [festivals, setFestivals] = useState<Festival[]>([]);
   const [showAddFestival, setShowAddFestival] = useState(false);
   const [newFestivalName, setNewFestivalName] = useState("");
   const [newFestivalDescription, setNewFestivalDescription] = useState("");
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
   const [newFestivalImage, setNewFestivalImage] = useState<File | null>(null);
   const [newFestivalDate, setNewFestivalDate] = useState("");
@@ -318,7 +319,6 @@ const AddPost: React.FC = () => {
         isNavOpen={isNavOpen}
         setIsNavOpen={setIsNavOpen}
         user={auth.currentUser}
-        userProfile={userProfile}
         accessibleFestivalsCount={festivals.length}
       />
 

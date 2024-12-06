@@ -5,6 +5,7 @@ import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/
 import * as THREE from 'three';
 import { Suspense } from 'react';
 import { gsap } from 'gsap';
+import { useScrollAnimation } from '../hooks/useScrollAnimation';
 
 // Loader component for Suspense fallback
 function Loader() {
@@ -62,6 +63,7 @@ const AboutUs: React.FC = () => {
   const location = useLocation();
   const contentRef = useRef<HTMLDivElement>(null);
   const parallaxRef = useRef<HTMLDivElement>(null);
+  const rightSectionRef = useRef<HTMLDivElement>(null);
 
   // Add back the parallax effect
   useEffect(() => {
@@ -86,44 +88,93 @@ const AboutUs: React.FC = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Keep the entrance/exit animations
+  // Update the entrance animation
   useEffect(() => {
-    if (location.state?.animateFrom === 'welcome' && contentRef.current) {
-      gsap.set(contentRef.current, {
-        opacity: 0,
-        scale: 0.95
-      });
+    if (location.state?.animateFrom === 'welcome') {
+      // Set initial positions
+      if (parallaxRef.current) {
+        gsap.set(parallaxRef.current, {
+          opacity: 0,
+          x: -100,
+        });
+      }
+      
+      if (rightSectionRef.current) {
+        gsap.set(rightSectionRef.current, {
+          opacity: 0,
+          x: 100,
+        });
+      }
 
-      gsap.to(contentRef.current, {
-        opacity: 1,
-        scale: 1,
-        duration: 1,
-        delay: 0.3,
-        ease: "power3.out",
-      });
+      // Animate in
+      if (parallaxRef.current) {
+        gsap.to(parallaxRef.current, {
+          opacity: 1,
+          x: 0,
+          duration: 1,
+          delay: 0.3,
+          ease: "power3.out",
+        });
+      }
+
+      if (rightSectionRef.current) {
+        gsap.to(rightSectionRef.current, {
+          opacity: 1,
+          x: 0,
+          duration: 1,
+          delay: 0.3,
+          ease: "power3.out",
+        });
+      }
     }
   }, [location]);
 
   const handleBack = () => {
-    if (contentRef.current) {
-      // Animate out
-      gsap.to(contentRef.current, {
+    // Animate out both sections
+    if (parallaxRef.current && rightSectionRef.current) {
+      // Animate left section
+      gsap.to(parallaxRef.current, {
         opacity: 0,
-        scale: 1.05,
+        x: -100,
+        duration: 0.8,
+        ease: "power3.in",
+      });
+
+      // Animate right section
+      gsap.to(rightSectionRef.current, {
+        opacity: 0,
+        x: 100,
         duration: 0.8,
         ease: "power3.in",
       });
 
       // Navigate after animation
       setTimeout(() => {
-        navigate('/', { replace: true });
+        navigate('/', { 
+          replace: true,
+          state: { from: 'about' }
+        });
       }, 800);
+    } else {
+      // Fallback if refs are not available
+      navigate('/', { 
+        replace: true,
+        state: { from: 'about' }
+      });
     }
   };
 
+  // Add these new refs for the additional sections
+  const leftSection1Ref = useScrollAnimation('right');
+  const rightSection1Ref = useScrollAnimation('left');
+  const leftSection2Ref = useScrollAnimation('left');
+  const rightSection2Ref = useScrollAnimation('right');
+  const leftSection3Ref = useScrollAnimation('right');
+  const rightSection3Ref = useScrollAnimation('left');
+
   return (
-    <div className="min-h-screen w-full overflow-hidden relative">
-      {/* Enhanced Background */}
+    <div className="relative min-h-screen w-full overflow-x-hidden">
+      {/* Fixed Background */}
       <div className="fixed inset-0">
         <Canvas
           className="w-full h-full"
@@ -135,13 +186,10 @@ const AboutUs: React.FC = () => {
         </Canvas>
       </div>
 
-      {/* Animated content wrapper */}
-      <div 
-        ref={contentRef} 
-        className="relative z-10 min-h-screen flex flex-col"
-      >
+      {/* Content wrapper */}
+      <div className="relative z-10 flex flex-col pt-16 pb-16">
         {/* Back Button */}
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50">
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50">
           <button
             onClick={handleBack}
             className="relative px-8 py-2 border border-white/20 rounded-full
@@ -156,18 +204,19 @@ const AboutUs: React.FC = () => {
           </button>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="max-w-6xl w-full grid md:grid-cols-[1.2fr,1fr] gap-16 items-center">
+        {/* All content wrapped in a consistent container */}
+        <div className="container max-w-6xl mx-auto px-4 md:px-8 space-y-24">
+          {/* Hero Section */}
+          <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-start pt-12">
             {/* Left Side - Main Content with parallax */}
             <div 
               ref={parallaxRef}
-              className="space-y-12 transition-transform duration-300 ease-out"
+              className="space-y-8"
             >
               {/* Brand */}
               <div>
                 <h1 className="text-7xl md:text-8xl font-['Space_Grotesk'] tracking-[0.2em] 
-                             text-white/90 mb-6
+                             text-white/90 mb-4
                              animate-text bg-gradient-to-r from-white/80 via-white to-white/80 
                              bg-clip-text text-transparent">
                   SONDER
@@ -180,7 +229,7 @@ const AboutUs: React.FC = () => {
               </div>
 
               {/* Description */}
-              <div className="space-y-6 max-w-2xl">
+              <div className="space-y-4">
                 <p className="text-white/70 font-['Space_Grotesk'] text-xl leading-relaxed">
                   In a world where we're constantly connected, Sonder creates a space 
                   for genuine presence and connection. We believe that the most precious 
@@ -194,7 +243,10 @@ const AboutUs: React.FC = () => {
             </div>
 
             {/* Right Side - Features */}
-            <div className="space-y-8">
+            <div 
+              ref={rightSectionRef}
+              className="space-y-6"
+            >
               <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10">
                 <div className="w-12 h-[2px] bg-white/40 mb-6"></div>
                 <h3 className="text-2xl text-white/90 font-['Space_Grotesk'] mb-4">
@@ -226,14 +278,119 @@ const AboutUs: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer Quote */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center max-w-xl px-4">
-          <p className="text-white/40 font-['Space_Grotesk'] italic text-lg">
-            "The best moments in our lives are not the posed ones. They are 
-            the moments when we are truly living."
-          </p>
+          {/* Content Sections */}
+          <div className="space-y-24">
+            {/* Section 1 */}
+            <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
+              <div 
+                ref={rightSection1Ref}
+                className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10"
+              >
+                <div className="space-y-6">
+                  <h3 className="text-2xl text-white/90 font-['Space_Grotesk']">
+                    Key Features
+                  </h3>
+                  <ul className="space-y-4 text-white/60 text-lg">
+                    <li>• Delayed photo sharing</li>
+                    <li>• Mindfulness reminders</li>
+                    <li>• Presence tracking</li>
+                    <li>• Digital wellbeing insights</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div 
+                ref={leftSection1Ref}
+                className="space-y-6"
+              >
+                <h2 className="text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
+                  Mindful Technology
+                </h2>
+                <p className="text-white/70 font-['Space_Grotesk'] text-xl leading-relaxed">
+                  We believe technology should enhance our lives, not consume them. 
+                  Sonder is designed with intentionality, helping you strike the perfect 
+                  balance between capturing moments and living them.
+                </p>
+              </div>
+            </div>
+
+            {/* Section 2 */}
+            <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
+              <div 
+                ref={leftSection2Ref}
+                className="space-y-6"
+              >
+                <h2 className="text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
+                  Community & Connection
+                </h2>
+                <p className="text-white/70 font-['Space_Grotesk'] text-xl leading-relaxed">
+                  Join a community of mindful individuals who value authentic experiences. 
+                  Share stories, connect meaningfully, and inspire others to embrace 
+                  present-moment awareness.
+                </p>
+              </div>
+
+              <div 
+                ref={rightSection2Ref}
+                className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10"
+              >
+                <div className="space-y-6">
+                  <h3 className="text-2xl text-white/90 font-['Space_Grotesk']">
+                    Community Features
+                  </h3>
+                  <ul className="space-y-4 text-white/60 text-lg">
+                    <li>• Private sharing circles</li>
+                    <li>• Meaningful interactions</li>
+                    <li>• Group challenges</li>
+                    <li>• Community stories</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3 */}
+            <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
+              <div 
+                ref={rightSection3Ref}
+                className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10"
+              >
+                <div className="space-y-6">
+                  <h3 className="text-2xl text-white/90 font-['Space_Grotesk']">
+                    Privacy & Security
+                  </h3>
+                  <ul className="space-y-4 text-white/60 text-lg">
+                    <li>• End-to-end encryption</li>
+                    <li>• Customizable privacy settings</li>
+                    <li>• Secure data storage</li>
+                    <li>• Personal data control</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div 
+                ref={leftSection3Ref}
+                className="space-y-6"
+              >
+                <h2 className="text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
+                  Your Data, Your Control
+                </h2>
+                <p className="text-white/70 font-['Space_Grotesk'] text-xl leading-relaxed">
+                  We believe in putting you in control of your digital footprint. 
+                  With Sonder, your memories are yours alone, protected by 
+                  industry-leading security measures and privacy controls.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Quote */}
+          <div className="text-center max-w-xl mx-auto">
+            <p className="text-white/40 font-['Space_Grotesk'] italic text-lg">
+              "The best moments in our lives are not the posed ones. They are 
+              the moments when we are truly living."
+            </p>
+          </div>
         </div>
       </div>
     </div>

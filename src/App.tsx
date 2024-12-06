@@ -24,6 +24,7 @@ import { Suspense } from 'react';
 import FestivalDetails from './components/FestivalDetails';
 import AboutUs from "./components/AboutUs";
 import BusinessSettings from './components/BusinessSettings';
+import { UserProfileProvider } from './contexts/UserProfileContext';
 
 // Add Loader component
 function Loader() {
@@ -192,7 +193,9 @@ const App: React.FC = () => {
 const AppWrapper: React.FC = () => {
   return (
     <Router>
-      <App />
+      <UserProfileProvider>
+        <App />
+      </UserProfileProvider>
     </Router>
   );
 };

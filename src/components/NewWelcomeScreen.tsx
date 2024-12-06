@@ -175,7 +175,54 @@ function Loader() {
 
 const NewWelcomeScreen: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAnimating, setIsAnimating] = React.useState(false);
+  const [showIntro, setShowIntro] = React.useState(
+    !(location.state && location.state.from === 'about')
+  );
+
+  React.useEffect(() => {
+    if (!showIntro) return;
+
+    const tl = gsap.timeline();
+    
+    // Animate each word
+    const words = [
+      '.word-in', '.word-a', '.word-hyper', '.word-connected', 
+      '.word-world', '.word-weve', '.word-never', '.word-felt',
+      '.word-more', '.word-disconnected'
+    ];
+
+    // Set initial state for all words
+    gsap.set(words.map(w => w), { 
+      opacity: 0,
+      y: 20 // Start slightly below final position
+    });
+
+    // Animate each word one by one with better timing
+    words.forEach((word) => {
+      tl.to(word, {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: "power2.out",
+        stagger: 0.15 // Smooth delay between words
+      }, ">");  // The ">" ensures proper sequencing
+    });
+
+    // After all words are shown, wait longer before fading out
+    tl.to({}, { duration: 1.5 }) // longer pause
+      .to('.intro-text', {
+        opacity: 0,
+        duration: 1.2,
+        ease: "power2.inOut",
+        onComplete: () => setShowIntro(false)
+      });
+
+    return () => {
+      tl.kill();
+    };
+  }, [showIntro]);
 
   const handleAboutClick = () => {
     setIsAnimating(true);
@@ -184,14 +231,15 @@ const NewWelcomeScreen: React.FC = () => {
     gsap.to('.content-fade', {
       opacity: 0,
       scale: 0.95,
-      duration: 0.8,
-      ease: "power3.in"
+      duration: 1,
+      ease: "power2.inOut"
     });
 
-    // Navigate after animation
     setTimeout(() => {
-      navigate('/about', { state: { animateFrom: 'welcome' } });
-    }, 800);
+      navigate('/about', { 
+        state: { animateFrom: 'welcome' }
+      });
+    }, 1000);
   };
 
   const handleSignIn = () => {
@@ -214,6 +262,27 @@ const NewWelcomeScreen: React.FC = () => {
 
   return (
     <div className="h-screen w-full relative bg-black overflow-hidden">
+      {showIntro && (
+        <div className="absolute inset-0 bg-black flex items-center justify-center z-40">
+          <div className="intro-text text-center px-4">
+            <p className="text-[#808080] text-2xl md:text-3xl mb-2 font-['Space_Grotesk']">
+              <span className="word-in">In</span>{' '}
+              <span className="word-a">A</span>{' '}
+              <span className="word-hyper text-white">Hyper</span>
+              <span className="word-connected text-white">-Connected</span>{' '}
+              <span className="word-world">World</span>
+            </p>
+            <p className="text-[#808080] text-2xl md:text-3xl font-['Space_Grotesk']">
+              <span className="word-weve">We've</span>{' '}
+              <span className="word-never">Never</span>{' '}
+              <span className="word-felt">Felt</span>{' '}
+              <span className="word-more">More</span>{' '}
+              <span className="word-disconnected text-white">Disconnected</span>.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Video background - lowest layer */}
       <video 
         autoPlay 
