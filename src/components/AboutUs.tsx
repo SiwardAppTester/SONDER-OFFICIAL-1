@@ -64,23 +64,26 @@ const AboutUs: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const parallaxRef = useRef<HTMLDivElement>(null);
   const rightSectionRef = useRef<HTMLDivElement>(null);
+  const textSectionsRef = useRef<(HTMLDivElement | null)[]>([]);
 
   // Add back the parallax effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!parallaxRef.current) return;
-      
       const { clientX, clientY } = e;
       const { innerWidth, innerHeight } = window;
       
       const moveX = (clientX - innerWidth / 2) / innerWidth;
       const moveY = (clientY - innerHeight / 2) / innerHeight;
       
-      gsap.to(parallaxRef.current, {
-        x: moveX * 20,
-        y: moveY * 20,
-        duration: 1,
-        ease: "power2.out"
+      textSectionsRef.current.forEach((element) => {
+        if (!element) return;
+        
+        gsap.to(element, {
+          x: moveX * 20,
+          y: moveY * 20,
+          duration: 1,
+          ease: "power2.out"
+        });
       });
     };
 
@@ -210,7 +213,7 @@ const AboutUs: React.FC = () => {
           <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-start pt-12">
             {/* Left Side - Main Content with parallax */}
             <div 
-              ref={parallaxRef}
+              ref={(el) => (textSectionsRef.current[0] = el)}
               className="space-y-8"
             >
               {/* Brand */}
@@ -301,7 +304,7 @@ const AboutUs: React.FC = () => {
               </div>
 
               <div 
-                ref={leftSection1Ref}
+                ref={(el) => (textSectionsRef.current[1] = el)}
                 className="space-y-6"
               >
                 <h2 className="text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
@@ -318,7 +321,7 @@ const AboutUs: React.FC = () => {
             {/* Section 2 */}
             <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
               <div 
-                ref={leftSection2Ref}
+                ref={(el) => (textSectionsRef.current[2] = el)}
                 className="space-y-6"
               >
                 <h2 className="text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
@@ -369,7 +372,7 @@ const AboutUs: React.FC = () => {
               </div>
 
               <div 
-                ref={leftSection3Ref}
+                ref={(el) => (textSectionsRef.current[3] = el)}
                 className="space-y-6"
               >
                 <h2 className="text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
@@ -385,7 +388,10 @@ const AboutUs: React.FC = () => {
           </div>
 
           {/* Footer Quote */}
-          <div className="text-center max-w-xl mx-auto">
+          <div 
+            ref={(el) => (textSectionsRef.current[5] = el)}
+            className="text-center max-w-xl mx-auto"
+          >
             <p className="text-white/40 font-['Space_Grotesk'] italic text-lg">
               "The best moments in our lives are not the posed ones. They are 
               the moments when we are truly living."

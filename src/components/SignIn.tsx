@@ -59,6 +59,14 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   const [festivalCode] = useState(initialFestivalCode || "");
   const [isBusinessAccount, setIsBusinessAccount] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const isTransitioning = location.state?.transitioning;
+
+  useEffect(() => {
+    // Clear the transition state from history
+    if (isTransitioning) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [isTransitioning]);
 
   useEffect(() => {
     // Create admin account if it doesn't exist
@@ -211,7 +219,7 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className={`relative h-screen w-full overflow-hidden ${isTransitioning ? 'fade-in' : ''}`}>
       {/* Three.js Background */}
       <div className="absolute inset-0">
         <Canvas

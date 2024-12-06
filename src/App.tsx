@@ -17,61 +17,11 @@ import CompleteProfile from "./components/CompleteProfile";
 import BusinessDashboard from './components/BusinessDashboard';
 import Discover from "./components/Discover";
 import NewWelcomeScreen from "./components/NewWelcomeScreen";
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
-import * as THREE from 'three';
-import { Suspense } from 'react';
+import { Loader, InnerSphere, ThreeBackground } from './components/ThreeBackground';
 import FestivalDetails from './components/FestivalDetails';
 import AboutUs from "./components/AboutUs";
 import BusinessSettings from './components/BusinessSettings';
 import { UserProfileProvider } from './contexts/UserProfileContext';
-
-// Add Loader component
-function Loader() {
-  const { progress } = useProgress()
-  return (
-    <Html center>
-      <div className="flex flex-col items-center">
-        <div className="w-12 h-12 border-2 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
-        <div className="text-white/80 text-sm mt-4 font-['Space_Grotesk']">
-          {progress.toFixed(0)}%
-        </div>
-      </div>
-    </Html>
-  )
-}
-
-// Add InnerSphere component
-function InnerSphere() {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.x = state.clock.getElapsedTime() * 0.2;
-      meshRef.current.rotation.y = state.clock.getElapsedTime() * 0.3;
-    }
-  });
-
-  return (
-    <>
-      <Environment preset="sunset" />
-      <PerspectiveCamera makeDefault position={[0, 0, 5]} />
-      <ambientLight intensity={0.2} />
-      <pointLight position={[10, 10, 10]} intensity={0.5} />
-      
-      <mesh ref={meshRef} scale={[-15, -15, -15]}>
-        <sphereGeometry args={[1, 64, 64]} />
-        <meshStandardMaterial
-          side={THREE.BackSide}
-          color="#1a1a1a"
-          metalness={0.9}
-          roughness={0.1}
-          envMapIntensity={1}
-        />
-      </mesh>
-    </>
-  )
-}
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -103,33 +53,14 @@ const App: React.FC = () => {
   if (loading) {
     return (
       <div className="relative min-h-screen w-full overflow-hidden bg-black">
-        <div className="absolute inset-0">
-          <Canvas
-            className="w-full h-full"
-            gl={{ antialias: true, alpha: true }}
-          >
-            <Suspense fallback={<Loader />}>
-              <InnerSphere />
-            </Suspense>
-          </Canvas>
-        </div>
+        <ThreeBackground />
       </div>
     );
   }
 
   return (
     <div className="bg-black min-h-screen">
-      <div className="fixed inset-0">
-        <Canvas
-          className="w-full h-full"
-          gl={{ antialias: true, alpha: true }}
-        >
-          <Suspense fallback={<Loader />}>
-            <InnerSphere />
-          </Suspense>
-        </Canvas>
-      </div>
-
+      <ThreeBackground />
       <div className="app flex flex-col min-h-screen relative z-10">
         <main className="flex-grow">
           <Routes>
@@ -142,7 +73,7 @@ const App: React.FC = () => {
             {/* Move signin route after root path */}
             <Route 
               path="/signin" 
-              element={!user ? <SignIn /> : <Navigate to="/home" />} 
+              element={<SignIn />} 
             />
             
             {/* Protected routes */}
