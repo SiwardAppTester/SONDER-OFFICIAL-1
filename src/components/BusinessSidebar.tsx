@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Menu, MessageCircle, Home as HomeIcon, Search as SearchIcon, Calendar as CalendarIcon, Plus, Settings, ChevronDown, ChevronUp, Camera, Compass, LayoutDashboard } from "lucide-react";
 import { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
 import { doc, updateDoc, getDoc, getDocs, query, where, collection } from "firebase/firestore";
 import { db } from "../firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -255,11 +254,15 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
               <img
                 src={localPhotoURL}
                 alt="Profile"
-                className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => navigate('/business-settings')}
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center
-                            text-sm font-medium text-white cursor-pointer">
+              <div 
+                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center
+                          text-sm font-medium text-white cursor-pointer hover:bg-white/20 transition-colors"
+                onClick={() => navigate('/business-settings')}
+              >
                 {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
               </div>
             )}
@@ -310,7 +313,13 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
         {/* Profile Section */}
         <div className="px-6 -mt-2">
           <div className="flex flex-col items-center mb-6">
-            <div className="relative transform hover:scale-105 transition-all duration-300">
+            <div 
+              className="relative transform hover:scale-105 transition-all duration-300 cursor-pointer"
+              onClick={() => {
+                navigate('/business-settings');
+                setIsNavOpen(false);
+              }}
+            >
               {localPhotoURL ? (
                 <img
                   src={localPhotoURL}
@@ -326,7 +335,10 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
                 </div>
               )}
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent navigation when clicking the camera icon
+                  fileInputRef.current?.click();
+                }}
                 className="absolute bottom-3 right-0 bg-white/20 rounded-full p-2 
                          hover:bg-white/30 transition-colors
                          hover:scale-110 transform duration-300"

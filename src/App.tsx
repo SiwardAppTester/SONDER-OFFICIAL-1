@@ -23,6 +23,7 @@ import * as THREE from 'three';
 import { Suspense } from 'react';
 import FestivalDetails from './components/FestivalDetails';
 import AboutUs from "./components/AboutUs";
+import BusinessSettings from './components/BusinessSettings';
 
 // Add Loader component
 function Loader() {
@@ -156,6 +157,7 @@ const App: React.FC = () => {
                 <Route path="/business-calendar" element={<BusinessCalendar />} />
                 <Route path="/business-dashboard" element={<BusinessDashboard />} />
                 <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} />
+                <Route path="/business-settings" element={<BusinessSettings />} />
               </>
             )}
 
