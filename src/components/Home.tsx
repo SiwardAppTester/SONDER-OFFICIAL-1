@@ -800,117 +800,112 @@ const Home: React.FC = () => {
 
         {!selectedFestival ? (
           <div className="max-w-5xl mx-auto px-4 mt-8 md:mt-16">
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Access New Festival Card */}
-              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
-                            shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                            p-8 border border-white/20">
-                <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] mb-6 text-white/90 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Access New Festival Card - More subtle design */}
+              <div className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10
+                            shadow-[0_0_30px_rgba(255,255,255,0.05)] p-6
+                            hover:bg-white/10 transition-all">
+                <h2 className="text-xl font-['Space_Grotesk'] tracking-[0.1em] mb-4 text-white/80 
                              flex items-center gap-2">
-                  <KeyRound className="text-white/80" size={24} />
+                  <KeyRound className="text-white/60" size={20} />
                   Access New Festival
                 </h2>
-                <form onSubmit={handleAccessCodeSubmit} className="space-y-4">
+                <form onSubmit={handleAccessCodeSubmit} className="space-y-3">
                   <input
                     type="text"
                     value={generalAccessCode}
                     onChange={(e) => setGeneralAccessCode(e.target.value)}
                     placeholder="Enter access code"
-                    className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
-                             text-white placeholder-white/50 font-['Space_Grotesk']
-                             focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
+                    className="w-full p-2.5 rounded-lg bg-white/5 border border-white/10 
+                             text-white placeholder-white/40 font-['Space_Grotesk'] text-sm
+                             focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
                   />
                   {generalAccessError && (
-                    <p className="text-red-400 text-sm">{generalAccessError}</p>
+                    <p className="text-red-400 text-xs">{generalAccessError}</p>
                   )}
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="flex-1 px-8 py-3 border-2 border-white/30 rounded-full
-                               text-white text-lg font-['Space_Grotesk'] tracking-[0.2em]
+                      className="flex-1 px-4 py-2 border border-white/20 rounded-lg
+                               text-white text-sm font-['Space_Grotesk'] tracking-wider
                                transition-all duration-300 
-                               hover:border-white/60 hover:scale-105
-                               hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                               active:scale-95"
+                               hover:bg-white/10 hover:border-white/30"
                     >
                       JOIN FESTIVAL
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowQRScanner(true)}
-                      className="aspect-square bg-white/10 text-white p-4 rounded-full
-                               border-2 border-white/30
-                               hover:border-white/60 hover:bg-white/20
+                      className="aspect-square bg-white/5 text-white/80 p-2 rounded-lg
+                               border border-white/20
+                               hover:bg-white/10 hover:border-white/30
                                transition-all duration-300"
                     >
-                      <QrCode size={24} />
+                      <QrCode size={20} />
                     </button>
                   </div>
                 </form>
               </div>
 
-              {/* Your Accessible Festivals Card */}
-              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
-                            shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                            p-8 border border-white/20">
-                <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] mb-6 text-white/90 
-                             flex items-center gap-2">
-                  <Star className="text-white/80" size={24} />
-                  Your Accessible Festivals
-                </h2>
-                <div className="space-y-3">
-                  {festivals
-                    .filter(festival => accessibleFestivals.has(festival.id))
-                    .map((festival) => (
-                      <button
-                        key={festival.id}
-                        onClick={() => {
-                          setSelectedFestival(festival.id);
-                          setShowFestivalList(false);
-                          setIsNavOpen(false);
-                        }}
-                        className="w-full text-left p-5 rounded-xl bg-white/10 
-                                 border border-white/20
-                                 hover:border-white/40 hover:bg-white/20
-                                 transition-all duration-300 group"
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="text-lg font-['Space_Grotesk'] text-white/90 group-hover:text-white 
-                                       transition-colors mb-1">
-                              {festival.name}
-                            </h3>
-                            <div className="flex items-center gap-2">
-                              <span className="inline-block w-2 h-2 bg-white/40 rounded-full"></span>
-                              <p className="text-sm text-white/60 font-['Space_Grotesk']">
-                                {festival.categories?.length || 0} Categories Available
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-white/60 opacity-0 group-hover:opacity-100 
-                                       transition-all duration-300 transform translate-x-2 group-hover:translate-x-0
-                                       font-['Space_Grotesk']">
-                            View Content →
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                
-                  {festivals.filter(festival => accessibleFestivals.has(festival.id)).length === 0 && (
-                    <div className="text-center py-8 px-4 bg-white/10 rounded-xl border border-white/20">
-                      <div className="mb-3 text-white/40">
-                        <Package size={32} className="mx-auto" />
+              {/* Festival Cards */}
+              {festivals
+                .filter(festival => accessibleFestivals.has(festival.id))
+                .map((festival) => (
+                  <div
+                    key={festival.id}
+                    onClick={() => {
+                      setSelectedFestival(festival.id);
+                      setShowFestivalList(false);
+                      setIsNavOpen(false);
+                    }}
+                    className="relative backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20
+                             shadow-[0_0_30px_rgba(255,255,255,0.1)] overflow-hidden
+                             group cursor-pointer hover:bg-white/20 transition-all
+                             h-[280px]"
+                  >
+                    <img 
+                      src={festival.imageUrl || 'default-festival-image.jpg'} 
+                      alt={festival.name}
+                      className="w-full h-36 object-cover"
+                    />
+                    <div className="absolute top-4 left-4 backdrop-blur-xl bg-white/10 text-white px-2 py-1 rounded border border-white/20">
+                      <div className="text-xs font-['Space_Grotesk']">
+                        {new Date(festival.date).toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase()}
                       </div>
-                      <p className="text-white/80 font-['Space_Grotesk']">
-                        No festivals accessed yet
-                      </p>
-                      <p className="text-sm text-white/60 mt-1 font-['Space_Grotesk']">
-                        Enter an access code to join your first festival
-                      </p>
+                      <div className="text-lg font-bold font-['Space_Grotesk']">
+                        {new Date(festival.date).getDate()}
+                      </div>
+                      <div className="text-xs font-['Space_Grotesk']">SEP</div>
                     </div>
-                  )}
+                    <div className="p-3">
+                      <h3 className="text-lg font-bold mb-1 text-white font-['Space_Grotesk'] tracking-wider">
+                        {festival.name}
+                      </h3>
+                      <p className="text-white/70 text-xs line-clamp-2 font-['Space_Grotesk']">
+                        {festival.description}
+                      </p>
+                      <div className="mt-1 text-xs text-white/50 font-['Space_Grotesk']">
+                        {festival.time && (
+                          <span>{festival.time} +18</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+              {/* Empty State - When no festivals are accessible */}
+              {festivals.filter(festival => accessibleFestivals.has(festival.id)).length === 0 && (
+                <div className="md:col-span-2 text-center py-8 backdrop-blur-xl bg-white/5 rounded-2xl 
+                               border border-white/10 flex flex-col items-center justify-center">
+                  <Package size={32} className="text-white/40 mb-3" />
+                  <p className="text-white/80 font-['Space_Grotesk']">
+                    No festivals accessed yet
+                  </p>
+                  <p className="text-sm text-white/60 mt-1 font-['Space_Grotesk']">
+                    Enter an access code or scan a QR code to join your first festival
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
 
             <p className="text-center text-white/60 mt-8 font-['Space_Grotesk'] tracking-wider
