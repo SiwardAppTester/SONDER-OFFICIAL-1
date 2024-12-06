@@ -177,35 +177,43 @@ const NewWelcomeScreen: React.FC = () => {
   const navigate = useNavigate();
   const [isAnimating, setIsAnimating] = React.useState(false);
 
-  const handleClick = () => {
+  const handleAboutClick = () => {
     setIsAnimating(true);
     
-    // Fade out content
+    // Animate content and sphere
     gsap.to('.content-fade', {
       opacity: 0,
-      duration: 1,
-      ease: "power2.in"
+      scale: 0.95,
+      duration: 0.8,
+      ease: "power3.in"
     });
 
-    // Navigate after animation but keep the component mounted
+    // Navigate after animation
     setTimeout(() => {
-      document.body.style.backgroundColor = '#000'; // Ensure black background
-      navigate('/signin', { state: { transitioning: true } });
-    }, 1500);
+      navigate('/about', { state: { animateFrom: 'welcome' } });
+    }, 800);
   };
 
-  // Add cleanup effect
-  React.useEffect(() => {
-    return () => {
-      // Reset background color when component unmounts
-      setTimeout(() => {
-        document.body.style.backgroundColor = '';
-      }, 100);
-    };
-  }, []);
+  const handleSignIn = () => {
+    setIsAnimating(true);
+    
+    // Animate content and sphere (matching handleAboutClick animation)
+    gsap.to('.content-fade', {
+      opacity: 0,
+      scale: 0.95,
+      duration: 0.8,
+      ease: "power3.in"
+    });
+
+    // Navigate after animation (using same timing as handleAboutClick)
+    setTimeout(() => {
+      document.body.style.backgroundColor = '#000';
+      navigate('/signin', { state: { animateFrom: 'welcome' } });
+    }, 800);
+  };
 
   return (
-    <div className="h-screen w-full relative bg-black">
+    <div className="h-screen w-full relative bg-black overflow-hidden">
       {/* Video background - lowest layer */}
       <video 
         autoPlay 
@@ -232,9 +240,9 @@ const NewWelcomeScreen: React.FC = () => {
           SONDER
         </h1>
         <button 
-          onClick={handleClick}
-          className="relative px-16 py-4 border-2 border-white/30 rounded-full
-                    text-white text-lg font-['Space_Grotesk'] tracking-[0.2em]
+          onClick={handleSignIn}
+          className="relative px-12 py-3.5 border-2 border-white/30 rounded-full
+                    text-white text-base font-['Space_Grotesk'] tracking-[0.2em]
                     transform md:translate-y-40 translate-y-40
                     transition-all duration-300 
                     hover:border-white/60 hover:scale-105
@@ -245,8 +253,8 @@ const NewWelcomeScreen: React.FC = () => {
           JOIN THE REVOLUTION
         </button>
         <button 
-          onClick={() => navigate('/about')}
-          className="relative px-8 py-2 border border-white/20 rounded-full
+          onClick={handleAboutClick}
+          className="relative px-10 py-2.5 border border-white/20 rounded-full
                     text-white/70 text-sm font-['Space_Grotesk'] tracking-[0.15em]
                     transform md:translate-y-40 translate-y-40
                     transition-all duration-300 

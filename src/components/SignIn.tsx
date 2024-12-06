@@ -1,12 +1,13 @@
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef } from "react";
 import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import gsap from 'gsap';
 
 // Add the Loader component
 function Loader() {
@@ -49,6 +50,8 @@ interface SignInProps {
 
 const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const contentRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
@@ -101,6 +104,24 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
 
     createAdminAccount();
   }, []);
+
+  // Add entrance animation
+  useEffect(() => {
+    if (location.state?.animateFrom === 'welcome' && contentRef.current) {
+      gsap.set(contentRef.current, {
+        opacity: 0,
+        scale: 0.95
+      });
+
+      gsap.to(contentRef.current, {
+        opacity: 1,
+        scale: 1,
+        duration: 1,
+        delay: 0.3,
+        ease: "power3.out",
+      });
+    }
+  }, [location]);
 
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
@@ -204,7 +225,7 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col justify-center items-center">
+      <div ref={contentRef} className="relative z-10 min-h-screen flex flex-col justify-center items-center">
         <div className="w-full max-w-md mx-auto px-4">
           {/* Logo */}
           <div className="text-[50px] md:text-[100px] font-[500] mb-2 tracking-[0.12em]

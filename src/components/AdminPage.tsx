@@ -1,8 +1,13 @@
+import * as THREE from 'three';
 import React, { useState, useEffect } from "react";
 import { collection, query, getDocs, where, doc, setDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
+import { Suspense } from 'react';
+import { Users, Building2, LogOut } from 'lucide-react';
 
 interface User {
   uid: string;
@@ -10,6 +15,41 @@ interface User {
   displayName: string;
   createdAt: any;
   isBusinessAccount?: boolean;
+}
+
+// Add the Loader component
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-white text-xl">
+        {progress.toFixed(0)}% loaded
+      </div>
+    </Html>
+  )
+}
+
+// Add the InnerSphere component
+function InnerSphere() {
+  return (
+    <>
+      <Environment preset="sunset" />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      
+      <mesh scale={[-15, -15, -15]}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          side={THREE.BackSide}
+          color="#1a1a1a"
+          metalness={0.9}
+          roughness={0.1}
+          envMapIntensity={1}
+        />
+      </mesh>
+    </>
+  )
 }
 
 const AdminPage: React.FC = () => {
@@ -139,176 +179,176 @@ const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-rose-100">
-      {/* Header Section - Adjusted for mobile */}
-      <div className="max-w-6xl mx-auto px-4 pt-4 md:pt-8 pb-2 md:pb-4">
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 
-                       border border-gray-100 relative overflow-hidden mb-4 md:mb-8">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-50/50 to-rose-50/50"></div>
-          <div className="relative flex flex-col md:flex-row justify-between items-center gap-4">
-            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold text-gray-900">
-              Admin Dashboard
-            </h1>
-            <button
-              onClick={handleSignOut}
-              className="w-full md:w-auto bg-red-500 text-white px-6 py-2.5 md:py-3 rounded-full hover:bg-red-600 
-                       transition-all duration-300 transform hover:scale-105
-                       shadow-lg hover:shadow-xl text-sm md:text-base"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen w-full overflow-y-auto relative">
+      {/* Three.js Background */}
+      <div className="fixed inset-0">
+        <Canvas className="w-full h-full" gl={{ antialias: true, alpha: true }}>
+          <Suspense fallback={<Loader />}>
+            <InnerSphere />
+          </Suspense>
+        </Canvas>
+      </div>
 
-        {/* Toggle Buttons - Made scrollable on mobile */}
-        <div className="bg-white rounded-xl md:rounded-2xl shadow-md p-4 md:p-6 mb-4 md:mb-8">
-          <div className="flex gap-2 md:gap-4 overflow-x-auto hide-scrollbar pb-2 md:pb-0">
-            <button
-              onClick={() => setActiveSection('users')}
-              className={`px-4 md:px-8 py-2.5 md:py-3 rounded-full transition-all transform hover:scale-105 whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
-                activeSection === 'users'
-                  ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                  : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              Regular Users
-            </button>
-            <button
-              onClick={() => setActiveSection('business')}
-              className={`px-4 md:px-8 py-2.5 md:py-3 rounded-full transition-all transform hover:scale-105 whitespace-nowrap flex-shrink-0 text-sm md:text-base ${
-                activeSection === 'business'
-                  ? "bg-purple-600 text-white shadow-lg shadow-purple-200"
-                  : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              Business Accounts
-            </button>
+      {/* Content */}
+      <div className="relative z-10 min-h-screen pb-20">
+        {/* Header Section */}
+        <div className="max-w-6xl mx-auto px-4 pt-8">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                         shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                         p-8 border border-white/20 mb-8">
+            <div className="flex justify-between items-center">
+              <h1 className="text-4xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
+                Admin Dashboard
+              </h1>
+              <button
+                onClick={handleSignOut}
+                className="px-6 py-3 border-2 border-white/30 rounded-full
+                         text-white font-['Space_Grotesk'] tracking-[0.2em]
+                         transition-all duration-300 
+                         hover:border-white/60 hover:scale-105
+                         hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                         active:scale-95
+                         flex items-center gap-2"
+              >
+                <LogOut size={20} />
+                SIGN OUT
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Main Content */}
-        {activeSection === 'business' ? (
-          <div className="space-y-4 md:space-y-8">
-            {/* Create Business Account Form */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 
-                          border border-gray-100 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-50/50 to-rose-50/50"></div>
-              <div className="relative">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Create Business Account</h2>
-                <form onSubmit={handleCreateBusinessAccount} className="space-y-3 md:space-y-4">
+          {/* Section Toggle */}
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 mb-8 border border-white/20">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setActiveSection('users')}
+                className={`px-8 py-3 rounded-full transition-all transform hover:scale-105 
+                           font-['Space_Grotesk'] flex items-center gap-2 ${
+                  activeSection === 'users'
+                    ? "bg-white/20 text-white border-2 border-white/40"
+                    : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
+                }`}
+              >
+                <Users size={20} />
+                Regular Users
+              </button>
+              <button
+                onClick={() => setActiveSection('business')}
+                className={`px-8 py-3 rounded-full transition-all transform hover:scale-105 
+                           font-['Space_Grotesk'] flex items-center gap-2 ${
+                  activeSection === 'business'
+                    ? "bg-white/20 text-white border-2 border-white/40"
+                    : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
+                }`}
+              >
+                <Building2 size={20} />
+                Business Accounts
+              </button>
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          {activeSection === 'business' ? (
+            <div className="space-y-8">
+              {/* Create Business Account Form */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                            p-8 border border-white/20">
+                <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90 mb-6">
+                  Create Business Account
+                </h2>
+                <form onSubmit={handleCreateBusinessAccount} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
                       Company Name
                     </label>
                     <input
                       type="text"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full p-3 border rounded-lg"
+                      className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                               text-white placeholder-white/50 font-['Space_Grotesk']
+                               focus:outline-none focus:ring-2 focus:ring-white/30"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
                       Email Address
                     </label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full p-3 border rounded-lg"
+                      className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                               text-white placeholder-white/50 font-['Space_Grotesk']
+                               focus:outline-none focus:ring-2 focus:ring-white/30"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
                       Password
                     </label>
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full p-3 border rounded-lg"
+                      className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                               text-white placeholder-white/50 font-['Space_Grotesk']
+                               focus:outline-none focus:ring-2 focus:ring-white/30"
                       required
                       minLength={6}
                     />
                   </div>
                   {createAccountError && (
-                    <p className="text-red-500 text-sm">{createAccountError}</p>
+                    <p className="text-red-400 text-sm font-['Space_Grotesk']">{createAccountError}</p>
                   )}
                   <button
                     type="submit"
-                    className="w-full bg-purple-600 text-white px-6 py-3 rounded-full 
-                             hover:bg-purple-700 transition-all duration-300
-                             transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="w-full py-3 border-2 border-white/30 rounded-full
+                             text-white font-['Space_Grotesk'] tracking-[0.2em]
+                             transition-all duration-300 
+                             hover:border-white/60 hover:scale-105
+                             hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                             active:scale-95"
                   >
-                    Create Business Account
+                    CREATE BUSINESS ACCOUNT
                   </button>
                 </form>
               </div>
-            </div>
 
-            {/* Business Users List - Reformatted for mobile */}
-            <div className="bg-white/95 backdrop-blur-sm rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 
-                          border border-gray-100 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-50/50 to-rose-50/50"></div>
-              <div className="relative">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Business Accounts</h2>
-                
-                {/* Mobile view */}
-                <div className="md:hidden space-y-3">
-                  {businessUsers.map((user) => (
-                    <div key={user.uid} className="bg-gray-50 p-3 rounded-lg">
-                      <div className="flex flex-col space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-500">Company</span>
-                          <span className="text-sm font-medium text-gray-900">{user.displayName}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-500">Email</span>
-                          <span className="text-sm text-gray-900">{user.email}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-gray-500">Created</span>
-                          <span className="text-sm text-gray-900">
-                            {user.createdAt?.toDate?.() 
-                              ? user.createdAt.toDate().toLocaleDateString() 
-                              : user.createdAt instanceof Date 
-                                ? user.createdAt.toLocaleDateString()
-                                : 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Desktop view - unchanged */}
-                <div className="hidden md:block">
-                  <table className="min-w-full divide-y divide-gray-200">
+              {/* Business Users List */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                            p-8 border border-white/20">
+                <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90 mb-6">
+                  Business Accounts
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
                     <thead>
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <tr className="border-b border-white/10">
+                        <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
                           Company Name
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
                           Email
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
                           Created
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody>
                       {businessUsers.map((user) => (
-                        <tr key={user.uid} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <tr key={user.uid} className="border-b border-white/10 hover:bg-white/5">
+                          <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
                             {user.displayName}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
                             {user.email}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
                             {user.createdAt?.toDate?.() 
                               ? user.createdAt.toDate().toLocaleDateString() 
                               : user.createdAt instanceof Date 
@@ -319,79 +359,50 @@ const AdminPage: React.FC = () => {
                       ))}
                     </tbody>
                   </table>
+                  {businessUsers.length === 0 && (
+                    <p className="text-center text-white/60 py-8 font-['Space_Grotesk']">
+                      No business accounts found
+                    </p>
+                  )}
                 </div>
-
-                {businessUsers.length === 0 && (
-                  <p className="text-center text-gray-500 py-4 text-sm md:text-base">No business accounts found</p>
-                )}
               </div>
             </div>
-          </div>
-        ) : (
-          /* Regular Users List - Reformatted for mobile */
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 
-                         border border-gray-100 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-50/50 to-rose-50/50"></div>
-            <div className="relative">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">Regular Users</h2>
-              {error && <p className="text-red-500 mb-4 text-sm md:text-base">{error}</p>}
-              
-              {/* Mobile view */}
-              <div className="md:hidden space-y-3">
-                {users.map((user) => (
-                  <div key={user.uid} className="bg-gray-50 p-3 rounded-lg">
-                    <div className="flex flex-col space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-gray-500">Name</span>
-                        <span className="text-sm font-medium text-gray-900">
-                          {user.displayName || 'Anonymous User'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-gray-500">Email</span>
-                        <span className="text-sm text-gray-900">{user.email}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium text-gray-500">Joined</span>
-                        <span className="text-sm text-gray-900">
-                          {user.createdAt?.toDate?.() 
-                            ? user.createdAt.toDate().toLocaleDateString() 
-                            : user.createdAt instanceof Date 
-                              ? user.createdAt.toLocaleDateString()
-                              : 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Desktop view - unchanged */}
-              <div className="hidden md:block">
-                <table className="min-w-full divide-y divide-gray-200">
+          ) : (
+            /* Regular Users List */
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                          shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                          p-8 border border-white/20">
+              <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90 mb-6">
+                Regular Users
+              </h2>
+              {error && (
+                <p className="text-red-400 mb-4 font-['Space_Grotesk']">{error}</p>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full">
                   <thead>
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <tr className="border-b border-white/10">
+                      <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
                         Name
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
                         Email
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
                         Joined
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody>
                     {users.map((user) => (
-                      <tr key={user.uid} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <tr key={user.uid} className="border-b border-white/10 hover:bg-white/5">
+                        <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
                           {user.displayName || 'Anonymous User'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
                           {user.email}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
                           {user.createdAt?.toDate?.() 
                             ? user.createdAt.toDate().toLocaleDateString() 
                             : user.createdAt instanceof Date 
@@ -402,14 +413,15 @@ const AdminPage: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+                {users.length === 0 && (
+                  <p className="text-center text-white/60 py-8 font-['Space_Grotesk']">
+                    No users found
+                  </p>
+                )}
               </div>
-
-              {users.length === 0 && (
-                <p className="text-center text-gray-500 py-4 text-sm md:text-base">No users found</p>
-              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/
 import * as THREE from 'three';
 import { Suspense } from 'react';
 import FestivalDetails from './components/FestivalDetails';
+import AboutUs from "./components/AboutUs";
 
 // Add Loader component
 function Loader() {
@@ -177,6 +178,7 @@ const App: React.FC = () => {
             {/* Catch all route */}
             <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
             <Route path="/festival/:festivalId" element={<FestivalDetails />} />
+            <Route path="/about" element={<AboutUs />} />
           </Routes>
         </main>
       </div>
