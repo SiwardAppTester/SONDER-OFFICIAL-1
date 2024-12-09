@@ -275,9 +275,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Desktop Top Bar */}
       <div className="hidden md:flex fixed top-0 left-0 right-0 h-16 bg-black shadow-lg z-50">
         <div className="container mx-auto px-4 flex items-center justify-between">
-          {/* Logo/Brand */}
+          {/* Logo/Brand - Updated with Link */}
           <div className="flex items-center space-x-4">
-            <span className="text-2xl font-bold text-white tracking-wider">SONDER</span>
+            <Link 
+              to="/"
+              className="text-2xl font-bold text-white tracking-wider hover:text-white/80 transition-colors duration-300"
+            >
+              SONDER
+            </Link>
           </div>
 
           {/* Profile Section */}
@@ -285,10 +290,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             {/* Navigation Links with updated styling */}
             {[
               { to: "/", icon: HomeIcon, label: "Home" },
-              { to: "/discover", icon: Compass, label: "Discover" },
-              { to: "/search", icon: SearchIcon, label: "Search" },
+              { to: "/calendar", icon: CalendarIcon, label: "Calendar" },
               { to: "/chat", icon: MessageCircle, label: "Messages" },
-              { to: "/calendar", icon: CalendarIcon, label: "Calendar" }
+              { to: "/search", icon: SearchIcon, label: "Search" },
+              { to: "/discover", icon: Compass, label: "Discover" }
             ].map(({ to, icon: Icon, label }) => (
               <Link
                 key={to}
@@ -340,7 +345,15 @@ const Sidebar: React.FC<SidebarProps> = ({
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
       } overflow-y-auto overflow-x-hidden`}>
         {/* Close button */}
-        <div className="p-3 flex justify-end">
+        <div className="p-3 flex justify-between items-center">
+          {/* Added Logo/Brand for mobile */}
+          <Link 
+            to="/"
+            onClick={() => setIsNavOpen(false)}
+            className="text-xl font-bold text-gray-800 tracking-wider hover:text-gray-600 transition-colors duration-300"
+          >
+            SONDER
+          </Link>
           <button
             onClick={() => setIsNavOpen(false)}
             className="relative group w-10 h-10 flex items-center justify-center 
@@ -454,10 +467,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-2">
             {[
               { to: "/", icon: HomeIcon, label: "Home" },
-              { to: "/discover", icon: Compass, label: "Discover" },
-              { to: "/search", icon: SearchIcon, label: "Search" },
+              { to: "/calendar", icon: CalendarIcon, label: "Calendar" },
               { to: "/chat", icon: MessageCircle, label: "Messages" },
-              { to: "/calendar", icon: CalendarIcon, label: "Calendar" }
+              { to: "/search", icon: SearchIcon, label: "Search" },
+              { to: "/discover", icon: Compass, label: "Discover" }
             ].map(({ to, icon: Icon, label }) => (
               <Link
                 key={to}
