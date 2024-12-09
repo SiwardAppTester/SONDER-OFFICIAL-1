@@ -5,10 +5,10 @@ import * as THREE from 'three';
 import Sidebar from "./Sidebar";
 import { auth, db, storage } from "../firebase";
 import { useUserProfile } from '../contexts/UserProfileContext';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { Plus, X, Upload, Share, Download, Trash2 } from 'lucide-react';
+import { Plus, X, Upload, Share, Download, Trash2, ArrowLeft, Key } from 'lucide-react';
 
 interface Festival {
   id: string;
@@ -18,6 +18,12 @@ interface Festival {
   date: string;
   time: string;
   categories?: Category[];
+  categoryAccessCodes?: {
+    code: string;
+    name: string;
+    categoryIds: string[];
+    createdAt: any;
+  }[];
 }
 
 interface Category {
@@ -42,8 +48,12 @@ function Loader() {
   const { progress } = useProgress()
   return (
     <Html center>
-      <div className="text-white text-xl">
-        {progress.toFixed(0)}% loaded
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-white/90
+                       animate-spin" />
+        <div className="text-white/70 text-sm font-['Space_Grotesk'] tracking-wider">
+          {progress.toFixed(0)}% loaded
+        </div>
       </div>
     </Html>
   )
@@ -90,6 +100,13 @@ const FestivalManagement: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [showAccessCodeModal, setShowAccessCodeModal] = useState(false);
+  const [newAccessCode, setNewAccessCode] = useState({
+    name: "",
+    code: "",
+    categoryIds: [] as string[]
+  });
 
   useEffect(() => {
     const fetchFestival = async () => {
@@ -461,6 +478,45 @@ const FestivalManagement: React.FC = () => {
     }
   };
 
+  const handleCreateAccessCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!festivalId) return;
+
+    try {
+      const festivalRef = doc(db, "festivals", festivalId);
+      const accessCode = {
+        name: newAccessCode.name,
+        code: newAccessCode.code.toLowerCase().trim(),
+        categoryIds: newAccessCode.categoryIds,
+        createdAt: new Date().toISOString()
+      };
+
+      // Get current access codes
+      const festivalDoc = await getDoc(festivalRef);
+      const currentAccessCodes = festivalDoc.data()?.categoryAccessCodes || [];
+
+      // Update with new array including the new access code
+      await updateDoc(festivalRef, {
+        categoryAccessCodes: [...currentAccessCodes, accessCode]
+      });
+
+      setShowAccessCodeModal(false);
+      setNewAccessCode({ name: "", code: "", categoryIds: [] });
+      
+      // Update local state
+      setFestival(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          categoryAccessCodes: [...(prev.categoryAccessCodes || []), accessCode]
+        };
+      });
+
+    } catch (error) {
+      console.error("Error creating access code:", error);
+    }
+  };
+
   // Filter posts based on selected media type AND selected category
   const filteredPosts = posts.filter(post => 
     post.mediaFiles.some(media => 
@@ -557,20 +613,48 @@ const FestivalManagement: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right side with create button */}
-                <div className="flex-shrink-0">
+                {/* Right side with buttons */}
+                <div className="flex-shrink-0 flex flex-col gap-3">
+                  <button
+                    onClick={() => navigate('/add-post')}
+                    className="px-6 py-3 bg-white/10 hover:bg-white/20 
+                              border border-white/20 hover:border-white/30
+                              rounded-xl backdrop-blur-lg
+                              transition-all duration-300 ease-in-out
+                              text-white text-sm font-['Space_Grotesk'] tracking-wide
+                              flex items-center justify-center gap-2
+                              hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                  >
+                    <ArrowLeft size={18} />
+                    Back to Festivals
+                  </button>
+
                   <button
                     onClick={() => setShowCategoryModal(true)}
                     className="px-6 py-3 bg-white/10 hover:bg-white/20 
-                             border border-white/20 hover:border-white/30
-                             rounded-xl backdrop-blur-lg
-                             transition-all duration-300 ease-in-out
-                             text-white text-sm font-['Space_Grotesk'] tracking-wide
-                             flex items-center justify-center gap-2
-                             hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                              border border-white/20 hover:border-white/30
+                              rounded-xl backdrop-blur-lg
+                              transition-all duration-300 ease-in-out
+                              text-white text-sm font-['Space_Grotesk'] tracking-wide
+                              flex items-center justify-center gap-2
+                              hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
                   >
                     <Plus size={18} />
                     Create Categories
+                  </button>
+
+                  <button
+                    onClick={() => setShowAccessCodeModal(true)}
+                    className="px-6 py-3 bg-white/10 hover:bg-white/20 
+                              border border-white/20 hover:border-white/30
+                              rounded-xl backdrop-blur-lg
+                              transition-all duration-300 ease-in-out
+                              text-white text-sm font-['Space_Grotesk'] tracking-wide
+                              flex items-center justify-center gap-2
+                              hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                  >
+                    <Key size={18} />
+                    Access Codes
                   </button>
                 </div>
               </div>
@@ -861,14 +945,127 @@ const FestivalManagement: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Access Code Modal */}
+            {showAccessCodeModal && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+                <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full mx-4 
+                              border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-['Space_Grotesk'] text-white/90">Create Access Code</h2>
+                    <button
+                      onClick={() => setShowAccessCodeModal(false)}
+                      className="text-white/50 hover:text-white/90 transition-colors"
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleCreateAccessCode} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                        Access Code Name
+                      </label>
+                      <input
+                        type="text"
+                        value={newAccessCode.name}
+                        onChange={(e) => setNewAccessCode(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10
+                                 text-white placeholder-white/30 font-['Space_Grotesk']
+                                 focus:outline-none focus:border-white/30
+                                 transition-all duration-300"
+                        placeholder="Enter access code name"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                        Access Code
+                      </label>
+                      <input
+                        type="text"
+                        value={newAccessCode.code}
+                        onChange={(e) => setNewAccessCode(prev => ({ ...prev, code: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10
+                                 text-white placeholder-white/30 font-['Space_Grotesk']
+                                 focus:outline-none focus:border-white/30
+                                 transition-all duration-300"
+                        placeholder="Enter access code"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                        Select Categories
+                      </label>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {festival?.categories?.map((category) => (
+                          <label key={category.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={newAccessCode.categoryIds.includes(category.id)}
+                              onChange={(e) => {
+                                setNewAccessCode(prev => ({
+                                  ...prev,
+                                  categoryIds: e.target.checked
+                                    ? [...prev.categoryIds, category.id]
+                                    : prev.categoryIds.filter(id => id !== category.id)
+                                }));
+                              }}
+                              className="form-checkbox rounded bg-white/5 border-white/20 text-white/90"
+                            />
+                            <span className="text-white/70 font-['Space_Grotesk']">{category.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowAccessCodeModal(false)}
+                        className="flex-1 px-6 py-3 rounded-xl border border-white/10
+                                 text-white/70 font-['Space_Grotesk']
+                                 hover:bg-white/5 transition-all duration-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 px-6 py-3 rounded-xl bg-white/10
+                                 border border-white/20 hover:border-white/30
+                                 text-white font-['Space_Grotesk']
+                                 hover:bg-white/20 transition-all duration-300"
+                      >
+                        Create Access Code
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Loading State */}
         {loading && (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-white/50 text-sm font-['Space_Grotesk']">
-              Loading festival details...
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="backdrop-blur-xl bg-white/5 rounded-2xl border border-white/10
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] p-8">
+              <div className="flex flex-col items-center gap-6">
+                <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-white/90
+                               animate-spin" />
+                <div className="flex flex-col items-center gap-2">
+                  <div className="text-xl font-['Space_Grotesk'] tracking-wider text-white/90">
+                    Loading Festival
+                  </div>
+                  <div className="text-sm font-['Space_Grotesk'] text-white/50">
+                    Please wait while we fetch the details...
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
