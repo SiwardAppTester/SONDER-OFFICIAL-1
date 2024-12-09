@@ -18,10 +18,10 @@ import BusinessDashboard from './components/BusinessDashboard';
 import Discover from "./components/Discover";
 import NewWelcomeScreen from "./components/NewWelcomeScreen";
 import { Loader, InnerSphere, ThreeBackground } from './components/ThreeBackground';
-import FestivalDetails from './components/FestivalDetails';
 import AboutUs from "./components/AboutUs";
 import BusinessSettings from './components/BusinessSettings';
 import { UserProfileProvider } from './contexts/UserProfileContext';
+import FestivalManagement from "./components/FestivalManagement";
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -111,8 +111,8 @@ const App: React.FC = () => {
 
             {/* Catch all route */}
             <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
-            <Route path="/festival/:festivalId" element={<FestivalDetails />} />
             <Route path="/about" element={<AboutUs />} />
+            <Route path="/festival-management/:festivalId" element={<FestivalManagement />} />
           </Routes>
         </main>
       </div>

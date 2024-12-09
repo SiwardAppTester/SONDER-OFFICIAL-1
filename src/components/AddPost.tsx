@@ -287,7 +287,7 @@ const AddPost: React.FC = () => {
   };
 
   const handleFestivalClick = (festivalId: string) => {
-    navigate(`/festival/${festivalId}`);
+    navigate(`/festival-management/${festivalId}`);
   };
 
   return (
