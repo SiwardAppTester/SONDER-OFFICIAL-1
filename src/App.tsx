@@ -22,6 +22,7 @@ import AboutUs from "./components/AboutUs";
 import BusinessSettings from './components/BusinessSettings';
 import { UserProfileProvider } from './contexts/UserProfileContext';
 import FestivalManagement from "./components/FestivalManagement";
+import UserSettings from './components/UserSettings';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -113,6 +114,7 @@ const App: React.FC = () => {
             <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/festival-management/:festivalId" element={<FestivalManagement />} />
+            <Route path="/settings" element={<UserSettings />} />
           </Routes>
         </main>
       </div>

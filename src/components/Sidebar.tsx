@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, updateDoc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase";
+import { useUserProfile } from '../contexts/UserProfileContext';
 
 interface Festival {
   id: string;
@@ -35,7 +36,6 @@ interface SidebarProps {
   isNavOpen: boolean;
   setIsNavOpen: (isOpen: boolean) => void;
   user: FirebaseUser | null;
-  userProfile: UserProfile | null;
   accessibleFestivalsCount: number;
   className?: string;
 }
@@ -50,10 +50,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   isNavOpen,
   setIsNavOpen,
   user,
-  userProfile,
   accessibleFestivalsCount,
   className,
 }) => {
+  const { userProfile, setUserProfile } = useUserProfile();
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [localPhotoURL, setLocalPhotoURL] = useState<string | undefined>(userProfile?.photoURL);
@@ -165,28 +165,22 @@ const Sidebar: React.FC<SidebarProps> = ({
       const storage = getStorage();
       const storageRef = ref(storage, `profile_images/${user.uid}`);
       
-      // Upload image
       await uploadBytes(storageRef, file);
-      
-      // Get download URL
       const downloadURL = await getDownloadURL(storageRef);
       
-      // Update user profile in Firestore
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
         photoURL: downloadURL
       });
 
-      // Update local state immediately
       setLocalPhotoURL(downloadURL);
+      setUserProfile(userProfile ? { ...userProfile, photoURL: downloadURL } : null);
 
-      // Also update Firebase Auth user profile
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, {
           photoURL: downloadURL
         });
       }
-
     } catch (error) {
       console.error("Error updating profile image:", error);
     }
@@ -223,44 +217,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     };
   }, [isNavOpen]);
 
-  // Remove or modify the existing useEffect that fetches user profile
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user?.uid) return;
-      
-      try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as UserProfile;
-          // Update followers and following counts
-          if (userData.followers) {
-            fetchUserDetails(userData.followers, setFollowersDetails);
-          }
-          if (userData.following) {
-            fetchUserDetails(userData.following, setFollowingDetails);
-          }
-          
-          // Don't set festivals count here - it will be handled by fetchFestivalsCount
-          // which properly checks for active status
-        }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-      }
-    };
-
-    // Only fetch if userProfile is not provided
-    if (!userProfile && user?.uid) {
-      fetchUserProfile();
-    }
-  }, [user?.uid, userProfile]);
-
   // Update effect for when userProfile changes
   useEffect(() => {
     if (userProfile) {
       setLocalPhotoURL(userProfile.photoURL);
       setFollowerCount(userProfile.followers?.length || 0);
       setFollowingCount(userProfile.following?.length || 0);
-      // Don't set festivals count here - it will be handled by fetchFestivalsCount
     }
   }, [userProfile]);
 
@@ -309,11 +271,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             <div className="relative group">
               <div 
                 className="cursor-pointer flex items-center space-x-3"
-                onClick={() => toggleDropdown('followers')}
+                onClick={() => {
+                  navigate('/settings');
+                  setIsNavOpen(false);
+                }}
               >
-                {userProfile?.photoURL ? (
+                {localPhotoURL ? (
                   <img
-                    src={userProfile.photoURL}
+                    src={localPhotoURL}
                     alt="Profile"
                     className="w-8 h-8 rounded-full border border-white/20 
                              hover:border-white/40 transition-all duration-300 object-cover"
@@ -382,26 +347,35 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Profile Image Section */}
         <div className="px-6 mb-4">
           <div className="flex flex-col items-center">
-            <div className="relative transform hover:scale-105 transition-all duration-300">
-              {userProfile?.photoURL ? (
+            <div 
+              className="relative transform hover:scale-105 transition-all duration-300"
+              onClick={() => {
+                navigate('/settings');
+                setIsNavOpen(false);
+              }}
+            >
+              {localPhotoURL ? (
                 <img
-                  src={userProfile.photoURL}
+                  src={localPhotoURL}
                   alt="Profile"
                   className="w-24 h-24 rounded-full mb-3 shadow-lg hover:shadow-purple-500/50 
-                           transition-all duration-300 object-cover border-2 border-white"
+                            transition-all duration-300 object-cover border-2 border-white cursor-pointer"
                 />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-white shadow-lg hover:shadow-purple-500/50 
                               transition-all duration-300 flex items-center justify-center mb-3
-                              text-2xl font-semibold text-purple-600">
+                              text-2xl font-semibold text-purple-600 cursor-pointer">
                   {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
                 </div>
               )}
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
                 className="absolute bottom-3 right-0 bg-purple-600 rounded-full p-2 
-                         hover:bg-purple-700 transition-colors shadow-lg
-                         hover:scale-110 transform duration-300"
+                          hover:bg-purple-700 transition-colors shadow-lg
+                          hover:scale-110 transform duration-300"
                 aria-label="Change profile picture"
               >
                 <Camera size={14} className="text-white" />
