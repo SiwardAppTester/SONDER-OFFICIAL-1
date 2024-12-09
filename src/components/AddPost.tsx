@@ -167,6 +167,8 @@ const AddPost: React.FC = () => {
   const [newFestivalDate, setNewFestivalDate] = useState("");
   const [newFestivalTime, setNewFestivalTime] = useState("");
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchFestivals();
@@ -201,6 +203,8 @@ const AddPost: React.FC = () => {
   };
 
   const handleAddFestival = async () => {
+    if (isCreating) return;
+    
     if (!newFestivalName.trim() || !newFestivalImage || !newFestivalDate || !newFestivalTime) {
       setToast({
         message: "Please fill in all required fields",
@@ -208,6 +212,8 @@ const AddPost: React.FC = () => {
       });
       return;
     }
+
+    setIsCreating(true);
 
     try {
       // Upload image first
@@ -252,37 +258,46 @@ const AddPost: React.FC = () => {
       setFestivals(prev => [...prev, newFestival]);
       setNewFestivalName("");
       setNewFestivalDescription("");
-      setShowAddFestival(false);
-
-      const festivalDoc = await getDoc(doc(db, "festivals", docRef.id));
-      if (!festivalDoc.exists()) {
-        throw new Error("Festival was not saved properly");
-      }
-
       setNewFestivalImage(null);
       setImagePreview("");
       setNewFestivalDate("");
       setNewFestivalTime("");
+      setShowAddFestival(false);
+      setToast({
+        message: "Festival created successfully",
+        type: 'success'
+      });
+
     } catch (error) {
       console.error("Error adding festival:", error);
       setToast({
         message: "Failed to create festival. Please try again.",
         type: 'error'
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleDeleteFestival = async (festivalId: string) => {
-    if (!window.confirm("Are you sure you want to delete this festival?")) {
-      return;
-    }
+    setShowDeleteConfirm(festivalId);
+  };
 
+  const confirmDelete = async (festivalId: string) => {
     try {
       await deleteDoc(doc(db, "festivals", festivalId));
       setFestivals(prev => prev.filter(festival => festival.id !== festivalId));
+      setShowDeleteConfirm(null);
+      setToast({
+        message: "Festival deleted successfully",
+        type: 'success'
+      });
     } catch (error) {
       console.error("Error deleting festival:", error);
-      alert("Failed to delete festival. Please try again.");
+      setToast({
+        message: "Failed to delete festival. Please try again.",
+        type: 'error'
+      });
     }
   };
 
@@ -361,19 +376,24 @@ const AddPost: React.FC = () => {
                     e.stopPropagation();
                     handleDeleteFestival(festival.id);
                   }}
-                  className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full 
-                           opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                  className="absolute top-4 right-4 p-2 rounded-full 
+                             bg-white/10 text-white opacity-0 group-hover:opacity-100 
+                             transition-all duration-300
+                             hover:bg-red-500/40 border border-white/20
+                             hover:border-red-500/60"
                 >
-                  <Trash2 size={18} />
+                  <Trash2 className="w-4 h-4" />
                 </button>
                 <div className="absolute top-4 left-4 backdrop-blur-xl bg-white/10 text-white px-2 py-1 rounded border border-white/20">
                   <div className="text-xs font-['Space_Grotesk']">
-                    {new Date(festival.date).toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase()}
+                    {new Date(festival.date).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
                   </div>
                   <div className="text-lg font-bold font-['Space_Grotesk']">
                     {new Date(festival.date).getDate()}
                   </div>
-                  <div className="text-xs font-['Space_Grotesk']">SEP</div>
+                  <div className="text-xs font-['Space_Grotesk']">
+                    {new Date(festival.date).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                  </div>
                 </div>
                 <div className="p-3">
                   <h3 className="text-lg font-bold mb-1 text-white font-['Space_Grotesk'] tracking-wider">
@@ -457,15 +477,51 @@ const AddPost: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleAddFestival}
-                  className="relative px-16 py-4 border-2 border-white/30 rounded-full
+                  disabled={isCreating}
+                  className={`relative px-16 py-4 border-2 border-white/30 rounded-full
                           text-white text-lg font-['Space_Grotesk'] tracking-[0.2em]
                           transition-all duration-300 
                           hover:border-white/60 hover:scale-105
                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
                           active:scale-95
-                          w-full"
+                          w-full
+                          ${isCreating ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  CREATE FESTIVAL
+                  {isCreating ? 'CREATING...' : 'CREATE FESTIVAL'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] p-8 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-['Space_Grotesk'] tracking-wider mb-6 text-white text-center">
+                Delete Festival
+              </h2>
+              <p className="text-white/70 text-center mb-8 font-['Space_Grotesk']">
+                Are you sure you want to delete this festival? This action cannot be undone.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 px-6 py-3 border-2 border-white/30 rounded-full
+                            text-white font-['Space_Grotesk'] tracking-wider
+                            transition-all duration-300 
+                            hover:border-white/60 hover:bg-white/10"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={() => showDeleteConfirm && confirmDelete(showDeleteConfirm)}
+                  className="flex-1 px-6 py-3 border-2 border-red-500/30 rounded-full
+                            text-red-500 font-['Space_Grotesk'] tracking-wider
+                            transition-all duration-300 
+                            hover:border-red-500/60 hover:bg-red-500/10"
+                >
+                  DELETE
                 </button>
               </div>
             </div>

@@ -107,6 +107,7 @@ const FestivalManagement: React.FC = () => {
     code: "",
     categoryIds: [] as string[]
   });
+  const [showCreateAccessCode, setShowCreateAccessCode] = useState(false);
 
   useEffect(() => {
     const fetchFestival = async () => {
@@ -955,98 +956,157 @@ const FestivalManagement: React.FC = () => {
               <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
                 <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full mx-4 
                               border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-['Space_Grotesk'] text-white/90">Create Access Code</h2>
-                    <button
-                      onClick={() => setShowAccessCodeModal(false)}
-                      className="text-white/50 hover:text-white/90 transition-colors"
-                    >
-                      <X size={24} />
-                    </button>
-                  </div>
-
-                  <form onSubmit={handleCreateAccessCode} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
-                        Access Code Name
-                      </label>
-                      <input
-                        type="text"
-                        value={newAccessCode.name}
-                        onChange={(e) => setNewAccessCode(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10
-                                 text-white placeholder-white/30 font-['Space_Grotesk']
-                                 focus:outline-none focus:border-white/30
-                                 transition-all duration-300"
-                        placeholder="Enter access code name"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
-                        Access Code
-                      </label>
-                      <input
-                        type="text"
-                        value={newAccessCode.code}
-                        onChange={(e) => setNewAccessCode(prev => ({ ...prev, code: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10
-                                 text-white placeholder-white/30 font-['Space_Grotesk']
-                                 focus:outline-none focus:border-white/30
-                                 transition-all duration-300"
-                        placeholder="Enter access code"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
-                        Select Categories
-                      </label>
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {festival?.categories?.map((category) => (
-                          <label key={category.id} className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              checked={newAccessCode.categoryIds.includes(category.id)}
-                              onChange={(e) => {
-                                setNewAccessCode(prev => ({
-                                  ...prev,
-                                  categoryIds: e.target.checked
-                                    ? [...prev.categoryIds, category.id]
-                                    : prev.categoryIds.filter(id => id !== category.id)
-                                }));
-                              }}
-                              className="form-checkbox rounded bg-white/5 border-white/20 text-white/90"
-                            />
-                            <span className="text-white/70 font-['Space_Grotesk']">{category.name}</span>
-                          </label>
-                        ))}
+                  {!showCreateAccessCode ? (
+                    // Overview of existing access codes
+                    <>
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-['Space_Grotesk'] text-white/90">Access Codes</h2>
+                        <button
+                          onClick={() => setShowAccessCodeModal(false)}
+                          className="text-white/50 hover:text-white/90 transition-colors"
+                        >
+                          <X size={24} />
+                        </button>
                       </div>
-                    </div>
 
-                    <div className="flex gap-3 pt-4">
+                      <div className="space-y-4 max-h-[60vh] overflow-y-auto mb-6">
+                        {festival?.categoryAccessCodes && festival.categoryAccessCodes.length > 0 ? (
+                          festival.categoryAccessCodes.map((accessCode, index) => (
+                            <div 
+                              key={index}
+                              className="p-4 rounded-xl bg-white/5 border border-white/10
+                                       hover:border-white/20 transition-all duration-300"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <h3 className="text-white font-['Space_Grotesk']">{accessCode.name}</h3>
+                                <span className="text-white/60 font-mono text-sm">{accessCode.code}</span>
+                              </div>
+                              <div className="text-white/50 text-sm font-['Space_Grotesk']">
+                                Categories: {accessCode.categoryIds.map(catId => 
+                                  festival.categories?.find(cat => cat.id === catId)?.name
+                                ).filter(Boolean).join(", ")}
+                              </div>
+                              <div className="text-white/30 text-xs font-['Space_Grotesk'] mt-2">
+                                Created: {new Date(accessCode.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8">
+                            <p className="text-white/50 font-['Space_Grotesk']">No access codes created yet</p>
+                          </div>
+                        )}
+                      </div>
+
                       <button
-                        type="button"
-                        onClick={() => setShowAccessCodeModal(false)}
-                        className="flex-1 px-6 py-3 rounded-xl border border-white/10
-                                 text-white/70 font-['Space_Grotesk']
-                                 hover:bg-white/5 transition-all duration-300"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="flex-1 px-6 py-3 rounded-xl bg-white/10
+                        onClick={() => setShowCreateAccessCode(true)}
+                        className="w-full px-6 py-3 rounded-xl bg-white/10
                                  border border-white/20 hover:border-white/30
                                  text-white font-['Space_Grotesk']
-                                 hover:bg-white/20 transition-all duration-300"
+                                 hover:bg-white/20 transition-all duration-300
+                                 flex items-center justify-center gap-2"
                       >
+                        <Plus size={18} />
                         Create Access Code
                       </button>
-                    </div>
-                  </form>
+                    </>
+                  ) : (
+                    // Create new access code form
+                    <>
+                      <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-['Space_Grotesk'] text-white/90">Create Access Code</h2>
+                        <button
+                          onClick={() => setShowCreateAccessCode(false)}
+                          className="text-white/50 hover:text-white/90 transition-colors"
+                        >
+                          <X size={24} />
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleCreateAccessCode} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                            Access Code Name
+                          </label>
+                          <input
+                            type="text"
+                            value={newAccessCode.name}
+                            onChange={(e) => setNewAccessCode(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10
+                                     text-white placeholder-white/30 font-['Space_Grotesk']
+                                     focus:outline-none focus:border-white/30
+                                     transition-all duration-300"
+                            placeholder="Enter access code name"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                            Access Code
+                          </label>
+                          <input
+                            type="text"
+                            value={newAccessCode.code}
+                            onChange={(e) => setNewAccessCode(prev => ({ ...prev, code: e.target.value }))}
+                            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10
+                                     text-white placeholder-white/30 font-['Space_Grotesk']
+                                     focus:outline-none focus:border-white/30
+                                     transition-all duration-300"
+                            placeholder="Enter access code"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                            Select Categories
+                          </label>
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {festival?.categories?.map((category) => (
+                              <label key={category.id} className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={newAccessCode.categoryIds.includes(category.id)}
+                                  onChange={(e) => {
+                                    setNewAccessCode(prev => ({
+                                      ...prev,
+                                      categoryIds: e.target.checked
+                                        ? [...prev.categoryIds, category.id]
+                                        : prev.categoryIds.filter(id => id !== category.id)
+                                    }));
+                                  }}
+                                  className="form-checkbox rounded bg-white/5 border-white/20 text-white/90"
+                                />
+                                <span className="text-white/70 font-['Space_Grotesk']">{category.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-4">
+                          <button
+                            type="button"
+                            onClick={() => setShowCreateAccessCode(false)}
+                            className="flex-1 px-6 py-3 rounded-xl border border-white/10
+                                     text-white/70 font-['Space_Grotesk']
+                                     hover:bg-white/5 transition-all duration-300"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="flex-1 px-6 py-3 rounded-xl bg-white/10
+                                     border border-white/20 hover:border-white/30
+                                     text-white font-['Space_Grotesk']
+                                     hover:bg-white/20 transition-all duration-300"
+                          >
+                            Create Access Code
+                          </button>
+                        </div>
+                      </form>
+                    </>
+                  )}
                 </div>
               </div>
             )}

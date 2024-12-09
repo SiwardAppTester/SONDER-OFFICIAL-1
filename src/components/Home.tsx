@@ -20,6 +20,8 @@ interface Post {
     url: string;
     type: "image" | "video";
     categoryId?: string;
+    hasAccess?: boolean;
+    shouldShow?: boolean;
   }[];
   userId: string;
   createdAt: any;
@@ -64,6 +66,11 @@ interface AccessCode {
   code: string;
   categoryIds: string[];
   createdAt: any;
+}
+
+interface ShareModalProps {
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 // Add the Loader component
@@ -122,6 +129,7 @@ const Home: React.FC = () => {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     const postsQuery = query(
@@ -558,7 +566,7 @@ const Home: React.FC = () => {
   const handleInstagramShare = async (url: string, type: string, postId: string, festivalId: string, categoryId?: string, mediaIndex: number = 0) => {
     try {
       if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        // For mobile devices
+        // Mobile sharing logic remains the same
         const response = await fetch(url);
         const blob = await response.blob();
         const file = new File([blob], `share.${type === 'video' ? 'mp4' : 'jpg'}`, { 
@@ -574,7 +582,6 @@ const Home: React.FC = () => {
           try {
             await navigator.share(shareData);
             
-            // Add share record to Firestore
             if (auth.currentUser) {
               await addDoc(collection(db, 'messages'), {
                 type: 'shared_post',
@@ -590,61 +597,42 @@ const Home: React.FC = () => {
             }
           } catch (error) {
             console.error('Error sharing:', error);
-            alert("Please try sharing directly to Instagram");
+            setShowShareModal(true);
           }
         } else {
-          alert("Sharing is not supported on this device");
+          setShowShareModal(true);
         }
       } else {
-        alert("Instagram sharing is only available on mobile devices");
+        setShowShareModal(true);
       }
     } catch (error) {
       console.error("Error sharing to Instagram:", error);
-      alert("Failed to share to Instagram. Please try manually.");
+      setShowShareModal(true);
     }
   };
 
-  const filteredPosts = posts.filter(post => {
-    // First check if this post belongs to the selected festival
-    if (post.festivalId !== selectedFestival) return false;
+  // Modify the filteredPosts logic to include all posts but mark them as accessible/inaccessible
+  const filteredPosts = posts
+    .filter(post => post.festivalId === selectedFestival)
+    .map(post => ({
+      ...post,
+      mediaFiles: post.mediaFiles.map(media => {
+        const userAccessibleCategories = accessibleCategories[post.festivalId] || [];
+        const hasAccess = userAccessibleCategories.includes(media.categoryId || '');
+        
+        // Check if this media should be shown based on filters
+        const matchesCategory = !selectedCategory || media.categoryId === selectedCategory;
+        const matchesMediaType = selectedMediaType === "all" || media.type === selectedMediaType;
+        const shouldShow = matchesCategory && matchesMediaType;
 
-    // Then check if user has access to this festival
-    if (!accessibleFestivals.has(post.festivalId)) return false;
-
-    // Get user's accessible categories for this festival
-    const userAccessibleCategories = accessibleCategories[post.festivalId] || [];
-
-    // Filter media files based on category and media type
-    const hasAccessibleMedia = post.mediaFiles.some(media => {
-      // Check category access
-      if (selectedCategory && media.categoryId !== selectedCategory) return false;
-      if (!media.categoryId) return false; // Skip media without category
-      if (!userAccessibleCategories.includes(media.categoryId)) return false;
-
-      // Check media type
-      if (selectedMediaType !== "all" && media.type !== selectedMediaType) return false;
-
-      return true;
-    });
-
-    return hasAccessibleMedia;
-  }).map(post => ({
-    ...post,
-    // Filter out media files that don't match the criteria
-    mediaFiles: post.mediaFiles.filter(media => {
-      // Check category access
-      if (selectedCategory && media.categoryId !== selectedCategory) return false;
-      if (!media.categoryId) return false; // Skip media without category
-      
-      const userAccessibleCategories = accessibleCategories[post.festivalId] || [];
-      if (!userAccessibleCategories.includes(media.categoryId)) return false;
-
-      // Check media type
-      if (selectedMediaType !== "all" && media.type !== selectedMediaType) return false;
-
-      return true;
-    })
-  }));
+        return {
+          ...media,
+          hasAccess,
+          shouldShow
+        };
+      }).filter(media => media.shouldShow)
+    }))
+    .filter(post => post.mediaFiles.length > 0);
 
   const handleQRFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
@@ -754,6 +742,34 @@ const Home: React.FC = () => {
     }
   };
 
+  const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 backdrop-blur-xl bg-black/90 flex items-center justify-center z-50 p-4">
+        <div className="bg-white/10 rounded-3xl p-8 max-w-md w-full mx-4 relative 
+                       border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+          <div className="text-center">
+            <h3 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90 mb-4">
+              Share to Instagram
+            </h3>
+            <p className="text-white/60 text-sm font-['Space_Grotesk'] mb-6">
+              Instagram sharing is only available on mobile devices. Please access this content from your mobile device to share.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-6 py-2.5 rounded-full bg-white/10 border border-white/20
+                       text-white/70 hover:bg-white/20 transition-all duration-300
+                       font-['Space_Grotesk'] text-sm tracking-wider"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen w-full overflow-y-auto relative">
       {/* Three.js Background - Make it fixed */}
@@ -770,26 +786,6 @@ const Home: React.FC = () => {
 
       {/* Content - Add padding bottom for scrolling space */}
       <div className="relative z-10 min-h-screen pb-20">
-        {/* Navigation - Position back button */}
-        <div className="w-full px-8 mt-8">
-          {selectedFestival && (
-            <button
-              onClick={() => {
-                setSelectedFestival("");
-                setShowFestivalList(true);
-                setShowAccessInput(false);
-                setSelectedCategory("");
-              }}
-              className="text-white/40 hover:text-white/90 
-                        transition-all duration-300
-                        text-sm font-['Space_Grotesk']"
-              aria-label="Return to festivals overview"
-            >
-              ← Back
-            </button>
-          )}
-        </div>
-
         <Sidebar
           isNavOpen={isNavOpen}
           setIsNavOpen={setIsNavOpen}
@@ -870,12 +866,14 @@ const Home: React.FC = () => {
                     />
                     <div className="absolute top-4 left-4 backdrop-blur-xl bg-white/10 text-white px-2 py-1 rounded border border-white/20">
                       <div className="text-xs font-['Space_Grotesk']">
-                        {new Date(festival.date).toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase()}
+                        {new Date(festival.date).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
                       </div>
                       <div className="text-lg font-bold font-['Space_Grotesk']">
                         {new Date(festival.date).getDate()}
                       </div>
-                      <div className="text-xs font-['Space_Grotesk']">SEP</div>
+                      <div className="text-xs font-['Space_Grotesk']">
+                        {new Date(festival.date).toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+                      </div>
                     </div>
                     <div className="p-3">
                       <h3 className="text-lg font-bold mb-1 text-white font-['Space_Grotesk'] tracking-wider">
@@ -916,8 +914,8 @@ const Home: React.FC = () => {
         ) : (
           // Festival content view
           <div className="max-w-6xl mx-auto px-4 pb-20">
-            {/* Back button - Positioned above festival name */}
-            <div className="mb-4">
+            {/* Back button - Added more top padding */}
+            <div className="mb-4 pt-8 md:pt-16">
               <button
                 onClick={() => {
                   setSelectedFestival("");
@@ -979,20 +977,30 @@ const Home: React.FC = () => {
                       </button>
                       {festivals
                         .find(f => f.id === selectedFestival)
-                        ?.categories?.map((category) => (
-                          <button
-                            key={category.id}
-                            onClick={() => setSelectedCategory(category.id)}
-                            className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 
-                                      font-['Space_Grotesk'] ${
-                              selectedCategory === category.id
-                                ? "bg-white/20 text-white border-2 border-white/40"
-                                : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
-                            }`}
-                          >
-                            {category.name}
-                          </button>
-                        ))}
+                        ?.categories?.map((category) => {
+                          const userAccessibleCategories = accessibleCategories[selectedFestival] || [];
+                          const hasAccess = userAccessibleCategories.includes(category.id);
+                          
+                          return (
+                            <button
+                              key={category.id}
+                              onClick={() => setSelectedCategory(category.id)}
+                              className={`px-6 py-2.5 rounded-full transition-all transform hover:scale-105 
+                                         font-['Space_Grotesk'] relative
+                                         ${selectedCategory === category.id
+                                           ? "bg-white/20 text-white border-2 border-white/40"
+                                           : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
+                                         }`}
+                            >
+                              <span className={`${!hasAccess 
+                                ? "text-white/70 line-through decoration-white/40 decoration-1" 
+                                : "text-white/70"}`}
+                              >
+                                {category.name}
+                              </span>
+                            </button>
+                          );
+                        })}
                     </div>
                   </div>
 
@@ -1033,63 +1041,49 @@ const Home: React.FC = () => {
               {filteredPosts.flatMap((post, postIndex) => 
                 post.mediaFiles.map((media, mediaIndex) => (
                   <div key={`${post.id}-${mediaIndex}`} className="relative group">
-                    {media.type === 'video' ? (
-                      <div className="aspect-[9/16] rounded-2xl overflow-hidden 
-                                    backdrop-blur-xl bg-white/10 border border-white/20">
-                        <video
-                          src={media.url}
-                          className="w-full h-full object-cover"
-                          controls
-                          onError={(e) => {
-                            console.error("Video failed to load:", media.url);
-                            (e.target as HTMLVideoElement).style.display = 'none';
-                          }}
-                        />
-                        <div className="absolute bottom-2 right-2 flex gap-2">
-                          <button
-                            onClick={() => handleInstagramShare(
-                              media.url, 
-                              media.type, 
-                              post.id, 
-                              post.festivalId, 
-                              media.categoryId, 
-                              mediaIndex
-                            )}
-                            className="bg-white/10 text-white p-2 rounded-full opacity-0 
-                                     group-hover:opacity-100 transition-all duration-300
-                                     hover:bg-white/20 border border-white/20"
-                          >
-                            <Share className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDownload(
-                              media.url, 
-                              media.type, 
-                              post.id, 
-                              post.festivalId, 
-                              media.categoryId, 
-                              mediaIndex
-                            )}
-                            className="bg-white/10 text-white p-2 rounded-full opacity-0 
-                                     group-hover:opacity-100 transition-all duration-300
-                                     hover:bg-white/20 border border-white/20"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                    <div className={`aspect-[9/16] rounded-2xl overflow-hidden 
+                                  backdrop-blur-xl bg-white/10 border border-white/20
+                                  ${!media.hasAccess ? 'relative' : ''}`}>
+                      {media.type === 'video' ? (
+                        <div className="h-full">
+                          <video
+                            src={media.url}
+                            className={`w-full h-full object-cover ${!media.hasAccess ? 'blur-xl' : ''}`}
+                            controls={media.hasAccess}
+                            controlsList="nodownload"
+                            onError={(e) => {
+                              console.error("Video failed to load:", media.url);
+                              (e.target as HTMLVideoElement).style.display = 'none';
+                            }}
+                          />
                         </div>
-                      </div>
-                    ) : (
-                      <div className="aspect-[9/16] rounded-2xl overflow-hidden 
-                                    backdrop-blur-xl bg-white/10 border border-white/20">
+                      ) : (
                         <img
                           src={media.url}
                           alt={`Post content ${mediaIndex + 1}`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover ${!media.hasAccess ? 'blur-xl' : ''}`}
                           onError={(e) => {
                             console.error("Image failed to load:", media.url);
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
                         />
+                      )}
+                      
+                      {/* Overlay for inaccessible content */}
+                      {!media.hasAccess && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-4">
+                          <Sparkles className="w-8 h-8 mb-2 text-white/80" />
+                          <h3 className="text-xl font-['Space_Grotesk'] tracking-wider text-center mb-2">
+                            Sonder
+                          </h3>
+                          <p className="text-sm text-center text-white/80 font-['Space_Grotesk']">
+                            The realization that each random passerby is living a life as vivid and complex as your own.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Controls for accessible content */}
+                      {media.hasAccess && (
                         <div className="absolute bottom-2 right-2 flex gap-2">
                           <button
                             onClick={() => handleInstagramShare(
@@ -1122,9 +1116,9 @@ const Home: React.FC = () => {
                             <Download className="w-4 h-4" />
                           </button>
                         </div>
-                      </div>
-                    )}
-                    {post.text && (
+                      )}
+                    </div>
+                    {post.text && media.hasAccess && (
                       <p className="text-white/80 mt-2 text-sm text-center font-['Space_Grotesk']">
                         {post.text}
                       </p>
@@ -1239,6 +1233,11 @@ const Home: React.FC = () => {
             </div>
           </div>
         )}
+
+        <ShareModal 
+          isOpen={showShareModal} 
+          onClose={() => setShowShareModal(false)} 
+        />
       </div>
     </div>
   );
