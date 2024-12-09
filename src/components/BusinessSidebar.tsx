@@ -220,7 +220,12 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
         <div className="container mx-auto px-4 flex items-center justify-between">
           {/* Logo/Brand */}
           <div className="flex items-center">
-            <span className="text-2xl font-bold text-white">SONDER</span>
+            <Link 
+              to="/add-post" 
+              className="text-2xl font-bold text-white hover:text-white/80 transition-colors duration-300"
+            >
+              SONDER
+            </Link>
           </div>
 
           {/* Right Side Navigation */}
@@ -228,16 +233,6 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
             <Link to="/" className="flex items-center space-x-2 p-2 rounded-lg
               text-white/80 hover:text-white transition-all duration-300 group">
               <HomeIcon size={18} className="group-hover:scale-110 transition-transform duration-300" />
-            </Link>
-            
-            <Link to="/discover" className="flex items-center space-x-2 p-2 rounded-lg
-              text-white/80 hover:text-white transition-all duration-300 group">
-              <Compass size={18} className="group-hover:scale-110 transition-transform duration-300" />
-            </Link>
-            
-            <Link to="/chat" className="flex items-center space-x-2 p-2 rounded-lg
-              text-white/80 hover:text-white transition-all duration-300 group">
-              <MessageCircle size={18} className="group-hover:scale-110 transition-transform duration-300" />
             </Link>
             
             <Link to="/business-dashboard" className="flex items-center space-x-2 p-2 rounded-lg
@@ -248,6 +243,21 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
             <Link to="/business-calendar" className="flex items-center space-x-2 p-2 rounded-lg
               text-white/80 hover:text-white transition-all duration-300 group">
               <CalendarIcon size={18} className="group-hover:scale-110 transition-transform duration-300" />
+            </Link>
+            
+            <Link to="/chat" className="flex items-center space-x-2 p-2 rounded-lg
+              text-white/80 hover:text-white transition-all duration-300 group">
+              <MessageCircle size={18} className="group-hover:scale-110 transition-transform duration-300" />
+            </Link>
+            
+            <Link to="/search" className="flex items-center space-x-2 p-2 rounded-lg
+              text-white/80 hover:text-white transition-all duration-300 group">
+              <SearchIcon size={18} className="group-hover:scale-110 transition-transform duration-300" />
+            </Link>
+            
+            <Link to="/discover" className="flex items-center space-x-2 p-2 rounded-lg
+              text-white/80 hover:text-white transition-all duration-300 group">
+              <Compass size={18} className="group-hover:scale-110 transition-transform duration-300" />
             </Link>
 
             {/* Profile Section */}
@@ -498,11 +508,11 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
           {/* Navigation Links */}
           <div className="space-y-2 mt-4">
             {[
-              { to: "/add-post", icon: Plus, label: "Create Post" },
-              { to: "/discover", icon: Compass, label: "Discover" },
               { to: "/business-dashboard", icon: LayoutDashboard, label: "Dashboard" },
+              { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" },
               { to: "/chat", icon: MessageCircle, label: "Messages" },
-              { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" }
+              { to: "/search", icon: SearchIcon, label: "Search" },
+              { to: "/discover", icon: Compass, label: "Discover" }
             ].map(({ to, icon: Icon, label }) => (
               <Link
                 key={to}
