@@ -575,6 +575,24 @@ const FestivalManagement: React.FC = () => {
 
       {/* Main Content - Scrollable */}
       <div className="relative z-10 min-h-screen pt-24 px-8 md:px-16 lg:px-32">
+        {/* Back to Festivals Button - New Position */}
+        <div className="mb-8">
+          <button
+            onClick={() => navigate('/add-post')}
+            className="px-6 py-3 bg-white/10 hover:bg-white/20 
+                      border border-white/20 hover:border-white/30
+                      rounded-xl backdrop-blur-lg
+                      transition-all duration-300 ease-in-out
+                      text-white text-sm font-['Space_Grotesk'] tracking-wide
+                      flex items-center justify-center gap-2
+                      hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
+                      w-fit"
+          >
+            <ArrowLeft size={18} />
+            Back to Festivals
+          </button>
+        </div>
+
         {festival && (
           <div className="mb-12 grid grid-cols-1 gap-8 max-w-[1400px] mx-auto pb-24">
             {/* Festival Header */}
@@ -615,20 +633,6 @@ const FestivalManagement: React.FC = () => {
 
                 {/* Right side with buttons */}
                 <div className="flex-shrink-0 flex flex-col gap-3">
-                  <button
-                    onClick={() => navigate('/add-post')}
-                    className="px-6 py-3 bg-white/10 hover:bg-white/20 
-                              border border-white/20 hover:border-white/30
-                              rounded-xl backdrop-blur-lg
-                              transition-all duration-300 ease-in-out
-                              text-white text-sm font-['Space_Grotesk'] tracking-wide
-                              flex items-center justify-center gap-2
-                              hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                  >
-                    <ArrowLeft size={18} />
-                    Back to Festivals
-                  </button>
-
                   <button
                     onClick={() => setShowCategoryModal(true)}
                     className="px-6 py-3 bg-white/10 hover:bg-white/20 
