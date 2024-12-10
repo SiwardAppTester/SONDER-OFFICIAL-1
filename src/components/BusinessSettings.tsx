@@ -94,6 +94,14 @@ const BusinessSettings: React.FC = () => {
     }
   ];
 
+  const handleSectionClick = (sectionId: string) => {
+    if (sectionId === 'terms') {
+      navigate('/business-terms');
+    } else {
+      setActiveSection(sectionId);
+    }
+  };
+
   return (
     <div className="relative h-screen w-full overflow-hidden">
       {/* Three.js Background */}
