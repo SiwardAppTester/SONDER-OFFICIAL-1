@@ -8,6 +8,8 @@ import { User as FirebaseUser } from "firebase/auth";
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import BusinessSidebar from "./BusinessSidebar";
+import { useUserProfile } from '../contexts/UserProfileContext';
 
 // Loader component for 3D scene
 function Loader() {
@@ -67,13 +69,11 @@ const Search: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [accessibleFestivals, setAccessibleFestivals] = useState<Set<string>>(new Set());
+  const { userProfile } = useUserProfile();
+  const isBusinessAccount = userProfile?.isBusinessAccount;
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-      setUser(currentUser);
       if (currentUser) {
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         if (userDoc.exists()) {
@@ -145,130 +145,138 @@ const Search: React.FC = () => {
   }, [searchTerm]);
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
-      {/* Three.js Background */}
-      <div className="absolute inset-0">
-        <Canvas
-          className="w-full h-full"
-          gl={{ antialias: true, alpha: true }}
-        >
-          <Suspense fallback={<Loader />}>
-            <InnerSphere />
-          </Suspense>
-        </Canvas>
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 min-h-screen flex flex-col">
-        {/* Navigation */}
-        <div className="p-4">
-          <button
-            onClick={() => setIsNavOpen(!isNavOpen)}
-            className="text-white/90 hover:text-white transition-colors duration-300"
-            aria-label="Toggle navigation menu"
-          >
-            <Menu size={28} />
-          </button>
-        </div>
-
-        <Sidebar
+    <div className="min-h-screen">
+      {/* Conditionally render either BusinessSidebar or regular Sidebar */}
+      {isBusinessAccount ? (
+        <BusinessSidebar
           isNavOpen={isNavOpen}
           setIsNavOpen={setIsNavOpen}
-          user={user}
-          userProfile={userProfile}
+          user={auth.currentUser}
+          accessibleFestivalsCount={0}  // You might want to pass the actual count if needed
         />
+      ) : (
+        <Sidebar />
+      )}
 
-        {/* Search Content */}
-        <div className="flex-1 p-4">
-          <div className="max-w-2xl mx-auto">
-            {/* Search Input */}
-            <div className="mb-8 transform hover:scale-105 transition-all duration-300">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Explore"
-                  className="w-full px-6 py-4 rounded-full 
-                           bg-white/10 text-white 
-                           border border-white/20
-                           backdrop-blur-xl
-                           shadow-[0_0_20px_rgba(255,255,255,0.1)]
-                           hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                           transition-all duration-300
-                           text-lg focus:outline-none focus:ring-2 focus:ring-white/30
-                           placeholder-white/50"
-                  minLength={2}
-                />
-                <SearchIcon className="absolute right-6 top-1/2 transform -translate-y-1/2 text-white/70" size={24} />
-              </div>
-            </div>
+      {/* Rest of your existing Search component JSX */}
+      <div className="relative z-10 min-h-screen md:ml-0">
+        {/* Three.js Background */}
+        <div className="absolute inset-0">
+          <Canvas
+            className="w-full h-full"
+            gl={{ antialias: true, alpha: true }}
+          >
+            <Suspense fallback={<Loader />}>
+              <InnerSphere />
+            </Suspense>
+          </Canvas>
+        </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="text-white/90 mb-4 text-center bg-white/10 backdrop-blur-xl rounded-lg p-3 border border-white/20">
-                {error}
-              </div>
-            )}
+        {/* Content */}
+        <div className="relative z-10 min-h-screen flex flex-col">
+          {/* Navigation */}
+          <div className="p-4">
+            <button
+              onClick={() => setIsNavOpen(!isNavOpen)}
+              className="text-white/90 hover:text-white transition-colors duration-300"
+              aria-label="Toggle navigation menu"
+            >
+              <Menu size={28} />
+            </button>
+          </div>
 
-            {/* Results */}
-            <div className="space-y-4">
-              {results.length > 0 ? (
-                results.map((user) => (
-                  <Link
-                    to={`/profile/${user.uid}`}
-                    key={user.uid}
-                    className="block bg-white/10 backdrop-blur-xl p-6 rounded-2xl
+          {/* Search Content */}
+          <div className="flex-1 p-4">
+            <div className="max-w-2xl mx-auto">
+              {/* Search Input */}
+              <div className="mb-8 transform hover:scale-105 transition-all duration-300">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Explore"
+                    className="w-full px-6 py-4 rounded-full 
+                             bg-white/10 text-white 
                              border border-white/20
+                             backdrop-blur-xl
                              shadow-[0_0_20px_rgba(255,255,255,0.1)]
                              hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                             transform hover:scale-105 transition-all duration-300"
-                  >
-                    <div className="flex items-center gap-4">
-                      {user.photoURL ? (
-                        <img
-                          src={user.photoURL}
-                          alt={user.displayName}
-                          className="w-16 h-16 rounded-full ring-2 ring-white/20"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 rounded-full bg-white/20
-                                      flex items-center justify-center text-white text-xl font-semibold">
-                          {user.displayName[0]}
-                        </div>
-                      )}
-                      <div className="flex-grow">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-xl text-white/90">
-                            {user.displayName}
-                          </p>
-                          {user.isBusinessAccount && (
-                            <CheckCircle 
-                              size={20} 
-                              className="text-white/70" 
-                              fill="currentColor"
-                              aria-label="Verified Business Account"
-                            />
-                          )}
-                        </div>
-                        <p className="text-white/60 text-md">@{user.username}</p>
-                      </div>
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                <div className="text-center text-white/60 text-lg py-8 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
-                  {loading ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                      <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                    </div>
-                  ) : (
-                    searchTerm ? "No users found" : ""
-                  )}
+                             transition-all duration-300
+                             text-lg focus:outline-none focus:ring-2 focus:ring-white/30
+                             placeholder-white/50"
+                    minLength={2}
+                  />
+                  <SearchIcon className="absolute right-6 top-1/2 transform -translate-y-1/2 text-white/70" size={24} />
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="text-white/90 mb-4 text-center bg-white/10 backdrop-blur-xl rounded-lg p-3 border border-white/20">
+                  {error}
                 </div>
               )}
+
+              {/* Results */}
+              <div className="space-y-4">
+                {results.length > 0 ? (
+                  results.map((user) => (
+                    <Link
+                      to={`/profile/${user.uid}`}
+                      key={user.uid}
+                      className="block bg-white/10 backdrop-blur-xl p-6 rounded-2xl
+                               border border-white/20
+                               shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                               hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                               transform hover:scale-105 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-4">
+                        {user.photoURL ? (
+                          <img
+                            src={user.photoURL}
+                            alt={user.displayName}
+                            className="w-16 h-16 rounded-full ring-2 ring-white/20"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-white/20
+                                        flex items-center justify-center text-white text-xl font-semibold">
+                            {user.displayName[0]}
+                          </div>
+                        )}
+                        <div className="flex-grow">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-xl text-white/90">
+                              {user.displayName}
+                            </p>
+                            {user.isBusinessAccount && (
+                              <CheckCircle 
+                                size={20} 
+                                className="text-white/70" 
+                                fill="currentColor"
+                                aria-label="Verified Business Account"
+                              />
+                            )}
+                          </div>
+                          <p className="text-white/60 text-md">@{user.username}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="text-center text-white/60 text-lg py-8 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
+                    {loading ? (
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                        <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                    ) : (
+                      searchTerm ? "No users found" : ""
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
