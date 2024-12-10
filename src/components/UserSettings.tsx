@@ -93,7 +93,8 @@ const UserSettings: React.FC = () => {
       id: 'help',
       title: 'Help & Support',
       icon: <HelpCircle className="w-6 h-6" />,
-      description: 'Get help and contact support'
+      description: 'Get help and contact support',
+      onClick: () => navigate('/help-support')
     }
   ];
 

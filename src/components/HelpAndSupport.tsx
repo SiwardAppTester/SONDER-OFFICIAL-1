@@ -96,24 +96,28 @@ const HelpAndSupport: React.FC = () => {
 
   const faqItems = [
     {
-      question: "How does Sonder add value to our festival?",
-      answer: "Sonder enhances the attendee experience by capturing professionally filmed content that attendees can relive and share. This increases engagement and amplifies your festival's reach on social media while providing a new revenue stream through content sales. It also eliminates the need for attendees to film themselves, allowing them to fully enjoy the event."
+      question: "How do I access my festival memories?",
+      answer: "You can access your festival memories by logging into your Sonder account and navigating to 'My Memories'. Here you'll find all the professional content captured during the festivals you've attended. You can view, download, and share these memories directly from your dashboard."
     },
     {
-      question: "How much does Sonder's service cost, and how does pricing work?",
-      answer: "Our pricing is tailored to your festival's needs, considering the scale of the event, the amount of content captured, and additional features like same-day highlights or integrations. We offer competitive, flexible packages, and our team can provide a custom quote based on your requirements."
+      question: "Can I share my festival memories on social media?",
+      answer: "Yes! You can easily share your festival memories on various social media platforms. Simply click the 'Share' button on any video or photo, and choose your preferred platform. You can share directly to Instagram, Facebook, Twitter, or download the content to share it later."
     },
     {
-      question: "How do attendees access their content after the festival?",
-      answer: "Attendees can easily access their content through the Sonder platform by using a unique access code or by creating an account. From there, they can view, download, and share their videos directly on social media. This seamless experience maximizes engagement and attendee satisfaction."
+      question: "How long will my festival memories be available?",
+      answer: "Your festival memories are stored permanently on our platform as long as you maintain an active account. You can access them anytime and download them to keep local copies for your personal collection."
     },
     {
-      question: "Who owns the content created during the event?",
-      answer: "Your festival retains ownership of the content. Sonder provides the platform and services to capture, edit, and distribute it. With your permission, we may use general footage for promotional purposes, but ownership and full rights remain with you."
+      question: "What should I do if I can't find my festival content?",
+      answer: "If you can't locate your festival content, first ensure you're logged in with the correct account. Check that the festival date has passed and allow up to 48 hours for content processing. If you still can't find your content, contact our support team with your ticket information and festival details."
     },
     {
-      question: "How does Sonder ensure legal compliance, including attendee consent?",
-      answer: "We help you comply with privacy laws by recommending that consent for filming is included in ticketing terms and conditions. Additionally, we advise using clear signage at entrances and throughout the venue to notify attendees that filming is taking place. Our team works closely with you to address all legal and compliance requirements."
+      question: "How do I update my account settings?",
+      answer: "To update your account settings, go to the 'Profile Settings' section in your dashboard. Here you can modify your personal information, notification preferences, and privacy settings. Don't forget to save your changes after making any modifications."
+    },
+    {
+      question: "Is my personal information secure?",
+      answer: "Yes, we take your privacy seriously. We use industry-standard encryption to protect your personal information and never share your data with third parties without your explicit consent. You can review our privacy policy for more detailed information about how we handle your data."
     }
   ];
 
