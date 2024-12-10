@@ -26,6 +26,7 @@ import UserSettings from './components/UserSettings';
 import BusinessTermsAndConditions from './components/BusinessTermsAndConditions';
 import TermsAndConditions from './components/TermsAndConditions';
 import UserManagement from './components/UserManagement';
+import HelpAndSupport from './components/HelpAndSupport';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -122,6 +123,7 @@ const App: React.FC = () => {
             <Route path="/business-terms" element={<BusinessTermsAndConditions />} />
             <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/user-management" element={<UserManagement />} />
+            <Route path="/help-support" element={<HelpAndSupport />} />
           </Routes>
         </main>
       </div>

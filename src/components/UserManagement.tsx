@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { collection, doc, setDoc, getDocs, query, where, deleteDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { Trash2, Plus, X } from 'lucide-react';
+import { Trash2, Plus, X, Menu } from 'lucide-react';
 import BusinessSidebar from './BusinessSidebar';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { getAuth } from 'firebase/auth';
 import { firebaseApp } from '../firebase';
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, Html, useProgress } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface SubUser {
   uid: string;
@@ -119,172 +122,190 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-black">
-      <BusinessSidebar
-        isNavOpen={isNavOpen}
-        setIsNavOpen={setIsNavOpen}
-        user={user}
-        userProfile={userProfile}
-        accessibleFestivalsCount={0}
-      />
-      
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-4xl mx-auto p-6 pt-20">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-white">User Management</h1>
-            <button
-              onClick={() => setIsAddingUser(true)}
-              className="px-6 py-3 border-2 border-white/30 rounded-full
-                       text-white font-['Space_Grotesk'] tracking-[0.2em]
-                       transition-all duration-300 
-                       hover:border-white/60 hover:scale-105
-                       hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                       active:scale-95
-                       flex items-center gap-2"
-            >
-              <Plus size={20} />
-              ADD USER
-            </button>
-          </div>
+    <div className="relative h-screen w-full overflow-hidden">
+      {/* Three.js Background */}
+      <div className="absolute inset-0">
+        <Canvas
+          className="w-full h-full"
+          gl={{ antialias: true, alpha: true }}
+        >
+          <Suspense fallback={<Loader />}>
+            <InnerSphere />
+          </Suspense>
+        </Canvas>
+      </div>
 
-          {error && (
-            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400">
-              {error}
+      {/* Navigation */}
+      <div className="md:hidden flex justify-between items-center p-4 relative z-20">
+        <button
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          className="text-white hover:text-white/80 transition-colors duration-300"
+        >
+          <Menu size={28} />
+        </button>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 flex h-screen">
+        <BusinessSidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={user || null}
+          userProfile={userProfile}
+          accessibleFestivalsCount={0}
+        />
+        
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-4xl mx-auto p-6 pt-32">
+            <div className="flex justify-end mb-8">
+              <button
+                onClick={() => setIsAddingUser(true)}
+                className="px-6 py-3 bg-white/5 border border-white/10 rounded-full
+                         text-white font-['Space_Grotesk'] tracking-[0.2em]
+                         transition-all duration-300 
+                         hover:bg-white/10 hover:border-white/20
+                         active:scale-95
+                         flex items-center gap-2"
+              >
+                <Plus size={18} />
+                ADD USER
+              </button>
             </div>
-          )}
 
-          {success && (
-            <div className="mb-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400">
-              {success}
-            </div>
-          )}
-
-          {isAddingUser && (
-            <div className="mb-8 backdrop-blur-xl bg-white/10 rounded-2xl 
-                          shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                          p-8 border border-white/20">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
-                  Add New User
-                </h2>
-                <button
-                  onClick={() => setIsAddingUser(false)}
-                  className="text-white/60 hover:text-white transition-colors"
-                >
-                  <X size={24} />
-                </button>
+            {error && (
+              <div className="mb-4 p-4 bg-red-500/5 border border-red-500/10 rounded-lg text-red-400 font-['Space_Grotesk']">
+                {error}
               </div>
+            )}
 
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
-                    Display Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newUserName}
-                    onChange={(e) => setNewUserName(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
-                             text-white placeholder-white/50 font-['Space_Grotesk']
-                             focus:outline-none focus:ring-2 focus:ring-white/30"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
-                             text-white placeholder-white/50 font-['Space_Grotesk']
-                             focus:outline-none focus:ring-2 focus:ring-white/30"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    value={newUserPassword}
-                    onChange={(e) => setNewUserPassword(e.target.value)}
-                    className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
-                             text-white placeholder-white/50 font-['Space_Grotesk']
-                             focus:outline-none focus:ring-2 focus:ring-white/30"
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-3 border-2 border-white/30 rounded-full
-                           text-white font-['Space_Grotesk'] tracking-[0.2em]
-                           transition-all duration-300 
-                           hover:border-white/60 hover:scale-105
-                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                           active:scale-95"
-                >
-                  CREATE USER
-                </button>
-              </form>
-            </div>
-          )}
+            {success && (
+              <div className="mb-4 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-lg text-emerald-400 font-['Space_Grotesk']">
+                {success}
+              </div>
+            )}
 
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
-                        shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                        p-8 border border-white/20">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
-                      Name
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+            {isAddingUser && (
+              <div className="mb-8 bg-white/5 rounded-lg border border-white/10 p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-lg font-['Space_Grotesk'] tracking-wider text-white">
+                    Add New User
+                  </h2>
+                  <button
+                    onClick={() => setIsAddingUser(false)}
+                    className="text-white/60 hover:text-white transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateUser} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                      Display Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newUserName}
+                      onChange={(e) => setNewUserName(e.target.value)}
+                      className="w-full p-3 rounded-lg bg-white/5 border border-white/10 
+                               text-white placeholder-white/40 font-['Space_Grotesk']
+                               focus:outline-none focus:border-white/20"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
                       Email
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
-                      Created
-                    </th>
-                    <th className="text-right py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subUsers.map((subUser) => (
-                    <tr key={subUser.uid} className="border-b border-white/10 hover:bg-white/5">
-                      <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
-                        {subUser.displayName}
-                      </td>
-                      <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
-                        {subUser.email}
-                      </td>
-                      <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
-                        {subUser.createdAt?.toDate?.().toLocaleDateString() || 'N/A'}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleDeleteUser(subUser.uid)}
-                          className="text-white/60 hover:text-red-400 transition-colors"
-                          title="Delete user"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </td>
+                    </label>
+                    <input
+                      type="email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      className="w-full p-3 rounded-lg bg-white/5 border border-white/10 
+                               text-white placeholder-white/40 font-['Space_Grotesk']
+                               focus:outline-none focus:border-white/20"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      className="w-full p-3 rounded-lg bg-white/5 border border-white/10 
+                               text-white placeholder-white/40 font-['Space_Grotesk']
+                               focus:outline-none focus:border-white/20"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-white/5 border border-white/10 rounded-full
+                             text-white font-['Space_Grotesk'] tracking-[0.2em]
+                             transition-all duration-300 
+                             hover:bg-white/10 hover:border-white/20
+                             active:scale-95"
+                  >
+                    CREATE USER
+                  </button>
+                </form>
+              </div>
+            )}
+
+            <div className="bg-white/5 rounded-lg border border-white/10 p-6">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                        Name
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                        Email
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                        Created
+                      </th>
+                      <th className="text-right py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {subUsers.length === 0 && (
-                <p className="text-center text-white/60 py-8 font-['Space_Grotesk']">
-                  No users found
-                </p>
-              )}
+                  </thead>
+                  <tbody>
+                    {subUsers.map((subUser) => (
+                      <tr key={subUser.uid} className="border-b border-white/10 hover:bg-white/5">
+                        <td className="py-3 px-4 text-white/80 font-['Space_Grotesk']">
+                          {subUser.displayName}
+                        </td>
+                        <td className="py-3 px-4 text-white/80 font-['Space_Grotesk']">
+                          {subUser.email}
+                        </td>
+                        <td className="py-3 px-4 text-white/80 font-['Space_Grotesk']">
+                          {subUser.createdAt?.toDate?.().toLocaleDateString() || 'N/A'}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            onClick={() => handleDeleteUser(subUser.uid)}
+                            className="text-white/60 hover:text-red-400 transition-colors"
+                            title="Delete user"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {subUsers.length === 0 && (
+                  <p className="text-center text-white/60 py-8 font-['Space_Grotesk']">
+                    No users found
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -292,5 +313,38 @@ const UserManagement: React.FC = () => {
     </div>
   );
 };
+
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-white text-xl">
+        {progress.toFixed(0)}% loaded
+      </div>
+    </Html>
+  )
+}
+
+function InnerSphere() {
+  return (
+    <>
+      <Environment preset="sunset" />
+      <PerspectiveCamera makeDefault position={[0, 0, 0]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[10, 10, 10]} intensity={0.5} />
+      
+      <mesh scale={[-15, -15, -15]}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshStandardMaterial
+          side={THREE.BackSide}
+          color="#1a1a1a"
+          metalness={0.9}
+          roughness={0.1}
+          envMapIntensity={1}
+        />
+      </mesh>
+    </>
+  )
+}
 
 export default UserManagement; 
