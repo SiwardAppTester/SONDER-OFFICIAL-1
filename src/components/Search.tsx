@@ -1,5 +1,5 @@
-import React, { useState, useEffect, Suspense, useCallback } from "react";
-import { collection, query, orderBy, startAt, endAt, getDocs, getDoc, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import React, { useState, useEffect, Suspense } from "react";
+import { collection, query, orderBy, startAt, endAt, getDocs, getDoc, doc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { Link } from "react-router-dom";
 import { Menu, CheckCircle, Search as SearchIcon } from "lucide-react";
@@ -51,7 +51,6 @@ interface UserResult {
   photoURL?: string;
   isBusinessAccount?: boolean;
   username: string;
-  isFollowing?: boolean;
 }
 
 interface UserProfile {
@@ -114,7 +113,6 @@ const Search: React.FC = () => {
 
         const querySnapshot = await getDocs(q);
         const users: UserResult[] = [];
-        const currentUserFollowing = userProfile?.following || [];
         
         querySnapshot.forEach((doc) => {
           const userData = doc.data();
@@ -126,26 +124,11 @@ const Search: React.FC = () => {
               photoURL: userData.photoURL,
               isBusinessAccount: userData.isBusinessAccount || false,
               username: userData.username || userData.email.split('@')[0],
-              isFollowing: currentUserFollowing.includes(doc.id)
             });
           }
         });
 
-        // Sort results: followed users first, then by display name
-        const sortedUsers = users.sort((a, b) => {
-          // First sort by following status
-          if (a.isFollowing && !b.isFollowing) return -1;
-          if (!a.isFollowing && b.isFollowing) return 1;
-          
-          // Then sort by business account status
-          if (a.isBusinessAccount && !b.isBusinessAccount) return -1;
-          if (!a.isBusinessAccount && b.isBusinessAccount) return 1;
-          
-          // Finally sort alphabetically by display name
-          return a.displayName.localeCompare(b.displayName);
-        });
-
-        setResults(sortedUsers);
+        setResults(users);
       } catch (err) {
         console.error("Error searching users:", err);
         setError("Failed to search users. Please try again.");
@@ -159,44 +142,7 @@ const Search: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, userProfile]);
-
-  const handleFollow = useCallback(async (targetUid: string, isFollowing: boolean) => {
-    if (!user) return;
-
-    try {
-      const currentUserRef = doc(db, "users", user.uid);
-      const targetUserRef = doc(db, "users", targetUid);
-
-      if (isFollowing) {
-        // Unfollow
-        await updateDoc(currentUserRef, {
-          following: arrayRemove(targetUid)
-        });
-        await updateDoc(targetUserRef, {
-          followers: arrayRemove(user.uid)
-        });
-      } else {
-        // Follow
-        await updateDoc(currentUserRef, {
-          following: arrayUnion(targetUid)
-        });
-        await updateDoc(targetUserRef, {
-          followers: arrayUnion(user.uid)
-        });
-      }
-
-      // Update local state
-      setResults(prev => prev.map(u => {
-        if (u.uid === targetUid) {
-          return { ...u, isFollowing: !isFollowing };
-        }
-        return u;
-      }));
-    } catch (error) {
-      console.error("Error updating follow status:", error);
-    }
-  }, [user]);
+  }, [searchTerm]);
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -266,61 +212,47 @@ const Search: React.FC = () => {
             )}
 
             {/* Results */}
-            <div className="space-y-2">
+            <div className="space-y-4">
               {results.length > 0 ? (
                 results.map((user) => (
                   <Link
                     to={`/profile/${user.uid}`}
                     key={user.uid}
-                    className="block bg-white/10 backdrop-blur-xl p-4 rounded-xl
-                               border border-white/20
-                               shadow-[0_0_20px_rgba(255,255,255,0.1)]
-                               hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                               transform hover:scale-102 transition-all duration-300"
+                    className="block bg-white/10 backdrop-blur-xl p-6 rounded-2xl
+                             border border-white/20
+                             shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                             hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                             transform hover:scale-105 transition-all duration-300"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                       {user.photoURL ? (
                         <img
                           src={user.photoURL}
                           alt={user.displayName}
-                          className="w-12 h-12 rounded-full ring-2 ring-white/20"
+                          className="w-16 h-16 rounded-full ring-2 ring-white/20"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-white/20
-                                      flex items-center justify-center text-white text-lg font-semibold">
+                        <div className="w-16 h-16 rounded-full bg-white/20
+                                      flex items-center justify-center text-white text-xl font-semibold">
                           {user.displayName[0]}
                         </div>
                       )}
                       <div className="flex-grow">
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-base text-white/90">
+                          <p className="font-semibold text-xl text-white/90">
                             {user.displayName}
                           </p>
                           {user.isBusinessAccount && (
                             <CheckCircle 
-                              size={16} 
+                              size={20} 
                               className="text-white/70" 
                               fill="currentColor"
                               aria-label="Verified Business Account"
                             />
                           )}
                         </div>
-                        <p className="text-white/60 text-sm">@{user.username}</p>
+                        <p className="text-white/60 text-md">@{user.username}</p>
                       </div>
-                      {auth.currentUser && auth.currentUser.uid !== user.uid && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault(); // Prevent navigation
-                            handleFollow(user.uid, user.isFollowing || false);
-                          }}
-                          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
-                            ${user.isFollowing 
-                              ? 'bg-white/10 text-white hover:bg-white/20' 
-                              : 'bg-white/90 text-black hover:bg-white'}`}
-                        >
-                          {user.isFollowing ? 'Following' : 'Follow'}
-                        </button>
-                      )}
                     </div>
                   </Link>
                 ))

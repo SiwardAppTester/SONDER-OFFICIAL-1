@@ -194,9 +194,16 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
         // Sign in to existing account
         const result = await signInWithEmailAndPassword(auth, email, password);
         
-        // Check if admin and redirect accordingly
+        // Get user data to check account type
+        const userRef = doc(db, "users", result.user.uid);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data();
+        
+        // Redirect based on account type
         if (result.user.email?.toLowerCase() === "admin@sonder.com") {
           navigate("/admin");
+        } else if (userData?.isBusinessAccount) {
+          navigate("/add-post");
         } else {
           navigate("/");
         }
