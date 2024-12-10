@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense } from "react";
-import { collection, query, orderBy, startAt, endAt, getDocs, getDoc, doc } from "firebase/firestore";
+import { collection, query, orderBy, startAt, endAt, getDocs, getDoc, doc, updateDoc, arrayRemove, arrayUnion } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { Link } from "react-router-dom";
 import { Menu, CheckCircle, Search as SearchIcon } from "lucide-react";
@@ -53,6 +53,7 @@ interface UserResult {
   photoURL?: string;
   isBusinessAccount?: boolean;
   username: string;
+  followers?: string[];
 }
 
 interface UserProfile {
@@ -71,6 +72,7 @@ const Search: React.FC = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const { userProfile } = useUserProfile();
   const isBusinessAccount = userProfile?.isBusinessAccount;
+  const [following, setFollowing] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
@@ -128,7 +130,17 @@ const Search: React.FC = () => {
           }
         });
 
-        setResults(users);
+        // Sort users: followed users first, then rest of the results
+        const sortedUsers = users.sort((a, b) => {
+          const aIsFollowed = following.has(a.uid);
+          const bIsFollowed = following.has(b.uid);
+          
+          if (aIsFollowed && !bIsFollowed) return -1;
+          if (!aIsFollowed && bIsFollowed) return 1;
+          return 0;
+        });
+
+        setResults(sortedUsers);
       } catch (err) {
         console.error("Error searching users:", err);
         setError("Failed to search users. Please try again.");
@@ -142,7 +154,69 @@ const Search: React.FC = () => {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, following]);
+
+  useEffect(() => {
+    const loadFollowingState = async () => {
+      if (!auth.currentUser) return;
+      
+      const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setFollowing(new Set(userData.following || []));
+      }
+    };
+
+    loadFollowingState();
+  }, []);
+
+  const handleFollowToggle = async (userId: string) => {
+    if (!auth.currentUser) return;
+
+    const currentUserId = auth.currentUser.uid;
+    const userRef = doc(db, "users", currentUserId);
+    const targetUserRef = doc(db, "users", userId);
+
+    try {
+      const isFollowing = following.has(userId);
+      
+      if (isFollowing) {
+        // Unfollow logic
+        await Promise.all([
+          // Update current user's following
+          updateDoc(userRef, {
+            following: arrayRemove(userId)
+          }),
+          // Update target user's followers
+          updateDoc(targetUserRef, {
+            followers: arrayRemove(currentUserId)
+          })
+        ]);
+        
+        const newFollowing = new Set(following);
+        newFollowing.delete(userId);
+        setFollowing(newFollowing);
+      } else {
+        // Follow logic
+        await Promise.all([
+          // Update current user's following
+          updateDoc(userRef, {
+            following: arrayUnion(userId)
+          }),
+          // Update target user's followers
+          updateDoc(targetUserRef, {
+            followers: arrayUnion(currentUserId)
+          })
+        ]);
+        
+        const newFollowing = new Set(following);
+        newFollowing.add(userId);
+        setFollowing(newFollowing);
+      }
+    } catch (error) {
+      console.error("Error toggling follow:", error);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -220,7 +294,7 @@ const Search: React.FC = () => {
                     <Link
                       to={`/profile/${user.uid}`}
                       key={user.uid}
-                      className="block bg-white/10 backdrop-blur-xl p-6 rounded-2xl
+                      className="block bg-white/10 backdrop-blur-xl py-4 px-6 rounded-2xl
                                border border-white/20
                                shadow-[0_0_20px_rgba(255,255,255,0.1)]
                                hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
@@ -239,9 +313,9 @@ const Search: React.FC = () => {
                             {user.displayName[0]}
                           </div>
                         )}
-                        <div className="flex-grow">
+                        <div className="flex-grow -my-1">
                           <div className="flex items-center gap-2">
-                            <p className="font-semibold text-xl text-white/90">
+                            <p className="font-semibold text-lg text-white/90">
                               {user.displayName}
                             </p>
                             {user.isBusinessAccount && (
@@ -253,8 +327,23 @@ const Search: React.FC = () => {
                               />
                             )}
                           </div>
-                          <p className="text-white/60 text-md">@{user.username}</p>
+                          <p className="text-white/50 text-sm -mt-0.5">@{user.username}</p>
                         </div>
+                        {auth.currentUser && auth.currentUser.uid !== user.uid && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleFollowToggle(user.uid);
+                            }}
+                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                              ${following.has(user.uid)
+                                ? 'bg-white/20 text-white hover:bg-white/30'
+                                : 'bg-white/10 text-white hover:bg-white/20'
+                              }`}
+                          >
+                            {following.has(user.uid) ? 'Unfollow' : 'Follow'}
+                          </button>
+                        )}
                       </div>
                     </Link>
                   ))

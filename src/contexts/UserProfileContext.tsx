@@ -10,6 +10,7 @@ interface UserProfile {
   followers?: string[];
   following?: string[];
   accessibleFestivals?: string[];
+  isBusinessAccount?: boolean;
 }
 
 interface UserProfileContextType {
