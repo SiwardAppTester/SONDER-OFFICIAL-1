@@ -28,6 +28,7 @@
   "dependencies": {
     "@azure/cognitiveservices-face": "^5.0.0",
     "@azure/ms-rest-azure-js": "^2.1.0",
+    "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@react-three/drei": "^9.119.0",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, Fragment } from "react";
 import { useParams } from "react-router-dom";
 import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db, auth } from "../firebase";
@@ -10,6 +10,8 @@ import { Heart, MessageCircle } from "lucide-react";
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { Dialog, Transition } from '@headlessui/react';
+import { X } from 'lucide-react';
 
 interface UserProfile {
   email: string;
@@ -50,6 +52,17 @@ interface MediaFile {
   type: "image" | "video";
 }
 
+interface StatModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  items: Array<{
+    id: string;
+    name: string;
+    photoURL?: string;
+  }>;
+}
+
 // Add the Loader component
 function Loader() {
   const { progress } = useProgress()
@@ -85,6 +98,111 @@ function InnerSphere() {
   )
 }
 
+// Update the StatModal component with these changes
+const StatModal: React.FC<StatModalProps> = ({ isOpen, onClose, title, items }) => {
+  return (
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-md" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl 
+                                     bg-black/30 backdrop-blur-xl p-6 border border-white/10
+                                     shadow-[0_0_30px_rgba(0,0,0,0.3)] transition-all">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                  <Dialog.Title className="text-2xl font-['Space_Grotesk'] tracking-[0.2em] text-white/90">
+                    {title}
+                  </Dialog.Title>
+                  <button
+                    onClick={onClose}
+                    className="text-white/70 hover:text-white transition-all duration-300
+                             hover:scale-110 active:scale-95"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                  {items.length === 0 ? (
+                    <div className="text-center py-12 bg-white/5 rounded-2xl 
+                                  border border-white/10">
+                      <p className="text-white/60 font-['Space_Grotesk'] tracking-wider">
+                        No items to display
+                      </p>
+                    </div>
+                  ) : (
+                    items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center space-x-4 p-4 rounded-xl
+                                 bg-white/5 border border-white/10
+                                 hover:border-white/20 transition-all duration-300
+                                 hover:bg-white/10 group cursor-pointer"
+                      >
+                        {item.photoURL ? (
+                          <img
+                            src={item.photoURL}
+                            alt={item.name}
+                            className="w-12 h-12 rounded-xl object-cover border border-white/10
+                                     group-hover:border-white/20 transition-all duration-300
+                                     shadow-[0_0_15px_rgba(0,0,0,0.2)]"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-white/10 
+                                        flex items-center justify-center
+                                        text-white/80 font-['Space_Grotesk'] text-xl
+                                        border border-white/10 group-hover:border-white/20
+                                        transition-all duration-300
+                                        shadow-[0_0_15px_rgba(0,0,0,0.2)]">
+                            {item.name[0]}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <span className="text-white/90 font-['Space_Grotesk'] tracking-wide
+                                         group-hover:text-white transition-all duration-300">
+                            {item.name}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Gradient overlay at the bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-12 
+                              bg-gradient-to-t from-black/20 to-transparent 
+                              pointer-events-none" />
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition>
+  );
+};
+
 const Profile: React.FC = () => {
   const { userId } = useParams();
   const [profileUser, setProfileUser] = useState<UserProfile | null>(null);
@@ -96,6 +214,8 @@ const Profile: React.FC = () => {
   const [followersCount, setFollowersCount] = useState(0);
   const [posts, setPosts] = useState<Post[]>([]);
   const [activeFestivalsCount, setActiveFestivalsCount] = useState(0);
+  const [selectedStat, setSelectedStat] = useState<string | null>(null);
+  const [modalItems, setModalItems] = useState<Array<{ id: string; name: string; photoURL?: string }>>([]);
 
   useEffect(() => {
     // Fetch the profile user's data
@@ -231,6 +351,80 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleStatClick = async (statType: string) => {
+    console.log('handleStatClick called with:', statType); // Debug log
+    if (!userId) return;
+
+    try {
+      let items: Array<{ id: string; name: string; photoURL?: string }> = [];
+
+      switch (statType) {
+        case 'FOLLOWERS':
+          if (profileUser?.followers) {
+            const followersData = await Promise.all(
+              profileUser.followers.map(async (followerId) => {
+                const userDoc = await getDoc(doc(db, "users", followerId));
+                const userData = userDoc.data() as UserProfile;
+                return {
+                  id: followerId,
+                  name: userData.fullName || userData.username || 'Anonymous User',
+                  photoURL: userData.photoURL
+                };
+              })
+            );
+            items = followersData;
+          }
+          break;
+
+        case 'FOLLOWING':
+          if (profileUser?.following) {
+            const followingData = await Promise.all(
+              profileUser.following.map(async (followingId) => {
+                const userDoc = await getDoc(doc(db, "users", followingId));
+                const userData = userDoc.data() as UserProfile;
+                return {
+                  id: followingId,
+                  name: userData.fullName || userData.username || 'Anonymous User',
+                  photoURL: userData.photoURL
+                };
+              })
+            );
+            items = followingData;
+          }
+          break;
+
+        case 'FESTIVALS':
+          if (profileUser?.accessibleFestivals) {
+            const festivalsData = await Promise.all(
+              profileUser.accessibleFestivals.map(async (festivalId) => {
+                const festivalDoc = await getDoc(doc(db, "festivals", festivalId));
+                const festivalData = festivalDoc.data();
+                return {
+                  id: festivalId,
+                  name: festivalData?.name || festivalData?.festivalName || 'Unnamed Festival',
+                  photoURL: festivalData?.photoURL
+                };
+              })
+            );
+            items = festivalsData;
+          }
+          break;
+      }
+
+      setModalItems(items);
+      setSelectedStat(statType);
+      console.log('Modal items set:', items); // Debug log
+    } catch (error) {
+      console.error("Error fetching stat details:", error);
+    }
+  };
+
+  // Add this in the component body to watch state changes
+  useEffect(() => {
+    console.log('selectedStat changed:', selectedStat);
+    console.log('modalItems changed:', modalItems);
+  }, [selectedStat, modalItems]);
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Three.js Background */}
@@ -272,33 +466,33 @@ const Profile: React.FC = () => {
         {!profileUser ? (
           <div className="text-center p-4 text-white/90 font-['Space_Grotesk']">Loading...</div>
         ) : (
-          <div className="max-w-7xl mx-auto px-4 pt-20 pb-12 relative z-10">
+          <div className="max-w-3xl mx-auto px-4 pt-20 pb-12 relative z-10">
             {/* Profile Header Section */}
             <div className="mb-12 backdrop-blur-xl bg-white/5 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.3)] 
                             border border-white/10 overflow-hidden">
               {/* Background Pattern */}
-              <div className="h-48 bg-gradient-to-b from-white/5 to-transparent 
+              <div className="h-32 bg-gradient-to-b from-white/5 to-transparent 
                               relative overflow-hidden">
                 <div className="absolute inset-0 backdrop-blur-3xl mix-blend-overlay opacity-30">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.1),transparent)]" />
                 </div>
               </div>
 
-              <div className="px-8 pb-8 -mt-24">
+              <div className="px-6 pb-6 -mt-24">
                 <div className="flex flex-col items-center">
                   {/* Profile Image */}
-                  <div className="relative mb-8">
+                  <div className="relative mb-4">
                     {profileUser.photoURL ? (
                       <img
                         src={profileUser.photoURL}
                         alt={profileUser.fullName || profileUser.displayName}
-                        className="w-36 h-36 rounded-xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] 
+                        className="w-24 h-24 rounded-xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] 
                                   object-cover transform hover:scale-105 transition-all duration-500
                                   backdrop-blur-sm"
                       />
                     ) : (
-                      <div className="w-36 h-36 rounded-xl bg-white/5 backdrop-blur-sm
-                                    flex items-center justify-center text-4xl font-bold text-white/80
+                      <div className="w-24 h-24 rounded-xl bg-white/5 backdrop-blur-sm
+                                    flex items-center justify-center text-2xl font-bold text-white/80
                                     border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)]
                                     transform hover:scale-105 transition-all duration-500">
                         {profileUser.fullName?.[0] || profileUser.username?.[0] || '?'}
@@ -307,17 +501,17 @@ const Profile: React.FC = () => {
                   </div>
 
                   {/* User Info */}
-                  <div className="text-center mb-12">
-                    <h1 className="text-4xl font-['Space_Grotesk'] tracking-[0.2em] text-white/90 mb-4">
+                  <div className="text-center mb-6">
+                    <h1 className="text-2xl font-['Space_Grotesk'] tracking-[0.2em] text-white/90 mb-2">
                       {profileUser.fullName || 'Anonymous User'}
                     </h1>
-                    <p className="text-xl text-white/50 font-['Space_Grotesk'] tracking-[0.15em]">
+                    <p className="text-base text-white/50 font-['Space_Grotesk'] tracking-[0.15em]">
                       @{profileUser.username || 'anonymous'}
                     </p>
                   </div>
 
                   {/* Stats Grid */}
-                  <div className="w-full max-w-4xl mx-auto grid grid-cols-3 gap-2 mb-12">
+                  <div className="w-full max-w-xl mx-auto grid grid-cols-3 gap-2 mb-6">
                     {[
                       { label: 'FOLLOWERS', value: followersCount },
                       { label: 'FOLLOWING', value: profileUser.following?.length || 0 },
@@ -325,17 +519,18 @@ const Profile: React.FC = () => {
                     ].map((stat, index) => (
                       <div 
                         key={index} 
-                        className="group relative backdrop-blur-sm"
+                        className="group relative backdrop-blur-sm cursor-pointer"
+                        onClick={() => handleStatClick(stat.label)}
                       >
                         <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent 
                                       rounded-xl transition-all duration-500 opacity-0 
                                       group-hover:opacity-100" />
-                        <div className="p-6 text-center relative border border-white/10 rounded-xl
+                        <div className="p-2 text-center relative border border-white/10 rounded-xl
                                       transition-all duration-500 hover:border-white/20">
-                          <div className="text-3xl font-light text-white/90 mb-3 font-['Space_Grotesk']">
+                          <div className="text-xl font-light text-white/90 mb-1 font-['Space_Grotesk']">
                             {stat.value}
                           </div>
-                          <div className="text-sm text-white/50 font-['Space_Grotesk'] tracking-[0.2em]">
+                          <div className="text-[10px] text-white/50 font-['Space_Grotesk'] tracking-[0.2em]">
                             {stat.label}
                           </div>
                         </div>
@@ -347,8 +542,8 @@ const Profile: React.FC = () => {
                   {currentUser && currentUser.uid !== userId && (
                     <button
                       onClick={handleFollowToggle}
-                      className={`relative overflow-hidden px-12 py-4 rounded-xl 
-                                font-['Space_Grotesk'] tracking-[0.3em] text-lg
+                      className={`relative overflow-hidden px-8 py-2 rounded-xl 
+                                font-['Space_Grotesk'] tracking-[0.3em] text-base
                                 transition-all duration-500 border
                                 ${isFollowing 
                                   ? 'border-white/20 text-white/70 hover:border-white/30' 
@@ -452,6 +647,13 @@ const Profile: React.FC = () => {
           </div>
         )}
       </div>
+
+      <StatModal
+        isOpen={selectedStat !== null}
+        onClose={() => setSelectedStat(null)}
+        title={selectedStat || ''}
+        items={modalItems}
+      />
     </div>
   );
 };
