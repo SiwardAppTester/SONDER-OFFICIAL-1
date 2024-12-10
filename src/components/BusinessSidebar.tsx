@@ -9,6 +9,7 @@ import { db } from "../firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateProfile } from "firebase/auth";
 import { useUserProfile } from '../contexts/UserProfileContext';
+import { User } from 'firebase/auth';
 
 interface UserProfile {
   email: string;
@@ -22,7 +23,8 @@ interface UserProfile {
 interface BusinessSidebarProps {
   isNavOpen: boolean;
   setIsNavOpen: (isOpen: boolean) => void;
-  user: FirebaseUser | null;
+  user: User | null;
+  userProfile: any;
   accessibleFestivalsCount: number;
 }
 
@@ -44,6 +46,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
   isNavOpen,
   setIsNavOpen,
   user,
+  userProfile: initialUserProfile,
   accessibleFestivalsCount,
 }) => {
   const { userProfile, setUserProfile } = useUserProfile();
@@ -230,7 +233,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
 
           {/* Right Side Navigation */}
           <div className="flex items-center space-x-6">
-            <Link to="/" className="flex items-center space-x-2 p-2 rounded-lg
+            <Link to="/add-post" className="flex items-center space-x-2 p-2 rounded-lg
               text-white/80 hover:text-white transition-all duration-300 group">
               <HomeIcon size={18} className="group-hover:scale-110 transition-transform duration-300" />
             </Link>

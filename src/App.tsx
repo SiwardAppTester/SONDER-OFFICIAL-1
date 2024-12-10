@@ -25,6 +25,7 @@ import FestivalManagement from "./components/FestivalManagement";
 import UserSettings from './components/UserSettings';
 import BusinessTermsAndConditions from './components/BusinessTermsAndConditions';
 import TermsAndConditions from './components/TermsAndConditions';
+import UserManagement from './components/UserManagement';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -120,6 +121,7 @@ const App: React.FC = () => {
             <Route path="/settings" element={<UserSettings />} />
             <Route path="/business-terms" element={<BusinessTermsAndConditions />} />
             <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/user-management" element={<UserManagement />} />
           </Routes>
         </main>
       </div>

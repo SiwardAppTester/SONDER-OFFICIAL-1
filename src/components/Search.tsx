@@ -152,10 +152,16 @@ const Search: React.FC = () => {
           isNavOpen={isNavOpen}
           setIsNavOpen={setIsNavOpen}
           user={auth.currentUser}
-          accessibleFestivalsCount={0}  // You might want to pass the actual count if needed
+          userProfile={userProfile}
+          accessibleFestivalsCount={0}
         />
       ) : (
-        <Sidebar />
+        <Sidebar
+          isNavOpen={isNavOpen}
+          setIsNavOpen={setIsNavOpen}
+          user={auth.currentUser}
+          accessibleFestivalsCount={0}
+        />
       )}
 
       {/* Rest of your existing Search component JSX */}
@@ -174,19 +180,8 @@ const Search: React.FC = () => {
 
         {/* Content */}
         <div className="relative z-10 min-h-screen flex flex-col">
-          {/* Navigation */}
-          <div className="p-4">
-            <button
-              onClick={() => setIsNavOpen(!isNavOpen)}
-              className="text-white/90 hover:text-white transition-colors duration-300"
-              aria-label="Toggle navigation menu"
-            >
-              <Menu size={28} />
-            </button>
-          </div>
-
           {/* Search Content */}
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-4 pt-20">
             <div className="max-w-2xl mx-auto">
               {/* Search Input */}
               <div className="mb-8 transform hover:scale-105 transition-all duration-300">

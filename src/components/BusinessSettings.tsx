@@ -97,6 +97,8 @@ const BusinessSettings: React.FC = () => {
   const handleSectionClick = (sectionId: string) => {
     if (sectionId === 'terms') {
       navigate('/business-terms');
+    } else if (sectionId === 'users') {
+      navigate('/user-management');
     } else {
       setActiveSection(sectionId);
     }
