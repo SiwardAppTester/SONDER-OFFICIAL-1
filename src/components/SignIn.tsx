@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense, useRef } from "react";
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase";
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
@@ -183,15 +183,13 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage(null);
     
     try {
       if (isRegistering) {
-        // Create new account
+        // Create new account without email verification
         const result = await createUserWithEmailAndPassword(auth, email, password);
         if (result.user) {
-          // Send verification email
-          await sendEmailVerification(result.user);
-
           // Create user document
           const userRef = doc(db, "users", result.user.uid);
           await setDoc(userRef, {
@@ -200,39 +198,21 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
             createdAt: serverTimestamp(),
             followers: [],
             following: [],
-            isProfileComplete: false,
-            emailVerified: false
+            isProfileComplete: false
           });
 
-          // Show verification message
-          setError("Please check your email to verify your account before signing in.");
-          setIsRegistering(false); // Switch back to sign in mode
-          setEmail("");
-          setPassword("");
+          // Redirect to complete profile
+          navigate("/complete-profile");
         }
       } else {
         // Sign in to existing account
         try {
           const result = await signInWithEmailAndPassword(auth, email, password);
           
-          if (!result.user.emailVerified) {
-            setError("Please verify your email before signing in. Check your inbox for the verification link.");
-            // Optionally resend verification email
-            await sendEmailVerification(result.user);
-            return;
-          }
-          
           // Get user data to check account type
           const userRef = doc(db, "users", result.user.uid);
           const userSnap = await getDoc(userRef);
           const userData = userSnap.data();
-          
-          // Update emailVerified status in Firestore if needed
-          if (userData && !userData.emailVerified) {
-            await updateDoc(userRef, {
-              emailVerified: true
-            });
-          }
           
           // Redirect based on account type
           if (result.user.email?.toLowerCase() === "admin@sonder.com") {
@@ -247,12 +227,11 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
         } catch (signInError: any) {
           console.error("Error with email auth:", signInError);
           
-          // Handle specific error cases
+          // Enhanced error handling
           switch (signInError.code) {
             case 'auth/too-many-requests':
-              setError(
-                "Too many sign-in attempts. Please wait a few minutes before trying again, or reset your password."
-              );
+              setError("Too many sign-in attempts. Please wait a few minutes before trying again, or reset your password.");
+              setShowResetPassword(true);
               break;
             case 'auth/invalid-credential':
               setError("Invalid email or password. Please try again.");
@@ -263,23 +242,27 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
             case 'auth/user-not-found':
               setError("No account found with this email. Please check your email or register.");
               break;
+            case 'auth/invalid-email':
+              setError("Please enter a valid email address.");
+              break;
+            case 'auth/missing-password':
+              setError("Please enter your password.");
+              break;
             default:
-              setError(
-                signInError.message || 
-                "Unable to sign in at this time. Please try again later."
-              );
+              setError("Unable to sign in at this time. Please try again later.");
           }
         }
       }
     } catch (error: any) {
       console.error("Outer error:", error);
-      setError(
-        "An unexpected error occurred. Please try again later or contact support."
-      );
+      setError("An unexpected error occurred. Please try again later.");
     }
   };
 
   const handleResetPassword = async () => {
+    setError("");
+    setSuccessMessage(null);
+    
     if (!email) {
       setError("Please enter your email address to reset your password.");
       return;
@@ -289,9 +272,23 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
       await sendPasswordResetEmail(auth, email);
       setSuccessMessage("Password reset email sent. Please check your inbox.");
       setShowResetPassword(false);
+      // Clear the password field after requesting reset
+      setPassword("");
     } catch (error: any) {
       console.error("Error sending reset email:", error);
-      setError("Failed to send reset email. Please try again.");
+      switch (error.code) {
+        case 'auth/invalid-email':
+          setError("Please enter a valid email address.");
+          break;
+        case 'auth/user-not-found':
+          setError("No account found with this email address.");
+          break;
+        case 'auth/too-many-requests':
+          setError("Too many requests. Please try again later.");
+          break;
+        default:
+          setError("Failed to send reset email. Please try again later.");
+      }
     }
   };
 

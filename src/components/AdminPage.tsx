@@ -179,23 +179,23 @@ const AdminPage: React.FC = () => {
       {/* Content */}
       <div className="relative z-10 h-screen overflow-y-auto">
         {/* Header Section */}
-        <div className="max-w-6xl mx-auto px-4 pt-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-8">
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
                          shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                         p-8 border border-white/20 mb-8">
-            <div className="flex justify-between items-center">
-              <h1 className="text-4xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
+                         p-4 sm:p-8 border border-white/20 mb-4 sm:mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              <h1 className="text-2xl sm:text-4xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
                 Admin Dashboard
               </h1>
               <button
                 onClick={handleSignOut}
-                className="px-6 py-3 border-2 border-white/30 rounded-full
+                className="w-full sm:w-auto px-6 py-3 border-2 border-white/30 rounded-full
                          text-white font-['Space_Grotesk'] tracking-[0.2em]
                          transition-all duration-300 
                          hover:border-white/60 hover:scale-105
                          hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
                          active:scale-95
-                         flex items-center gap-2"
+                         flex items-center justify-center gap-2"
               >
                 <LogOut size={20} />
                 SIGN OUT
@@ -204,54 +204,54 @@ const AdminPage: React.FC = () => {
           </div>
 
           {/* Section Toggle */}
-          <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 mb-8 border border-white/20">
-            <div className="flex gap-4">
+          <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 mb-4 sm:mb-8 border border-white/20">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
               <button
                 onClick={() => setActiveSection('users')}
-                className={`px-8 py-3 rounded-full transition-all transform hover:scale-105 
-                           font-['Space_Grotesk'] flex items-center gap-2 ${
+                className={`px-4 sm:px-8 py-3 rounded-full transition-all transform hover:scale-105 
+                           font-['Space_Grotesk'] flex items-center justify-center gap-2 w-full sm:w-auto ${
                   activeSection === 'users'
                     ? "bg-white/20 text-white border-2 border-white/40"
                     : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
                 }`}
               >
                 <Users size={20} />
-                Regular Users
+                <span className="whitespace-nowrap">Regular Users</span>
               </button>
               <button
                 onClick={() => setActiveSection('business')}
-                className={`px-8 py-3 rounded-full transition-all transform hover:scale-105 
-                           font-['Space_Grotesk'] flex items-center gap-2 ${
+                className={`px-4 sm:px-8 py-3 rounded-full transition-all transform hover:scale-105 
+                           font-['Space_Grotesk'] flex items-center justify-center gap-2 w-full sm:w-auto ${
                   activeSection === 'business'
                     ? "bg-white/20 text-white border-2 border-white/40"
                     : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
                 }`}
               >
                 <Building2 size={20} />
-                Business Accounts
+                <span className="whitespace-nowrap">Business Accounts</span>
               </button>
               <button
                 onClick={() => setActiveSection('data')}
-                className={`px-8 py-3 rounded-full transition-all transform hover:scale-105 
-                           font-['Space_Grotesk'] flex items-center gap-2 ${
+                className={`px-4 sm:px-8 py-3 rounded-full transition-all transform hover:scale-105 
+                           font-['Space_Grotesk'] flex items-center justify-center gap-2 w-full sm:w-auto ${
                   activeSection === 'data'
                     ? "bg-white/20 text-white border-2 border-white/40"
                     : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
                 }`}
               >
                 <Database size={20} />
-                Data
+                <span className="whitespace-nowrap">Data</span>
               </button>
             </div>
           </div>
 
           {/* Main Content Area */}
           {activeSection === 'business' ? (
-            <div className="space-y-8">
+            <div className="space-y-4 sm:space-y-8">
               {/* Create Business Account Form */}
               <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
                             shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                            p-8 border border-white/20">
+                            p-4 sm:p-8 border border-white/20">
                 <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90 mb-6">
                   Create Business Account
                 </h2>
@@ -264,7 +264,7 @@ const AdminPage: React.FC = () => {
                       type="text"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                      className="w-full p-3 text-sm sm:text-base rounded-lg bg-white/10 border border-white/20 
                                text-white placeholder-white/50 font-['Space_Grotesk']
                                focus:outline-none focus:ring-2 focus:ring-white/30"
                       required
@@ -278,7 +278,7 @@ const AdminPage: React.FC = () => {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                      className="w-full p-3 text-sm sm:text-base rounded-lg bg-white/10 border border-white/20 
                                text-white placeholder-white/50 font-['Space_Grotesk']
                                focus:outline-none focus:ring-2 focus:ring-white/30"
                       required
@@ -292,7 +292,7 @@ const AdminPage: React.FC = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                      className="w-full p-3 text-sm sm:text-base rounded-lg bg-white/10 border border-white/20 
                                text-white placeholder-white/50 font-['Space_Grotesk']
                                focus:outline-none focus:ring-2 focus:ring-white/30"
                       required
@@ -324,16 +324,16 @@ const AdminPage: React.FC = () => {
                   Business Accounts
                 </h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full text-sm sm:text-base">
                     <thead>
                       <tr className="border-b border-white/10">
-                        <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-sm font-['Space_Grotesk'] text-white/60">
                           Company Name
                         </th>
-                        <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-sm font-['Space_Grotesk'] text-white/60">
                           Email
                         </th>
-                        <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-sm font-['Space_Grotesk'] text-white/60">
                           Created
                         </th>
                       </tr>
@@ -341,13 +341,13 @@ const AdminPage: React.FC = () => {
                     <tbody>
                       {businessUsers.map((user) => (
                         <tr key={user.uid} className="border-b border-white/10 hover:bg-white/5">
-                          <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
+                          <td className="py-2 sm:py-3 px-2 sm:px-4 text-white/90 font-['Space_Grotesk']">
                             {user.displayName}
                           </td>
-                          <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
+                          <td className="py-2 sm:py-3 px-2 sm:px-4 text-white/90 font-['Space_Grotesk']">
                             {user.email}
                           </td>
-                          <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
+                          <td className="py-2 sm:py-3 px-2 sm:px-4 text-white/90 font-['Space_Grotesk']">
                             {user.createdAt?.toDate?.() 
                               ? user.createdAt.toDate().toLocaleDateString() 
                               : user.createdAt instanceof Date 
@@ -369,31 +369,33 @@ const AdminPage: React.FC = () => {
           ) : activeSection === 'data' ? (
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
                           shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                          p-8 border border-white/20">
+                          p-4 sm:p-8 border border-white/20">
               {selectedBusinessId ? (
                 <>
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <h2 className="text-xl sm:text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
                       Business Analytics {businessUsers.find(user => user.uid === selectedBusinessId)?.displayName && (
-                        <span className="text-white/60">
+                        <span className="text-white/60 block sm:inline text-base sm:text-2xl mt-1 sm:mt-0">
                           {" "}({businessUsers.find(user => user.uid === selectedBusinessId)?.displayName})
                         </span>
                       )}
                     </h2>
                     <button
                       onClick={() => setSelectedBusinessId(null)}
-                      className="px-4 py-2 rounded-lg bg-white/10 text-white/90 
+                      className="w-full sm:w-auto px-4 py-2 rounded-lg bg-white/10 text-white/90 
                                 hover:bg-white/20 transition-all duration-300
-                                flex items-center gap-2"
+                                flex items-center justify-center gap-2"
                     >
                       <ArrowLeft size={20} />
                       Back to Overview
                     </button>
                   </div>
-                  <BusinessDashboard 
-                    businessId={selectedBusinessId} 
-                    embedded={true} 
-                  />
+                  <div className="bg-transparent">
+                    <BusinessDashboard 
+                      businessId={selectedBusinessId} 
+                      embedded={true} 
+                    />
+                  </div>
                 </>
               ) : (
                 <>
@@ -438,7 +440,7 @@ const AdminPage: React.FC = () => {
                       Business Accounts Overview
                     </h3>
                     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredBusinessUsers.map((business) => (
                           <div 
                             key={business.uid}
@@ -484,16 +486,16 @@ const AdminPage: React.FC = () => {
                 <p className="text-red-400 mb-4 font-['Space_Grotesk']">{error}</p>
               )}
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full text-sm sm:text-base">
                   <thead>
                     <tr className="border-b border-white/10">
-                      <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-sm font-['Space_Grotesk'] text-white/60">
                         Name
                       </th>
-                      <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-sm font-['Space_Grotesk'] text-white/60">
                         Email
                       </th>
-                      <th className="text-left py-3 px-4 text-sm font-['Space_Grotesk'] text-white/60">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-sm font-['Space_Grotesk'] text-white/60">
                         Joined
                       </th>
                     </tr>
@@ -501,13 +503,13 @@ const AdminPage: React.FC = () => {
                   <tbody>
                     {users.map((user) => (
                       <tr key={user.uid} className="border-b border-white/10 hover:bg-white/5">
-                        <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-white/90 font-['Space_Grotesk']">
                           {user.displayName || 'Anonymous User'}
                         </td>
-                        <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-white/90 font-['Space_Grotesk']">
                           {user.email}
                         </td>
-                        <td className="py-3 px-4 text-white/90 font-['Space_Grotesk']">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 text-white/90 font-['Space_Grotesk']">
                           {user.createdAt?.toDate?.() 
                             ? user.createdAt.toDate().toLocaleDateString() 
                             : user.createdAt instanceof Date 
