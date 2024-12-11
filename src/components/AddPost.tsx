@@ -306,7 +306,7 @@ const AddPost: React.FC = () => {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative h-screen w-full overflow-y-auto md:overflow-hidden">
       {/* Three.js Background */}
       <div className="absolute inset-0">
         <Canvas
@@ -320,7 +320,7 @@ const AddPost: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <div className="md:hidden flex justify-between items-center p-4 relative z-20">
+      <div className="md:hidden flex justify-between items-center p-4 sticky top-0 z-50 bg-black/20 backdrop-blur-sm">
         <button
           onClick={() => setIsNavOpen(!isNavOpen)}
           className="text-white hover:text-white/80 transition-colors duration-300"
@@ -335,18 +335,19 @@ const AddPost: React.FC = () => {
         setIsNavOpen={setIsNavOpen}
         user={auth.currentUser}
         accessibleFestivalsCount={festivals.length}
+        userProfile={userProfile}
       />
 
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex flex-col items-center pt-16 md:pt-0">
+      <div className="relative z-10 min-h-screen flex flex-col items-center pt-4 md:pt-0">
         {/* Festivals Grid */}
-        <div className="w-full max-w-5xl mx-auto px-8 mt-16 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-4 md:px-8">
+        <div className="w-full max-w-5xl mx-auto px-4 md:px-8 mt-8 md:mt-16 pb-24 md:pb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {/* Add Festival Card */}
             <button
               onClick={() => setShowAddFestival(true)}
               className="relative backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20
-                       shadow-[0_0_30px_rgba(255,255,255,0.1)] h-[280px] 
+                       shadow-[0_0_30px_rgba(255,255,255,0.1)] h-[250px] md:h-[280px] 
                        flex flex-col items-center justify-center 
                        hover:bg-white/20 transition-all group"
             >
@@ -364,7 +365,7 @@ const AddPost: React.FC = () => {
                 className="relative backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20
                          shadow-[0_0_30px_rgba(255,255,255,0.1)] overflow-hidden
                          group cursor-pointer hover:bg-white/20 transition-all
-                         h-[280px]"
+                         h-[250px] md:h-[280px]"
               >
                 <img 
                   src={festival.imageUrl} 
@@ -415,9 +416,10 @@ const AddPost: React.FC = () => {
 
         {/* Add Festival Modal */}
         {showAddFestival && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20
-                          shadow-[0_0_30px_rgba(255,255,255,0.1)] p-8 max-w-md w-full mx-4 relative">
+                          shadow-[0_0_30px_rgba(255,255,255,0.1)] p-4 md:p-8 max-w-md w-full mx-auto relative
+                          max-h-[90vh] overflow-y-auto">
               <button
                 onClick={() => setShowAddFestival(false)}
                 className="absolute top-4 right-4 text-white/70 hover:text-white"
@@ -494,10 +496,11 @@ const AddPost: React.FC = () => {
           </div>
         )}
 
+        {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl border border-white/20
-                            shadow-[0_0_30px_rgba(255,255,255,0.1)] p-8 max-w-md w-full mx-4">
+                            shadow-[0_0_30px_rgba(255,255,255,0.1)] p-4 md:p-8 max-w-md w-full mx-auto">
               <h2 className="text-2xl font-['Space_Grotesk'] tracking-wider mb-6 text-white text-center">
                 Delete Festival
               </h2>
@@ -530,13 +533,13 @@ const AddPost: React.FC = () => {
 
         {/* Toast */}
         {toast && (
-          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 mx-4 w-[calc(100%-2rem)] md:w-auto">
             <div className={`px-6 py-3 rounded-full backdrop-blur-xl ${
               toast.type === 'success' 
                 ? 'bg-white/10 text-white border border-white/20' 
                 : 'bg-red-500/10 text-white border border-red-500/20'
             } transition-all transform animate-fade-in-up font-['Space_Grotesk'] tracking-wider`}>
-              <p className="text-center">{toast.message}</p>
+              <p className="text-center text-sm md:text-base">{toast.message}</p>
             </div>
           </div>
         )}
