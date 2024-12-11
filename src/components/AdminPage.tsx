@@ -7,8 +7,9 @@ import { useNavigate } from "react-router-dom";
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import { Suspense } from 'react';
-import { Users, Building2, LogOut } from 'lucide-react';
+import { Users, Building2, LogOut, Database, ArrowLeft } from 'lucide-react';
 import { Loader, InnerSphere } from './ThreeBackground';
+import BusinessDashboard from './BusinessDashboard';
 
 interface User {
   uid: string;
@@ -23,7 +24,7 @@ const AdminPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'users' | 'business'>('users');
+  const [activeSection, setActiveSection] = useState<'users' | 'business' | 'data'>('users');
   const [businessUsers, setBusinessUsers] = useState<User[]>([]);
 
   // Business account creation form state
@@ -31,6 +32,9 @@ const AdminPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [createAccountError, setCreateAccountError] = useState<string | null>(null);
+
+  // Add state for selected business
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -140,6 +144,11 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  // Add new handler
+  const handleBusinessClick = (businessId: string) => {
+    setSelectedBusinessId(businessId);
+  };
+
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }
@@ -208,6 +217,18 @@ const AdminPage: React.FC = () => {
               >
                 <Building2 size={20} />
                 Business Accounts
+              </button>
+              <button
+                onClick={() => setActiveSection('data')}
+                className={`px-8 py-3 rounded-full transition-all transform hover:scale-105 
+                           font-['Space_Grotesk'] flex items-center gap-2 ${
+                  activeSection === 'data'
+                    ? "bg-white/20 text-white border-2 border-white/40"
+                    : "bg-white/10 text-white/70 border border-white/20 hover:bg-white/20"
+                }`}
+              >
+                <Database size={20} />
+                Data
               </button>
             </div>
           </div>
@@ -332,6 +353,75 @@ const AdminPage: React.FC = () => {
                   )}
                 </div>
               </div>
+            </div>
+          ) : activeSection === 'data' ? (
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
+                          shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                          p-8 border border-white/20">
+              {selectedBusinessId ? (
+                <>
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90">
+                      Business Analytics {businessUsers.find(user => user.uid === selectedBusinessId)?.displayName && (
+                        <span className="text-white/60">
+                          {" "}({businessUsers.find(user => user.uid === selectedBusinessId)?.displayName})
+                        </span>
+                      )}
+                    </h2>
+                    <button
+                      onClick={() => setSelectedBusinessId(null)}
+                      className="px-4 py-2 rounded-lg bg-white/10 text-white/90 
+                                hover:bg-white/20 transition-all duration-300
+                                flex items-center gap-2"
+                    >
+                      <ArrowLeft size={20} />
+                      Back to Overview
+                    </button>
+                  </div>
+                  <BusinessDashboard 
+                    businessId={selectedBusinessId} 
+                    embedded={true} 
+                  />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90 mb-6">
+                    Data Analytics
+                  </h2>
+                  
+                  <div className="mb-8">
+                    <h3 className="text-xl font-['Space_Grotesk'] text-white/80 mb-4">
+                      Business Accounts Overview
+                    </h3>
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {businessUsers.map((business) => (
+                          <div 
+                            key={business.uid}
+                            className="p-4 bg-white/5 rounded-lg border border-white/10 
+                                      hover:bg-white/10 transition-all cursor-pointer"
+                            onClick={() => handleBusinessClick(business.uid)}
+                          >
+                            <h4 className="text-white/90 font-['Space_Grotesk'] font-medium mb-2">
+                              {business.displayName}
+                            </h4>
+                            <p className="text-white/60 text-sm">
+                              {business.email}
+                            </p>
+                            <p className="text-white/40 text-xs mt-2">
+                              Joined: {business.createdAt?.toDate?.() 
+                                ? business.createdAt.toDate().toLocaleDateString() 
+                                : business.createdAt instanceof Date 
+                                  ? business.createdAt.toLocaleDateString()
+                                  : 'N/A'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             /* Regular Users List */

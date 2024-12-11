@@ -125,6 +125,7 @@ const App: React.FC = () => {
             <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/user-management" element={<UserManagement />} />
             <Route path="/help-support" element={<HelpAndSupport />} />
+            <Route path="/business/:businessId" element={<BusinessDashboard />} />
           </Routes>
         </main>
       </div>

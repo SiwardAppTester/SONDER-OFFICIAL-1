@@ -8,6 +8,7 @@ import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import FilterPopup from './FilterPopup';
+import { useParams } from 'react-router-dom';
 
 interface Download {
   postId: string;
@@ -185,7 +186,15 @@ function InnerSphere() {
   )
 }
 
-const BusinessDashboard: React.FC = () => {
+interface BusinessDashboardProps {
+  businessId?: string;
+  embedded?: boolean;
+}
+
+const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ 
+  businessId: propBusinessId,
+  embedded = false 
+}) => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [accessibleFestivalsCount, setAccessibleFestivalsCount] = useState(0);
@@ -248,6 +257,53 @@ const BusinessDashboard: React.FC = () => {
   });
   const [filterPopup, setFilterPopup] = useState<FilterPopup | null>(null);
   const [columnFilters, setColumnFilters] = useState<Record<string, ColumnFilter>>({});
+  const { businessId: paramBusinessId } = useParams<{ businessId: string }>();
+  const businessId = propBusinessId || paramBusinessId;
+
+  // Modify the fetchUserProfile effect to use businessId directly
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const uid = businessId || auth.currentUser?.uid;
+        if (!uid) return;
+        
+        const userDoc = await getDoc(doc(db, "users", uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as UserProfile;
+          setUserProfile(userData);
+          
+          // Get festivals count
+          const [userIdSnapshot, ownerIdSnapshot] = await Promise.all([
+            getDocs(
+              query(
+                collection(db, "festivals"),
+                where("userId", "==", uid),
+                where("active", "==", true)
+              )
+            ),
+            getDocs(
+              query(
+                collection(db, "festivals"),
+                where("ownerId", "==", uid),
+                where("active", "==", true)
+              )
+            )
+          ]);
+          
+          const festivals = [...userIdSnapshot.docs, ...ownerIdSnapshot.docs]
+            .filter((doc, index, self) => 
+              index === self.findIndex(d => d.id === doc.id)
+            );
+          
+          setAccessibleFestivalsCount(festivals.length);
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [businessId]);
 
   // Modify the useEffect for fetching posts and initializing metrics
   useEffect(() => {
@@ -1061,38 +1117,42 @@ const BusinessDashboard: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Three.js Background */}
-      <div className="absolute inset-0">
-        <Canvas
-          className="w-full h-full"
-          gl={{ antialias: true, alpha: true }}
-        >
-          <Suspense fallback={<Loader />}>
-            <InnerSphere />
-          </Suspense>
-        </Canvas>
-      </div>
+      {/* Three.js Background - only show if not embedded */}
+      {!embedded && (
+        <div className="absolute inset-0">
+          <Canvas className="w-full h-full" gl={{ antialias: true, alpha: true }}>
+            <Suspense fallback={<Loader />}>
+              <InnerSphere />
+            </Suspense>
+          </Canvas>
+        </div>
+      )}
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen">
-        {/* Navigation */}
-        <div className="flex justify-between items-center p-6">
-          <button
-            onClick={() => setIsNavOpen(!isNavOpen)}
-            className="text-white/90 hover:text-white transition-colors duration-300"
-            aria-label="Toggle navigation menu"
-          >
-            <Menu size={28} />
-          </button>
-        </div>
+      <div className={`relative ${embedded ? '' : 'z-10 min-h-screen'}`}>
+        {/* Navigation - only show if not embedded */}
+        {!embedded && (
+          <div className="flex justify-between items-center p-6">
+            <button
+              onClick={() => setIsNavOpen(!isNavOpen)}
+              className="text-white/90 hover:text-white transition-colors duration-300"
+              aria-label="Toggle navigation menu"
+            >
+              <Menu size={28} />
+            </button>
+          </div>
+        )}
 
-        <BusinessSidebar
-          isNavOpen={isNavOpen}
-          setIsNavOpen={setIsNavOpen}
-          user={auth.currentUser}
-          userProfile={userProfile}
-          accessibleFestivalsCount={accessibleFestivalsCount}
-        />
+        {/* Only show sidebar if not embedded */}
+        {!embedded && (
+          <BusinessSidebar
+            isNavOpen={isNavOpen}
+            setIsNavOpen={setIsNavOpen}
+            user={auth.currentUser}
+            userProfile={userProfile}
+            accessibleFestivalsCount={accessibleFestivalsCount}
+          />
+        )}
 
         {/* Main Content Area */}
         <div className="max-w-7xl mx-auto px-4 py-8">
