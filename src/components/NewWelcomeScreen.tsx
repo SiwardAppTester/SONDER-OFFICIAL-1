@@ -182,7 +182,9 @@ const NewWelcomeScreen: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAnimating, setIsAnimating] = React.useState(false);
-  const [showIntro, setShowIntro] = React.useState(true);
+  const [showIntro, setShowIntro] = React.useState(() => {
+    return !location.state || location.state.from !== 'about';
+  });
 
   React.useEffect(() => {
     if (!showIntro) return;

@@ -187,14 +187,14 @@ const AboutUs: React.FC = () => {
         </Canvas>
       </div>
 
-      {/* Content wrapper */}
-      <div className="relative z-10 flex flex-col pt-16 pb-16">
-        {/* Back Button */}
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50">
+      {/* Update content wrapper padding for mobile */}
+      <div className="relative z-10 flex flex-col pt-12 md:pt-16 pb-8 md:pb-16">
+        {/* Back Button - adjust position for mobile */}
+        <div className="fixed top-4 md:top-8 left-1/2 -translate-x-1/2 z-50">
           <button
             onClick={handleBack}
-            className="relative px-8 py-2 border border-white/20 rounded-full
-                    text-white/70 text-sm font-['Space_Grotesk'] tracking-[0.15em]
+            className="relative px-6 md:px-8 py-2 border border-white/20 rounded-full
+                    text-white/70 text-xs md:text-sm font-['Space_Grotesk'] tracking-[0.15em]
                     transition-all duration-300 
                     hover:border-white/40 hover:scale-105
                     hover:text-white/90 hover:bg-white/5
@@ -205,50 +205,50 @@ const AboutUs: React.FC = () => {
           </button>
         </div>
 
-        {/* All content wrapped in a consistent container */}
-        <div className="container max-w-6xl mx-auto px-4 md:px-8 space-y-24">
-          {/* Hero Section */}
-          <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-start pt-12">
-            {/* Left Side - Main Content with parallax */}
+        {/* Update container padding for mobile */}
+        <div className="container max-w-6xl mx-auto px-4 md:px-8 space-y-16 md:space-y-24">
+          {/* Hero Section - adjust text sizes for mobile */}
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 lg:gap-16 items-start pt-8 md:pt-12">
+            {/* Left Side - adjust text sizes */}
             <div 
               ref={(el) => (textSectionsRef.current[0] = el)}
-              className="space-y-8"
+              className="space-y-6 md:space-y-8"
             >
-              {/* Brand */}
+              {/* Brand - adjust text sizes */}
               <div>
-                <h1 className="text-7xl md:text-8xl font-['Space_Grotesk'] tracking-[0.2em] 
-                             text-white/90 mb-4
+                <h1 className="text-5xl sm:text-6xl md:text-8xl font-['Space_Grotesk'] tracking-[0.2em] 
+                             text-white/90 mb-2 md:mb-4
                              animate-text bg-gradient-to-r from-white/80 via-white to-white/80 
                              bg-clip-text text-transparent">
                   SONDER
                 </h1>
-                <p className="text-2xl md:text-3xl text-white/80 
+                <p className="text-xl sm:text-2xl md:text-3xl text-white/80 
                            font-['Space_Grotesk'] tracking-wide leading-relaxed">
                   Experience the moment.<br />
                   Cherish forever.
                 </p>
               </div>
 
-              {/* Description */}
-              <div className="space-y-4">
-                <p className="text-white/70 font-['Space_Grotesk'] text-xl leading-relaxed">
+              {/* Description - adjust text sizes */}
+              <div className="space-y-3 md:space-y-4">
+                <p className="text-lg md:text-xl text-white/70 font-['Space_Grotesk'] leading-relaxed">
                   In a world where we're constantly connected, Sonder creates a space 
                   for genuine presence and connection. We believe that the most precious 
                   moments deserve our full attention.
                 </p>
-                <p className="text-white/70 font-['Space_Grotesk'] text-xl leading-relaxed">
+                <p className="text-lg md:text-xl text-white/70 font-['Space_Grotesk'] leading-relaxed">
                   Our platform encourages you to put down your phone, immerse yourself 
                   in the experience, and trust that your memories will be waiting for you.
                 </p>
               </div>
             </div>
 
-            {/* Right Side - Features */}
+            {/* Right Side - adjust padding for mobile */}
             <div 
               ref={rightSectionRef}
-              className="space-y-6"
+              className="space-y-4 md:space-y-6"
             >
-              <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10">
+              <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 md:p-8 border border-white/10">
                 <div className="w-12 h-[2px] bg-white/40 mb-6"></div>
                 <h3 className="text-2xl text-white/90 font-['Space_Grotesk'] mb-4">
                   Be Present
@@ -258,7 +258,7 @@ const AboutUs: React.FC = () => {
                 </p>
               </div>
 
-              <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10">
+              <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 md:p-8 border border-white/10">
                 <div className="w-12 h-[2px] bg-white/40 mb-6"></div>
                 <h3 className="text-2xl text-white/90 font-['Space_Grotesk'] mb-4">
                   Stay Connected
@@ -268,7 +268,7 @@ const AboutUs: React.FC = () => {
                 </p>
               </div>
 
-              <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10">
+              <div className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 md:p-8 border border-white/10">
                 <div className="w-12 h-[2px] bg-white/40 mb-6"></div>
                 <h3 className="text-2xl text-white/90 font-['Space_Grotesk'] mb-4">
                   Cherish Memories
@@ -280,13 +280,13 @@ const AboutUs: React.FC = () => {
             </div>
           </div>
 
-          {/* Content Sections */}
-          <div className="space-y-24">
+          {/* Content Sections - adjust spacing and text sizes */}
+          <div className="space-y-16 md:space-y-24">
             {/* Section 1 */}
-            <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8 lg:gap-16 items-center">
               <div 
                 ref={rightSection1Ref}
-                className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10"
+                className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 md:p-8 border border-white/10"
               >
                 <div className="space-y-6">
                   <h3 className="text-2xl text-white/90 font-['Space_Grotesk']">
@@ -305,10 +305,10 @@ const AboutUs: React.FC = () => {
                 ref={(el) => (textSectionsRef.current[1] = el)}
                 className="space-y-6"
               >
-                <h2 className="text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
                   Mindful Technology
                 </h2>
-                <p className="text-white/70 font-['Space_Grotesk'] text-xl leading-relaxed">
+                <p className="text-lg md:text-xl text-white/70 font-['Space_Grotesk'] leading-relaxed">
                   We believe technology should enhance our lives, not consume them. 
                   Sonder is designed with intentionality, helping you strike the perfect 
                   balance between capturing moments and living them.
@@ -317,15 +317,15 @@ const AboutUs: React.FC = () => {
             </div>
 
             {/* Section 2 */}
-            <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8 lg:gap-16 items-center">
               <div 
                 ref={(el) => (textSectionsRef.current[2] = el)}
                 className="space-y-6"
               >
-                <h2 className="text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
                   Community & Connection
                 </h2>
-                <p className="text-white/70 font-['Space_Grotesk'] text-xl leading-relaxed">
+                <p className="text-lg md:text-xl text-white/70 font-['Space_Grotesk'] leading-relaxed">
                   Join a community of mindful individuals who value authentic experiences. 
                   Share stories, connect meaningfully, and inspire others to embrace 
                   present-moment awareness.
@@ -334,7 +334,7 @@ const AboutUs: React.FC = () => {
 
               <div 
                 ref={rightSection2Ref}
-                className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10"
+                className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 md:p-8 border border-white/10"
               >
                 <div className="space-y-6">
                   <h3 className="text-2xl text-white/90 font-['Space_Grotesk']">
@@ -351,10 +351,10 @@ const AboutUs: React.FC = () => {
             </div>
 
             {/* Section 3 */}
-            <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
+            <div className="grid md:grid-cols-2 gap-6 md:gap-8 lg:gap-16 items-center">
               <div 
                 ref={rightSection3Ref}
-                className="backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10"
+                className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 md:p-8 border border-white/10"
               >
                 <div className="space-y-6">
                   <h3 className="text-2xl text-white/90 font-['Space_Grotesk']">
@@ -373,10 +373,10 @@ const AboutUs: React.FC = () => {
                 ref={(el) => (textSectionsRef.current[3] = el)}
                 className="space-y-6"
               >
-                <h2 className="text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-['Space_Grotesk'] text-white/90">
                   Your Data, Your Control
                 </h2>
-                <p className="text-white/70 font-['Space_Grotesk'] text-xl leading-relaxed">
+                <p className="text-lg md:text-xl text-white/70 font-['Space_Grotesk'] leading-relaxed">
                   We believe in putting you in control of your digital footprint. 
                   With Sonder, your memories are yours alone, protected by 
                   industry-leading security measures and privacy controls.
@@ -385,12 +385,12 @@ const AboutUs: React.FC = () => {
             </div>
           </div>
 
-          {/* Footer Quote */}
+          {/* Footer Quote - adjust padding for mobile */}
           <div 
             ref={(el) => (textSectionsRef.current[5] = el)}
-            className="text-center max-w-xl mx-auto"
+            className="text-center max-w-xl mx-auto px-4"
           >
-            <p className="text-white/40 font-['Space_Grotesk'] italic text-lg">
+            <p className="text-base md:text-lg text-white/40 font-['Space_Grotesk'] italic">
               "The best moments in our lives are not the posed ones. They are 
               the moments when we are truly living."
             </p>
