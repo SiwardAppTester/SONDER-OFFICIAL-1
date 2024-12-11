@@ -1,8 +1,8 @@
 import React, { useState, useEffect, Suspense, useRef } from "react";
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from "firebase/auth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../firebase";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
@@ -59,6 +59,8 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
   const [festivalCode] = useState(initialFestivalCode || "");
   const [isSigningIn, setIsSigningIn] = useState(false);
   const isTransitioning = location.state?.transitioning;
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   useEffect(() => {
     // Clear the transition state from history
@@ -130,6 +132,14 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
     }
   }, [location]);
 
+  useEffect(() => {
+    if (location.state?.verificationSuccess) {
+      setSuccessMessage(location.state.message);
+      // Clear the state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
     try {
@@ -179,6 +189,10 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
         // Create new account
         const result = await createUserWithEmailAndPassword(auth, email, password);
         if (result.user) {
+          // Send verification email
+          await sendEmailVerification(result.user);
+
+          // Create user document
           const userRef = doc(db, "users", result.user.uid);
           await setDoc(userRef, {
             email: result.user.email?.toLowerCase(),
@@ -186,35 +200,98 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
             createdAt: serverTimestamp(),
             followers: [],
             following: [],
-            isProfileComplete: false
+            isProfileComplete: false,
+            emailVerified: false
           });
-          navigate("/complete-profile");
+
+          // Show verification message
+          setError("Please check your email to verify your account before signing in.");
+          setIsRegistering(false); // Switch back to sign in mode
+          setEmail("");
+          setPassword("");
         }
       } else {
         // Sign in to existing account
-        const result = await signInWithEmailAndPassword(auth, email, password);
-        
-        // Get user data to check account type
-        const userRef = doc(db, "users", result.user.uid);
-        const userSnap = await getDoc(userRef);
-        const userData = userSnap.data();
-        
-        // Redirect based on account type
-        if (result.user.email?.toLowerCase() === "admin@sonder.com") {
-          navigate("/admin");
-        } else if (userData?.isBusinessAccount) {
-          navigate("/add-post");
-        } else {
-          navigate("/");
+        try {
+          const result = await signInWithEmailAndPassword(auth, email, password);
+          
+          if (!result.user.emailVerified) {
+            setError("Please verify your email before signing in. Check your inbox for the verification link.");
+            // Optionally resend verification email
+            await sendEmailVerification(result.user);
+            return;
+          }
+          
+          // Get user data to check account type
+          const userRef = doc(db, "users", result.user.uid);
+          const userSnap = await getDoc(userRef);
+          const userData = userSnap.data();
+          
+          // Update emailVerified status in Firestore if needed
+          if (userData && !userData.emailVerified) {
+            await updateDoc(userRef, {
+              emailVerified: true
+            });
+          }
+          
+          // Redirect based on account type
+          if (result.user.email?.toLowerCase() === "admin@sonder.com") {
+            navigate("/admin");
+          } else if (!userData?.isProfileComplete) {
+            navigate("/complete-profile");
+          } else if (userData?.isBusinessAccount) {
+            navigate("/add-post");
+          } else {
+            navigate("/", { state: { canUpdateProfile: true } });
+          }
+        } catch (signInError: any) {
+          console.error("Error with email auth:", signInError);
+          
+          // Handle specific error cases
+          switch (signInError.code) {
+            case 'auth/too-many-requests':
+              setError(
+                "Too many sign-in attempts. Please wait a few minutes before trying again, or reset your password."
+              );
+              break;
+            case 'auth/invalid-credential':
+              setError("Invalid email or password. Please try again.");
+              break;
+            case 'auth/user-disabled':
+              setError("This account has been disabled. Please contact support.");
+              break;
+            case 'auth/user-not-found':
+              setError("No account found with this email. Please check your email or register.");
+              break;
+            default:
+              setError(
+                signInError.message || 
+                "Unable to sign in at this time. Please try again later."
+              );
+          }
         }
       }
     } catch (error: any) {
-      console.error("Error with email auth:", error);
-      if (error.code === 'auth/invalid-credential') {
-        setError("Invalid email or password. Please try again.");
-      } else {
-        setError(error instanceof Error ? error.message : "Authentication failed");
-      }
+      console.error("Outer error:", error);
+      setError(
+        "An unexpected error occurred. Please try again later or contact support."
+      );
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError("Please enter your email address to reset your password.");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccessMessage("Password reset email sent. Please check your inbox.");
+      setShowResetPassword(false);
+    } catch (error: any) {
+      console.error("Error sending reset email:", error);
+      setError("Failed to send reset email. Please try again.");
     }
   };
 
@@ -279,7 +356,12 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
                   minLength={6}
                 />
               </div>
-              {error && <p className="text-white/80 text-sm text-center font-['Space_Grotesk']">{error}</p>}
+              {error && <p className="text-red-400 text-sm text-center font-['Space_Grotesk']">{error}</p>}
+              {successMessage && (
+                <p className="text-green-400 text-sm text-center font-['Space_Grotesk']">
+                  {successMessage}
+                </p>
+              )}
               <div className="w-full">
                 <button
                   type="submit"
@@ -294,6 +376,18 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
                   {isRegistering ? "REGISTER" : "SIGN IN"}
                 </button>
               </div>
+              {!isRegistering && (
+                <div className="w-full text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword(true)}
+                    className="text-white/60 text-sm hover:text-white/90 
+                             transition-colors font-['Space_Grotesk'] tracking-wider"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
               <div className="w-full">
                 <button
                   type="button"
@@ -369,6 +463,58 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
           </p>
         </div>
       </div>
+
+      {/* Password Reset Modal */}
+      {showResetPassword && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="bg-white/10 p-8 rounded-2xl border border-white/20 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-2xl text-white/90 font-['Space_Grotesk']">
+                Reset Password
+              </h3>
+              <button
+                onClick={() => setShowResetPassword(false)}
+                className="text-white/60 hover:text-white/90 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <p className="text-white/70 mb-6 font-['Space_Grotesk']">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+            
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                       text-white placeholder-white/50 font-['Space_Grotesk']
+                       focus:outline-none focus:ring-2 focus:ring-white/30 mb-6"
+            />
+            
+            <div className="flex gap-3">
+              <button
+                onClick={handleResetPassword}
+                className="flex-1 px-6 py-3 bg-white/10 text-white rounded-lg
+                         hover:bg-white/20 transition-all font-['Space_Grotesk']
+                         border border-white/20"
+              >
+                Send Reset Link
+              </button>
+              <button
+                onClick={() => setShowResetPassword(false)}
+                className="px-6 py-3 bg-white/5 text-white/70 rounded-lg
+                         hover:bg-white/10 transition-all font-['Space_Grotesk']
+                         border border-white/20"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

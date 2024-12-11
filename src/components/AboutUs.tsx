@@ -9,17 +9,15 @@ import { useScrollAnimation } from '../hooks/useScrollAnimation';
 
 // Loader component for Suspense fallback
 function Loader() {
-  const { progress } = useProgress()
   return (
     <Html center>
-      <div className="flex flex-col items-center">
-        <div className="w-12 h-12 border-2 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
-        <div className="text-white/80 text-sm mt-4 font-['Space_Grotesk']">
-          {progress.toFixed(0)}%
-        </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-white/80 animate-[bounce_1s_infinite_0ms]"></div>
+        <div className="w-3 h-3 rounded-full bg-white/80 animate-[bounce_1s_infinite_200ms]"></div>
+        <div className="w-3 h-3 rounded-full bg-white/80 animate-[bounce_1s_infinite_400ms]"></div>
       </div>
     </Html>
-  )
+  );
 }
 
 // Enhanced sphere with animation (simplified)

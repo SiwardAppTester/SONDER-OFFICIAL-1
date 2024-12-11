@@ -74,6 +74,27 @@ function FloatingShell({ isAnimating }: { isAnimating: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const [hasAnimationStarted, setHasAnimationStarted] = React.useState(false)
   
+  // Add position adjustment for mobile
+  React.useEffect(() => {
+    if (meshRef.current) {
+      const handleResize = () => {
+        const isMobile = window.innerWidth < 768;
+        // Adjust scale as before
+        meshRef.current!.scale.set(
+          isMobile ? 0.8 : 1,
+          isMobile ? 0.8 : 1,
+          isMobile ? 0.8 : 1
+        );
+        // Adjust sphere position - slightly lower but still up from original
+        meshRef.current!.position.y = isMobile ? 0.2 : -0.1;
+      };
+
+      handleResize(); // Initial check
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+  
   useFrame((state) => {
     if (meshRef.current) {
       if (!isAnimating) {
@@ -104,23 +125,6 @@ function FloatingShell({ isAnimating }: { isAnimating: boolean }) {
       }
     }
   })
-
-  React.useEffect(() => {
-    const handleResize = () => {
-      if (meshRef.current) {
-        const isMobile = window.innerWidth < 768;
-        meshRef.current.scale.set(
-          isMobile ? 0.8 : 1,
-          isMobile ? 0.8 : 1,
-          isMobile ? 0.8 : 1
-        );
-      }
-    };
-
-    handleResize(); // Initial check
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   return (
     <mesh ref={meshRef} position={[0, -0.1, 0]} castShadow>
@@ -163,23 +167,22 @@ function Scene({ isAnimating }: { isAnimating: boolean }) {
 }
 
 function Loader() {
-  const { progress } = useProgress()
   return (
     <Html center>
-      <div className="text-white text-xl">
-        {progress.toFixed(0)}% loaded
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-white/80 animate-[bounce_1s_infinite_0ms]"></div>
+        <div className="w-3 h-3 rounded-full bg-white/80 animate-[bounce_1s_infinite_200ms]"></div>
+        <div className="w-3 h-3 rounded-full bg-white/80 animate-[bounce_1s_infinite_400ms]"></div>
       </div>
     </Html>
-  )
+  );
 }
 
 const NewWelcomeScreen: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAnimating, setIsAnimating] = React.useState(false);
-  const [showIntro, setShowIntro] = React.useState(
-    !(location.state && location.state.from === 'about')
-  );
+  const [showIntro, setShowIntro] = React.useState(true);
 
   React.useEffect(() => {
     if (!showIntro) return;
@@ -196,7 +199,7 @@ const NewWelcomeScreen: React.FC = () => {
     // Set initial state for all words
     gsap.set(words.map(w => w), { 
       opacity: 0,
-      y: 20 // Start slightly below final position
+      y: 20
     });
 
     // Animate each word one by one with better timing
@@ -264,15 +267,15 @@ const NewWelcomeScreen: React.FC = () => {
     <div className="h-screen w-full relative bg-black overflow-hidden">
       {showIntro && (
         <div className="absolute inset-0 bg-black flex items-center justify-center z-40">
-          <div className="intro-text text-center px-4">
-            <p className="text-[#808080] text-2xl md:text-3xl mb-2 font-['Space_Grotesk']">
+          <div className="intro-text text-center md:px-4 px-6">
+            <p className="text-[#808080] text-xl md:text-3xl md:mb-2 mb-4 font-['Space_Grotesk'] md:leading-normal leading-relaxed">
               <span className="word-in">In</span>{' '}
               <span className="word-a">A</span>{' '}
               <span className="word-hyper text-white">Hyper</span>
               <span className="word-connected text-white">-Connected</span>{' '}
               <span className="word-world">World</span>
             </p>
-            <p className="text-[#808080] text-2xl md:text-3xl font-['Space_Grotesk']">
+            <p className="text-[#808080] text-xl md:text-3xl font-['Space_Grotesk'] md:leading-normal leading-relaxed">
               <span className="word-weve">We've</span>{' '}
               <span className="word-never">Never</span>{' '}
               <span className="word-felt">Felt</span>{' '}
@@ -303,16 +306,16 @@ const NewWelcomeScreen: React.FC = () => {
         <h1 className="md:text-[160px] text-[70px] font-[500] md:mb-12 mb-6 tracking-[0.12em]
                       text-white/95 font-['Outfit']
                       drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
-                      transform md:-translate-y-48 -translate-y-48
+                      transform md:-translate-y-48 -translate-y-40
                       transition-all duration-700 ease-out
                       hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]">
           SONDER
         </h1>
         <button 
           onClick={handleSignIn}
-          className="relative px-12 py-3.5 border-2 border-white/30 rounded-full
-                    text-white text-base font-['Space_Grotesk'] tracking-[0.2em]
-                    transform md:translate-y-40 translate-y-40
+          className="relative md:px-12 px-8 md:py-3.5 py-2.5 border-2 border-white/30 rounded-full
+                    text-white md:text-base text-sm font-['Space_Grotesk'] md:tracking-[0.2em] tracking-[0.15em]
+                    transform md:translate-y-40 translate-y-32
                     transition-all duration-300 
                     hover:border-white/60 hover:scale-105
                     hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
@@ -323,15 +326,15 @@ const NewWelcomeScreen: React.FC = () => {
         </button>
         <button 
           onClick={handleAboutClick}
-          className="relative px-10 py-2.5 border border-white/20 rounded-full
-                    text-white/70 text-sm font-['Space_Grotesk'] tracking-[0.15em]
-                    transform md:translate-y-40 translate-y-40
+          className="relative md:px-10 px-6 md:py-2.5 py-2 border border-white/20 rounded-full
+                    text-white/70 md:text-sm text-xs font-['Space_Grotesk'] md:tracking-[0.15em] tracking-[0.1em]
+                    transform md:translate-y-40 translate-y-32
                     transition-all duration-300 
                     hover:border-white/40 hover:scale-105
                     hover:text-white/90 hover:bg-white/5
                     active:scale-95
                     cursor-pointer
-                    mt-2"
+                    mt-2 md:mb-0 mb-12"
         >
           ABOUT US
         </button>
