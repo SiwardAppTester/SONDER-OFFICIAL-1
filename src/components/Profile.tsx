@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firest
 import { db, auth } from "../firebase";
 import { Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
+import BusinessSidebar from "./BusinessSidebar";
 import { User as FirebaseUser } from "firebase/auth";
 import { collection, query, where, orderBy, onSnapshot, getDocs } from "firebase/firestore";
 import { Heart, MessageCircle } from "lucide-react";
@@ -12,6 +13,7 @@ import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/
 import * as THREE from 'three';
 import { Dialog, Transition } from '@headlessui/react';
 import { X } from 'lucide-react';
+import { useUserProfile } from '../contexts/UserProfileContext';
 
 interface UserProfile {
   email: string;
@@ -22,6 +24,7 @@ interface UserProfile {
   accessibleFestivals?: string[];
   fullName?: string;
   username?: string;
+  isBusinessAccount?: boolean;
 }
 
 // Add Post interface
@@ -216,6 +219,8 @@ const Profile: React.FC = () => {
   const [activeFestivalsCount, setActiveFestivalsCount] = useState(0);
   const [selectedStat, setSelectedStat] = useState<string | null>(null);
   const [modalItems, setModalItems] = useState<Array<{ id: string; name: string; photoURL?: string }>>([]);
+  const { userProfile: contextUserProfile } = useUserProfile();
+  const isBusinessAccount = contextUserProfile?.isBusinessAccount;
 
   useEffect(() => {
     // Fetch the profile user's data
@@ -454,14 +459,23 @@ const Profile: React.FC = () => {
           </div>
         </div>
 
-        <Sidebar
-          isNavOpen={isNavOpen}
-          setIsNavOpen={setIsNavOpen}
-          user={currentUser}
-          userProfile={userProfile}
-          accessibleFestivalsCount={accessibleFestivals.size}
-          className="z-50"
-        />
+        {/* Conditionally render either BusinessSidebar or regular Sidebar */}
+        {isBusinessAccount ? (
+          <BusinessSidebar
+            isNavOpen={isNavOpen}
+            setIsNavOpen={setIsNavOpen}
+            user={auth.currentUser}
+            userProfile={userProfile}
+            accessibleFestivalsCount={0}
+          />
+        ) : (
+          <Sidebar
+            isNavOpen={isNavOpen}
+            setIsNavOpen={setIsNavOpen}
+            user={auth.currentUser}
+            accessibleFestivalsCount={0}
+          />
+        )}
 
         {!profileUser ? (
           <div className="text-center p-4 text-white/90 font-['Space_Grotesk']">Loading...</div>

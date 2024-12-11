@@ -96,6 +96,7 @@ const App: React.FC = () => {
                 <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} />
                 <Route path="/business-settings" element={<BusinessSettings />} />
                 <Route path="/search" element={<Search />} />
+                <Route path="/profile/:userId" element={<Profile />} />
               </>
             )}
 
