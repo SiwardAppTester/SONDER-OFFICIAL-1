@@ -36,6 +36,9 @@ const AdminPage: React.FC = () => {
   // Add state for selected business
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
 
+  // Add new state for search
+  const [searchTerm, setSearchTerm] = useState("");
+
   useEffect(() => {
     fetchUsers();
     fetchBusinessUsers();
@@ -138,7 +141,7 @@ const AdminPage: React.FC = () => {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      navigate("/");
+      navigate("/signin");
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -149,15 +152,24 @@ const AdminPage: React.FC = () => {
     setSelectedBusinessId(businessId);
   };
 
+  // Add search filter function
+  const filteredBusinessUsers = businessUsers.filter(business => 
+    business.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    business.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) {
     return <div className="p-4">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen w-full overflow-y-auto relative">
+    <div className="relative h-screen w-full">
       {/* Three.js Background */}
       <div className="fixed inset-0">
-        <Canvas className="w-full h-full" gl={{ antialias: true, alpha: true }}>
+        <Canvas
+          className="w-full h-full"
+          gl={{ antialias: true, alpha: true }}
+        >
           <Suspense fallback={<Loader />}>
             <InnerSphere />
           </Suspense>
@@ -165,7 +177,7 @@ const AdminPage: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 min-h-screen pb-20">
+      <div className="relative z-10 h-screen overflow-y-auto">
         {/* Header Section */}
         <div className="max-w-6xl mx-auto px-4 pt-8">
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
@@ -389,13 +401,45 @@ const AdminPage: React.FC = () => {
                     Data Analytics
                   </h2>
                   
+                  {/* Add Search Bar */}
+                  <div className="mb-6">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search business accounts..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full p-4 rounded-xl bg-white/10 border border-white/20 
+                                 text-white placeholder-white/50 font-['Space_Grotesk']
+                                 focus:outline-none focus:ring-2 focus:ring-white/30
+                                 pl-12 transition-all duration-300
+                                 hover:bg-white/[0.15]"
+                      />
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                        <svg 
+                          className="w-5 h-5 text-white/50" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="mb-8">
                     <h3 className="text-xl font-['Space_Grotesk'] text-white/80 mb-4">
                       Business Accounts Overview
                     </h3>
                     <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {businessUsers.map((business) => (
+                        {filteredBusinessUsers.map((business) => (
                           <div 
                             key={business.uid}
                             className="p-4 bg-white/5 rounded-lg border border-white/10 
@@ -418,6 +462,11 @@ const AdminPage: React.FC = () => {
                           </div>
                         ))}
                       </div>
+                      {filteredBusinessUsers.length === 0 && (
+                        <p className="text-center text-white/60 py-8 font-['Space_Grotesk']">
+                          No business accounts found matching your search
+                        </p>
+                      )}
                     </div>
                   </div>
                 </>
