@@ -162,12 +162,12 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
           });
           navigate("/complete-profile");
         } else {
-          // Existing user - check if profile is complete
+          // Existing user - check account type
           const userData = userSnap.data();
-          if (!userData.isProfileComplete) {
-            navigate("/complete-profile");
-          } else if (userData.isBusinessAccount) {
+          if (userData.isBusinessAccount) {
             navigate("/add-post");
+          } else if (!userData.isProfileComplete) {
+            navigate("/complete-profile");
           } else {
             navigate("/");
           }
@@ -217,10 +217,12 @@ const SignIn: React.FC<SignInProps> = ({ initialFestivalCode }) => {
           // Redirect based on account type
           if (result.user.email?.toLowerCase() === "admin@sonder.com") {
             navigate("/admin");
-          } else if (!userData?.isProfileComplete) {
-            navigate("/complete-profile");
           } else if (userData?.isBusinessAccount) {
+            // Business accounts go directly to add-post
             navigate("/add-post");
+          } else if (!userData?.isProfileComplete) {
+            // Only regular users need to complete profile
+            navigate("/complete-profile");
           } else {
             navigate("/", { state: { canUpdateProfile: true } });
           }

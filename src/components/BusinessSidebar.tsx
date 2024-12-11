@@ -293,17 +293,17 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Sidebar - Updated Styling */}
-      <div className={`md:hidden fixed top-0 left-0 h-full w-80 bg-black shadow-lg transform 
+      {/* Mobile Sidebar */}
+      <div className={`md:hidden fixed top-0 left-0 h-full w-[280px] bg-black shadow-lg transform 
                       transition-transform duration-300 ease-in-out z-50 flex flex-col ${
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
-      } overflow-y-auto overflow-x-hidden`}>
-        {/* Close button */}
-        <div className="p-3 flex justify-end">
+      }`}>
+        {/* Header with close button */}
+        <div className="p-4 flex justify-end items-center border-b border-white/10">
           <button
             onClick={() => setIsNavOpen(false)}
             className="relative group w-10 h-10 flex items-center justify-center 
-                      bg-white/10 backdrop-blur-sm rounded-xl
+                      bg-white/10 backdrop-blur-sm rounded-full
                       transition-all duration-300 transform
                       hover:scale-105 hover:bg-white/20"
           >
@@ -324,215 +324,37 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
           </button>
         </div>
 
-        {/* Profile Section */}
-        <div className="px-6 -mt-2">
-          <div className="flex flex-col items-center mb-6">
-            <div 
-              className="relative transform hover:scale-105 transition-all duration-300 cursor-pointer"
-              onClick={() => {
-                navigate('/business-settings');
-                setIsNavOpen(false);
-              }}
-            >
-              {localPhotoURL ? (
-                <img
-                  src={localPhotoURL}
-                  alt="Profile"
-                  className="w-24 h-24 rounded-full mb-3 border-2 border-white/20
-                           hover:border-white/40 transition-all duration-300 object-cover"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full bg-white/10 
-                              transition-all duration-300 flex items-center justify-center mb-3
-                              text-2xl font-semibold text-white border-2 border-white/20">
-                  {userProfile?.displayName?.[0] || user?.email?.[0] || '?'}
-                </div>
-              )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent navigation when clicking the camera icon
-                  fileInputRef.current?.click();
-                }}
-                className="absolute bottom-3 right-0 bg-white/20 rounded-full p-2 
-                         hover:bg-white/30 transition-colors
-                         hover:scale-110 transform duration-300"
-                aria-label="Change profile picture"
-              >
-                <Camera size={14} className="text-white" />
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageChange}
-                accept="image/*"
-                className="hidden"
-              />
+        {/* Main Content - Fixed Height with Flex */}
+        <div className="flex flex-col h-[calc(100%-73px)] justify-between px-4 py-6">
+          {/* Top Section with Navigation */}
+          <div>
+            {/* Navigation Links */}
+            <div className="space-y-2">
+              {[
+                { to: "/add-post", icon: HomeIcon, label: "Home" },
+                { to: "/business-dashboard", icon: LayoutDashboard, label: "Dashboard" },
+                { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" },
+                { to: "/chat", icon: MessageCircle, label: "Messages" },
+                { to: "/search", icon: SearchIcon, label: "Search" },
+                { to: "/discover", icon: Compass, label: "Discover" }
+              ].map(({ to, icon: Icon, label }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  onClick={() => setIsNavOpen(false)}
+                  className="flex items-center space-x-3 p-4 rounded-xl
+                    bg-white/10 backdrop-blur-sm hover:bg-white/20 
+                    transition-all duration-300 group"
+                >
+                  <Icon size={20} className="text-white group-hover:scale-110 transition-transform duration-300" />
+                  <span className="text-white/90 font-medium">{label}</span>
+                </Link>
+              ))}
             </div>
-            <span className="text-white/90 font-semibold text-lg">
-              {userProfile?.displayName || 'Business Account'}
-            </span>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-2 text-center mb-4 stats-grid">
-            {[
-              { label: 'Followers', count: userProfile?.followers?.length || 0, type: 'followers' as const },
-              { label: 'Following', count: userProfile?.following?.length || 0, type: 'following' as const },
-              { label: 'Festivals', count: accessibleFestivalsCount, type: 'festivals' as const }
-            ].map(({ label, count, type }) => (
-              <div 
-                key={type}
-                className={`stats-grid-item bg-white/10 backdrop-blur-sm p-2 rounded-lg cursor-pointer
-                  transition-all duration-300 border border-white/20
-                  ${openDropdown === type 
-                    ? 'bg-white/20 scale-105' 
-                    : 'hover:scale-105 hover:bg-white/15'}
-                  transform`}
-                onClick={() => toggleDropdown(type)}
-              >
-                <div className="flex flex-col items-center">
-                  <span className="text-base font-bold text-white">{count}</span>
-                  <span className="text-xs text-white/70 font-medium">{label}</span>
-                  <div className="mt-0.5">
-                    {openDropdown === type 
-                      ? <ChevronUp size={12} className="text-white/70" /> 
-                      : <ChevronDown size={12} className="text-white/70" />}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Dropdown Content */}
-          {openDropdown && (
-            <div 
-              className="dropdown-content h-28 border border-white/20 bg-white/10 backdrop-blur-sm 
-                        rounded-xl mb-4 shadow-inner overflow-hidden"
-            >
-              <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-purple-200 
-                            scrollbar-track-transparent py-2">
-                {openDropdown === 'followers' && followersDetails.length > 0 && (
-                  <div className="h-full overflow-y-auto py-1 px-2">
-                    {followersDetails.map((follower) => (
-                      <Link
-                        key={follower.id}
-                        to={`/profile/${follower.id}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdown(null);
-                          setIsNavOpen(false);
-                        }}
-                        className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
-                                  transition-all duration-300 group
-                                  hover:shadow-sm border border-purple-100/50
-                                  bg-white/40 overflow-hidden cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          {follower.photoURL ? (
-                            <img 
-                              src={follower.photoURL} 
-                              alt={follower.username} 
-                              className="w-6 h-6 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                              {follower.username[0].toUpperCase()}
-                            </div>
-                          )}
-                          <span>@{follower.username}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-
-                {openDropdown === 'following' && followingDetails.length > 0 && (
-                  <div className="h-full overflow-y-auto py-1 px-2">
-                    {followingDetails.map((following) => (
-                      <Link
-                        key={following.id}
-                        to={`/profile/${following.id}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdown(null);
-                          setIsNavOpen(false);
-                        }}
-                        className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
-                                  transition-all duration-300 group
-                                  hover:shadow-sm border border-purple-100/50
-                                  bg-white/40 overflow-hidden cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          {following.photoURL ? (
-                            <img 
-                              src={following.photoURL} 
-                              alt={following.username} 
-                              className="w-6 h-6 rounded-full"
-                            />
-                          ) : (
-                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                              {following.username[0].toUpperCase()}
-                            </div>
-                          )}
-                          <span>@{following.username}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-
-                {openDropdown === 'festivals' && festivalDetails.length > 0 && (
-                  <div className="h-full overflow-y-auto py-1 px-2">
-                    {festivalDetails.map((festival) => (
-                      <Link
-                        key={festival.id}
-                        to={`/festival/${festival.id}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdown(null);
-                          setIsNavOpen(false);
-                        }}
-                        className="block py-2 px-2 hover:bg-white/80 text-sm text-gray-700 rounded-lg 
-                                  transition-all duration-300 group
-                                  hover:shadow-sm border border-purple-100/50
-                                  bg-white/40 overflow-hidden cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span>{festival.name}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Links */}
-          <div className="space-y-2 mt-4">
-            {[
-              { to: "/business-dashboard", icon: LayoutDashboard, label: "Dashboard" },
-              { to: "/business-calendar", icon: CalendarIcon, label: "Calendar" },
-              { to: "/chat", icon: MessageCircle, label: "Messages" },
-              { to: "/search", icon: SearchIcon, label: "Search" },
-              { to: "/discover", icon: Compass, label: "Discover" }
-            ].map(({ to, icon: Icon, label }) => (
-              <Link
-                key={to}
-                to={to}
-                onClick={() => setIsNavOpen(false)}
-                className="flex items-center space-x-3 p-3 rounded-xl
-                  bg-white/10 backdrop-blur-sm hover:bg-white/20 
-                  transition-all duration-300 group"
-              >
-                <Icon size={20} className="text-white group-hover:scale-110 transition-transform duration-300" />
-                <span className="text-white/90 font-medium">{label}</span>
-              </Link>
-            ))}
-          </div>
-
-          {/* Sign Out Button */}
-          <div className="mt-6 mb-8">
+          {/* Sign Out Button - Always at Bottom */}
+          <div className="pt-4">
             <button
               onClick={handleSignOut}
               className="w-full px-4 py-3 rounded-xl bg-white/10 text-white/90 font-medium
@@ -548,12 +370,12 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
       {/* Mobile Overlay */}
       {isNavOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300"
+          className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
           onClick={() => setIsNavOpen(false)}
         />
       )}
 
-      {/* Spacer */}
+      {/* Spacer for Desktop */}
       <div className="hidden md:block h-16" />
     </>
   );
