@@ -2,13 +2,13 @@ import React, { Suspense, useEffect, useState, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment, PerspectiveCamera, Html, useProgress } from "@react-three/drei";
 import * as THREE from 'three';
-import Sidebar from "./Sidebar";
+import BusinessSidebar from "./BusinessSidebar";
 import { auth, db, storage } from "../firebase";
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { Plus, X, Upload, Share, Download, Trash2, ArrowLeft, Key } from 'lucide-react';
+import { Plus, X, Upload, Share, Download, Trash2, ArrowLeft, Key, Menu } from 'lucide-react';
 
 interface Festival {
   id: string;
@@ -565,8 +565,18 @@ const FestivalManagement: React.FC = () => {
         </Canvas>
       </div>
 
+      {/* Add Mobile Navigation */}
+      <div className="md:hidden flex justify-between items-center p-4 fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm">
+        <button
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          className="text-white hover:text-white/80 transition-colors duration-300"
+        >
+          <Menu size={28} />
+        </button>
+      </div>
+
       {/* Sidebar - Fixed position */}
-      <Sidebar
+      <BusinessSidebar
         isNavOpen={isNavOpen}
         setIsNavOpen={setIsNavOpen}
         user={auth.currentUser}
@@ -574,13 +584,13 @@ const FestivalManagement: React.FC = () => {
         accessibleFestivalsCount={0}
       />
 
-      {/* Main Content - Scrollable */}
-      <div className="relative z-10 min-h-screen pt-24 px-8 md:px-16 lg:px-32">
-        {/* Back to Festivals Button - New Position */}
-        <div className="mb-8">
+      {/* Main Content - Add padding-top to account for fixed header on mobile */}
+      <div className="relative z-10 min-h-screen pt-16 md:pt-20 px-4 sm:px-8 md:px-16 lg:px-32">
+        {/* Back to Festivals Button - Update padding for mobile */}
+        <div className="mb-6 sm:mb-8">
           <button
             onClick={() => navigate('/add-post')}
-            className="px-6 py-3 bg-white/10 hover:bg-white/20 
+            className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 
                       border border-white/20 hover:border-white/30
                       rounded-xl backdrop-blur-lg
                       transition-all duration-300 ease-in-out
@@ -599,22 +609,22 @@ const FestivalManagement: React.FC = () => {
             {/* Festival Header */}
             <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
                           shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                          p-8 border border-white/20">
-              <div className="flex flex-col md:flex-row items-start gap-6">
+                          p-4 sm:p-8 border border-white/20">
+              <div className="flex flex-col gap-6">
                 {/* Left side with festival info */}
-                <div className="flex-1 flex items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-start gap-6">
                   <div className="flex-shrink-0">
                     <img
                       src={festival.imageUrl}
                       alt={festival.name}
-                      className="h-32 w-32 rounded-xl object-cover shadow-lg border border-white/10"
+                      className="h-24 w-24 sm:h-32 sm:w-32 rounded-xl object-cover shadow-lg border border-white/10"
                     />
                   </div>
                   <div className="space-y-2">
-                    <h1 className="text-3xl font-['Space_Grotesk'] tracking-wide text-white/90">
+                    <h1 className="text-2xl sm:text-3xl font-['Space_Grotesk'] tracking-wide text-white/90">
                       {festival.name}
                     </h1>
-                    <div className="flex items-center gap-3 text-sm text-white/50 font-['Space_Grotesk']">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm text-white/50 font-['Space_Grotesk']">
                       <span>
                         {new Date(festival.date).toLocaleDateString('en-US', {
                           weekday: 'long',
@@ -623,7 +633,7 @@ const FestivalManagement: React.FC = () => {
                           day: 'numeric'
                         })}
                       </span>
-                      <span>•</span>
+                      <span className="hidden sm:inline">•</span>
                       <span>{festival.time}</span>
                     </div>
                     <p className="text-white/60 text-sm font-['Space_Grotesk'] max-w-2xl">
@@ -633,10 +643,11 @@ const FestivalManagement: React.FC = () => {
                 </div>
 
                 {/* Right side with buttons */}
-                <div className="flex-shrink-0 flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => setShowCategoryModal(true)}
-                    className="px-6 py-3 bg-white/10 hover:bg-white/20 
+                    className="flex-1 sm:flex-none px-6 py-3 
+                              bg-black/20 sm:bg-white/10 hover:bg-white/20 
                               border border-white/20 hover:border-white/30
                               rounded-xl backdrop-blur-lg
                               transition-all duration-300 ease-in-out
@@ -650,7 +661,8 @@ const FestivalManagement: React.FC = () => {
 
                   <button
                     onClick={() => setShowAccessCodeModal(true)}
-                    className="px-6 py-3 bg-white/10 hover:bg-white/20 
+                    className="flex-1 sm:flex-none px-6 py-3 
+                              bg-black/20 sm:bg-white/10 hover:bg-white/20 
                               border border-white/20 hover:border-white/30
                               rounded-xl backdrop-blur-lg
                               transition-all duration-300 ease-in-out
@@ -665,8 +677,8 @@ const FestivalManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* Categories Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-w-[1000px]">
+            {/* Categories Grid - Update grid columns for mobile */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 max-w-[1000px]">
               {festival.categories?.map((category) => (
                 <div
                   key={category.id}
@@ -760,8 +772,8 @@ const FestivalManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* Media Content Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {/* Media Content Grid - Update grid columns and spacing for mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {selectedCategory ? (
                 filteredPosts.length > 0 ? (
                   filteredPosts.map((post) => (
@@ -852,7 +864,7 @@ const FestivalManagement: React.FC = () => {
             {/* Create Category Modal */}
             {showCategoryModal && (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
-                <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full mx-4 
+                <div className="bg-[#1a1a1a] rounded-2xl p-4 sm:p-6 max-w-md w-full mx-4 
                               border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-['Space_Grotesk'] text-white/90">Create New Category</h2>

@@ -294,18 +294,19 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
       </div>
 
       {/* Mobile Sidebar */}
-      <div className={`md:hidden fixed top-0 left-0 h-full w-[280px] bg-black shadow-lg transform 
-                      transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+      <div className={`md:hidden fixed top-0 left-0 h-full w-[85vw] max-w-[280px] min-w-[250px] 
+                      bg-zinc-900/80 backdrop-blur-md shadow-lg transform transition-transform duration-300 
+                      ease-in-out z-50 flex flex-col ${
         isNavOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Header with close button */}
-        <div className="p-4 flex justify-end items-center border-b border-white/10">
+        <div className="p-4 flex justify-end items-center border-b border-white/5">
           <button
             onClick={() => setIsNavOpen(false)}
             className="relative group w-10 h-10 flex items-center justify-center 
-                      bg-white/10 backdrop-blur-sm rounded-full
+                      bg-zinc-800/50 backdrop-blur-sm rounded-full
                       transition-all duration-300 transform
-                      hover:scale-105 hover:bg-white/20"
+                      hover:scale-105 hover:bg-zinc-700/50"
           >
             <svg 
               className="w-5 h-5 text-white transition-transform duration-300 
@@ -343,7 +344,7 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
                   to={to}
                   onClick={() => setIsNavOpen(false)}
                   className="flex items-center space-x-3 p-4 rounded-xl
-                    bg-white/10 backdrop-blur-sm hover:bg-white/20 
+                    bg-zinc-800/50 backdrop-blur-sm hover:bg-zinc-700/50 
                     transition-all duration-300 group"
                 >
                   <Icon size={20} className="text-white group-hover:scale-110 transition-transform duration-300" />
@@ -357,9 +358,9 @@ const BusinessSidebar: React.FC<BusinessSidebarProps> = ({
           <div className="pt-4">
             <button
               onClick={handleSignOut}
-              className="w-full px-4 py-3 rounded-xl bg-white/10 text-white/90 font-medium
-                transition-all duration-300 hover:bg-white/20 active:scale-95
-                border border-white/20"
+              className="w-full px-4 py-3 rounded-xl bg-zinc-800/50 text-white/90 font-medium
+                transition-all duration-300 hover:bg-zinc-700/50 active:scale-95
+                border border-white/10"
             >
               Sign Out
             </button>
