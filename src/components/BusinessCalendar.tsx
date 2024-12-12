@@ -329,8 +329,8 @@ const BusinessCalendar: React.FC = () => {
 
       {/* Main Content */}
       <div className="relative z-10 min-h-screen">
-        <div className="p-4">
-          <div className="flex items-center gap-4">
+        <div className="p-4 fixed lg:relative top-0 left-0 right-0 z-50 bg-black/20 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none">
+          <div className="flex items-center justify-between gap-4">
             <button
               onClick={() => setIsNavOpen(!isNavOpen)}
               className="text-white/90 hover:text-white"
@@ -338,220 +338,231 @@ const BusinessCalendar: React.FC = () => {
             >
               <Menu size={24} />
             </button>
+            
+            <h1 className="text-2xl font-bold text-white hover:text-white/80 transition-colors duration-300 lg:hidden">
+              SONDER
+            </h1>
           </div>
         </div>
 
-        <BusinessSidebar
-          isNavOpen={isNavOpen}
-          setIsNavOpen={setIsNavOpen}
-          user={currentUser}
-          userProfile={userProfile}
-          accessibleFestivalsCount={0}
-        />
+        <div className="pt-16 lg:pt-0">
+          <BusinessSidebar
+            isNavOpen={isNavOpen}
+            setIsNavOpen={setIsNavOpen}
+            user={currentUser}
+            userProfile={userProfile}
+            accessibleFestivalsCount={0}
+          />
 
-        <div className="max-w-[1200px] mx-auto px-4 mt-1 flex gap-6">
-          {/* Calendar Section */}
-          <div className="flex-1">
-            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                         p-6 border border-white/20">
-              {/* Month Navigation */}
-              <div className="flex justify-between items-center mb-6">
-                <button
-                  onClick={handlePreviousMonth}
-                  className="px-6 py-2 border-2 border-white/30 rounded-full
-                           text-white font-['Space_Grotesk'] tracking-wider
-                           transition-all duration-300 
-                           hover:border-white/60 hover:scale-105
-                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                >
-                  Previous
-                </button>
-                <h2 className="text-2xl font-['Space_Grotesk'] tracking-wider text-white/90">
-                  {currentMonth.toLocaleString('default', { month: 'long', year: 'numeric' }).toLowerCase()}
-                </h2>
-                <button
-                  onClick={handleNextMonth}
-                  className="px-6 py-2 border-2 border-white/30 rounded-full
-                           text-white font-['Space_Grotesk'] tracking-wider
-                           transition-all duration-300 
-                           hover:border-white/60 hover:scale-105
-                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                >
-                  Next
-                </button>
+          <div className="max-w-[1200px] mx-auto px-4 mt-1 pb-24 lg:pb-0 flex flex-col lg:flex-row gap-6">
+            {/* Calendar Section */}
+            <div className="flex-1">
+              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                           p-4 sm:p-6 border border-white/20">
+                {/* Month Navigation - Made more compact on mobile */}
+                <div className="flex justify-between items-center mb-6">
+                  <button
+                    onClick={handlePreviousMonth}
+                    className="px-3 sm:px-6 py-2 border-2 border-white/30 rounded-full
+                             text-white text-sm sm:text-base font-['Space_Grotesk'] tracking-wider
+                             transition-all duration-300 
+                             hover:border-white/60 hover:scale-105
+                             hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                  >
+                    Previous
+                  </button>
+                  <h2 className="text-lg sm:text-2xl font-['Space_Grotesk'] tracking-wider text-white/90">
+                    {currentMonth.toLocaleString('default', { 
+                      month: 'short', 
+                      year: 'numeric'
+                    }).toLowerCase()}
+                  </h2>
+                  <button
+                    onClick={handleNextMonth}
+                    className="px-3 sm:px-6 py-2 border-2 border-white/30 rounded-full
+                             text-white text-sm sm:text-base font-['Space_Grotesk'] tracking-wider
+                             transition-all duration-300 
+                             hover:border-white/60 hover:scale-105
+                             hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                  >
+                    Next
+                  </button>
+                </div>
+
+                {/* Calendar Grid - Adjusted for mobile */}
+                <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                    <div key={day} className="text-center font-['Space_Grotesk'] tracking-wider text-white/70 py-1 text-sm sm:text-base">
+                      {day}
+                    </div>
+                  ))}
+                  {getMonthData().map((day, index) => {
+                    const date = day ? formatDate(
+                      currentMonth.getFullYear(),
+                      currentMonth.getMonth(),
+                      day
+                    ) : '';
+                    const dayEvents = events.filter(event => event.date === date);
+
+                    return (
+                      <div
+                        key={index}
+                        className={`min-h-[60px] sm:min-h-[90px] border rounded-xl p-2 sm:p-3 transition-all duration-300 
+                          ${day ? 'cursor-pointer hover:scale-[1.02]' : ''}
+                          ${selectedDate === date ? 'bg-white/20 border-white/40' : 'border-white/20'}
+                          ${!day ? 'bg-transparent border-transparent' : 'bg-white/10'}
+                          hover:bg-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]`}
+                        onClick={() => day && setSelectedDate(date)}
+                      >
+                        {day && (
+                          <>
+                            <div className="font-['Space_Grotesk'] tracking-wider text-white/90 text-sm sm:text-base">
+                              {day}
+                            </div>
+                            {dayEvents.length > 0 && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center justify-center 
+                                               bg-white/10 text-white/90 text-xs font-medium 
+                                               px-2 py-0.5 rounded-full">
+                                  {dayEvents.length}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Add Event Button */}
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowAddEvent(true)}
+                    className="w-full sm:w-auto px-6 py-2 border-2 border-white/30 rounded-full
+                             text-white font-['Space_Grotesk'] tracking-wider
+                             transition-all duration-300 flex items-center justify-center sm:justify-start gap-2
+                             hover:border-white/60 hover:scale-105
+                             hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
+                  >
+                    <Plus size={18} />
+                    Add Event
+                  </button>
+                </div>
               </div>
+            </div>
 
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-2">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                  <div key={day} className="text-center font-['Space_Grotesk'] tracking-wider text-white/70 py-1">
-                    {day}
-                  </div>
-                ))}
-                {getMonthData().map((day, index) => {
-                  const date = day ? formatDate(
-                    currentMonth.getFullYear(),
-                    currentMonth.getMonth(),
-                    day
-                  ) : '';
-                  const dayEvents = events.filter(event => event.date === date);
+            {/* Events Display Section - Made responsive */}
+            <div className="w-full lg:w-72 mt-6 lg:mt-0 space-y-3">
+              <div className="backdrop-blur-xl bg-black/40 lg:bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+                            border border-white/20 overflow-hidden lg:sticky lg:top-4">
+                <div className="p-4 border-b border-white/20">
+                  <h3 className="text-lg font-['Space_Grotesk'] tracking-wider text-white/90">
+                    Events for {new Date(selectedDate).toLocaleDateString('default', { 
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </h3>
+                </div>
 
-                  return (
-                    <div
-                      key={index}
-                      className={`min-h-[90px] border rounded-xl p-3 transition-all duration-300 
-                        ${day ? 'cursor-pointer hover:scale-[1.02]' : ''}
-                        ${selectedDate === date ? 'bg-white/20 border-white/40' : 'border-white/20'}
-                        ${!day ? 'bg-transparent border-transparent' : 'bg-white/10'}
-                        hover:bg-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]`}
-                      onClick={() => day && setSelectedDate(date)}
-                    >
-                      {day && (
-                        <>
-                          <div className="font-['Space_Grotesk'] tracking-wider text-white/90">{day}</div>
-                          {dayEvents.length > 0 && (
-                            <div className="mt-1">
-                              <span className="inline-flex items-center justify-center 
-                                             bg-white/10 text-white/90 text-xs font-medium 
-                                             px-2 py-0.5 rounded-full">
-                                {dayEvents.length}
+                <div className="max-h-[50vh] lg:max-h-[calc(100vh-8rem)] overflow-y-auto p-4 space-y-4">
+                  {events
+                    .filter(event => event.date === selectedDate)
+                    .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
+                    .map(event => (
+                      <div
+                        key={event.id}
+                        className="backdrop-blur-xl bg-black/40 lg:bg-white/5 rounded-xl p-4 
+                                 border border-white/10 hover:border-white/20 
+                                 transition-all duration-300 hover:scale-[1.02]
+                                 hover:bg-black/60 lg:hover:bg-white/10"
+                      >
+                        {/* Event Time */}
+                        {(event.startTime || event.endTime) && (
+                          <div className="mb-2">
+                            <span className="text-white/90 text-sm font-['Space_Grotesk'] tracking-wider">
+                              {event.startTime} - {event.endTime}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Event Title */}
+                        <h4 className="text-white text-lg font-['Space_Grotesk'] tracking-wider mb-2">
+                          {event.title}
+                        </h4>
+
+                        {/* Event Description */}
+                        <p className="text-white/90 text-sm mb-3 font-['Space_Grotesk']">
+                          {event.description}
+                        </p>
+
+                        {/* Event Details */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {/* Location */}
+                          {event.city && (
+                            <div className="flex items-center gap-1.5 bg-black/40 lg:bg-white/5 px-2.5 py-1 rounded-full
+                                          border border-white/10">
+                              <span className="text-xs text-white/90 font-['Space_Grotesk'] tracking-wide">
+                                📍 {event.city}, {event.country}
                               </span>
                             </div>
                           )}
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
 
-              {/* Add Event Button */}
-              <div className="mt-6">
-                <button
-                  onClick={() => setShowAddEvent(true)}
-                  className="px-6 py-2 border-2 border-white/30 rounded-full
-                           text-white font-['Space_Grotesk'] tracking-wider
-                           transition-all duration-300 flex items-center gap-2
-                           hover:border-white/60 hover:scale-105
-                           hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                >
-                  <Plus size={18} />
-                  Add Event
-                </button>
-              </div>
-            </div>
-          </div>
+                          {/* Genre */}
+                          {event.genre && (
+                            <div className="flex items-center gap-1.5 bg-black/40 lg:bg-white/5 px-2.5 py-1 rounded-full
+                                          border border-white/10">
+                              <span className="text-xs text-white/90 font-['Space_Grotesk'] tracking-wide">
+                                🎵 {event.genre}
+                              </span>
+                            </div>
+                          )}
+                        </div>
 
-          {/* Events Display Section */}
-          <div className="w-72 space-y-3">
-            <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                          border border-white/20 overflow-hidden sticky top-4">
-              <div className="p-4 border-b border-white/20">
-                <h3 className="text-lg font-['Space_Grotesk'] tracking-wider text-white/90">
-                  Events for {new Date(selectedDate).toLocaleDateString('default', { 
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
-                </h3>
-              </div>
+                        {/* Artists */}
+                        {event.artists && event.artists.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {event.artists.map(artist => (
+                              <span
+                                key={artist}
+                                className="bg-black/40 lg:bg-white/5 text-white/90 px-2.5 py-1 rounded-full text-xs
+                                         border border-white/10 font-['Space_Grotesk'] tracking-wide"
+                              >
+                                👤 {artist}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
-              <div className="max-h-[calc(100vh-8rem)] overflow-y-auto p-4 space-y-4">
-                {events
-                  .filter(event => event.date === selectedDate)
-                  .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
-                  .map(event => (
-                    <div
-                      key={event.id}
-                      className="backdrop-blur-xl bg-white/5 rounded-xl p-4 
-                               border border-white/10 hover:border-white/20 
-                               transition-all duration-300 hover:scale-[1.02]
-                               hover:bg-white/10"
-                    >
-                      {/* Event Time */}
-                      {(event.startTime || event.endTime) && (
-                        <div className="mb-2">
-                          <span className="text-white/80 text-sm font-['Space_Grotesk'] tracking-wider">
-                            {event.startTime} - {event.endTime}
+                        {/* Event Type & Actions */}
+                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-['Space_Grotesk'] tracking-wide
+                                        ${event.isPublic 
+                                          ? 'bg-black/40 lg:bg-white/10 text-white' 
+                                          : 'bg-black/30 lg:bg-white/5 text-white/90'}`}>
+                            {event.isPublic ? 'Public' : 'Private'}
                           </span>
+                          
+                          <button
+                            onClick={() => handleDeleteEvent(event.id)}
+                            className="text-white/80 hover:text-white transition-colors text-sm
+                                      font-['Space_Grotesk'] tracking-wider"
+                          >
+                            Delete
+                          </button>
                         </div>
-                      )}
+                      </div>
+                    ))}
 
-                      {/* Event Title */}
-                      <h4 className="text-white/90 text-lg font-['Space_Grotesk'] tracking-wider mb-2">
-                        {event.title}
-                      </h4>
-
-                      {/* Event Description */}
-                      <p className="text-white/70 text-sm mb-3 font-['Space_Grotesk']">
-                        {event.description}
+                  {events.filter(event => event.date === selectedDate).length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-white/90 text-sm font-['Space_Grotesk'] tracking-wider">
+                        No events scheduled for this day
                       </p>
-
-                      {/* Event Details */}
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {/* Location */}
-                        {event.city && (
-                          <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full
-                                        border border-white/10">
-                            <span className="text-xs text-white/80 font-['Space_Grotesk'] tracking-wide">
-                              📍 {event.city}, {event.country}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Genre */}
-                        {event.genre && (
-                          <div className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full
-                                        border border-white/10">
-                            <span className="text-xs text-white/80 font-['Space_Grotesk'] tracking-wide">
-                              🎵 {event.genre}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Artists */}
-                      {event.artists && event.artists.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {event.artists.map(artist => (
-                            <span
-                              key={artist}
-                              className="bg-white/5 text-white/80 px-2.5 py-1 rounded-full text-xs
-                                       border border-white/10 font-['Space_Grotesk'] tracking-wide"
-                            >
-                              👤 {artist}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Event Type & Actions */}
-                      <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-['Space_Grotesk'] tracking-wide
-                                      ${event.isPublic 
-                                        ? 'bg-white/10 text-white/90' 
-                                        : 'bg-white/5 text-white/70'}`}>
-                          {event.isPublic ? 'Public' : 'Private'}
-                        </span>
-                        
-                        <button
-                          onClick={() => handleDeleteEvent(event.id)}
-                          className="text-white/60 hover:text-white/90 transition-colors text-sm
-                                    font-['Space_Grotesk'] tracking-wider"
-                        >
-                          Delete
-                        </button>
-                      </div>
                     </div>
-                  ))}
-
-                {events.filter(event => event.date === selectedDate).length === 0 && (
-                  <div className="text-center py-8">
-                    <p className="text-white/60 text-sm font-['Space_Grotesk'] tracking-wider">
-                      No events scheduled for this day
-                    </p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
