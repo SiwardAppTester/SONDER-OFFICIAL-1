@@ -327,6 +327,11 @@ const AddPost: React.FC = () => {
         >
           <Menu size={28} />
         </button>
+        
+        {/* Add Sonder text - only visible on mobile */}
+        <h1 className="text-2xl font-bold text-white hover:text-white/80 transition-colors duration-300">
+          SONDER
+        </h1>
       </div>
 
       {/* BusinessSidebar */}

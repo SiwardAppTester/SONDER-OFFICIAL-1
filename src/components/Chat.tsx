@@ -487,15 +487,19 @@ const Chat: React.FC<ChatProps> = ({ isBusinessAccount: initialIsBusinessAccount
 
       {/* Main Content */}
       <div className="relative z-10 min-h-screen">
-        {/* Navigation */}
-        <div className="flex justify-between items-center p-4">
+        {/* Navigation - Updated for mobile consistency */}
+        <div className="md:hidden flex justify-between items-center p-4 sticky top-0 z-50 bg-black/20 backdrop-blur-sm">
           <button
             onClick={() => setIsNavOpen(!isNavOpen)}
-            className="text-white/90 hover:text-white transition-colors duration-300"
-            aria-label="Toggle navigation menu"
+            className="text-white hover:text-white/80 transition-colors duration-300"
           >
             <Menu size={28} />
           </button>
+          
+          {/* Add Sonder text - only visible on mobile */}
+          <h1 className="text-2xl font-bold text-white hover:text-white/80 transition-colors duration-300">
+            SONDER
+          </h1>
         </div>
 
         {/* Keep existing Sidebar components with updated styling */}
@@ -518,7 +522,7 @@ const Chat: React.FC<ChatProps> = ({ isBusinessAccount: initialIsBusinessAccount
         {/* Chat Layout */}
         <div className="flex justify-center w-full">
           <div className="flex flex-col md:flex-row justify-center gap-4 overflow-hidden px-4 pb-4 h-[calc(100vh-12rem)] 
-                        max-w-7xl mx-auto w-full">
+                        max-w-7xl mx-auto w-full md:pt-20">
             {/* Users sidebar */}
             <div className={`w-full md:w-80 h-full ${selectedUser ? 'hidden md:block' : 'block'}`}>
               <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
@@ -581,8 +585,8 @@ const Chat: React.FC<ChatProps> = ({ isBusinessAccount: initialIsBusinessAccount
             </div>
 
             {/* Chat area */}
-            <div className={`flex-1 h-full max-w-3xl ${selectedUser ? 'block' : 'hidden md:block'}`}>
-              <div className="backdrop-blur-xl bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
+            <div className={`flex-1 h-full max-w-3xl ${selectedUser ? 'block mt-8 md:mt-0' : 'hidden md:block'}`}>
+              <div className="backdrop-blur-xl bg-black/40 md:bg-white/10 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.1)] 
                             border border-white/20 flex flex-col h-full">
                 {selectedUser ? (
                   <>
@@ -616,10 +620,10 @@ const Chat: React.FC<ChatProps> = ({ isBusinessAccount: initialIsBusinessAccount
                           } mb-4`}
                         >
                           <div
-                            className={`max-w-[70%] rounded-2xl px-4 py-3 
+                            className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-3 
                                       ${message.senderId === currentUser?.uid
-                                        ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white/90"
-                                        : "bg-white/10 backdrop-blur-sm border border-white/20 text-white/90"}`}
+                                        ? "bg-black/40 md:bg-white/10 backdrop-blur-sm border border-white/20 text-white"
+                                        : "bg-black/40 md:bg-white/10 backdrop-blur-sm border border-white/20 text-white"}`}
                           >
                             {message.type === "shared_post" ? (
                               <div className="cursor-pointer">
@@ -628,16 +632,16 @@ const Chat: React.FC<ChatProps> = ({ isBusinessAccount: initialIsBusinessAccount
                                   className="hover:opacity-90 transition-opacity"
                                 >
                                   <div className="flex items-center gap-2 mb-1">
-                                    <Share size={16} />
-                                    <span className="font-['Space_Grotesk'] tracking-wider">Shared a post</span>
+                                    <Share size={16} className="text-white" />
+                                    <span className="font-['Space_Grotesk'] tracking-wider text-white">Shared a post</span>
                                   </div>
-                                  <span className="text-sm underline font-['Space_Grotesk']">Click to view post</span>
+                                  <span className="text-sm underline font-['Space_Grotesk'] text-white">Click to view post</span>
                                 </div>
                               </div>
                             ) : (
-                              <p className="font-['Space_Grotesk'] tracking-wider">{message.text}</p>
+                              <p className="font-['Space_Grotesk'] tracking-wider text-white">{message.text}</p>
                             )}
-                            <p className="text-xs mt-1 opacity-70 font-['Space_Grotesk']">
+                            <p className="text-xs mt-1 text-white/70 font-['Space_Grotesk']">
                               {message.timestamp?.toDate().toLocaleTimeString()}
                             </p>
                           </div>

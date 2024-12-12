@@ -220,6 +220,21 @@ const Search: React.FC = () => {
 
   return (
     <div className="min-h-screen">
+      {/* Add Mobile Navigation Header */}
+      <div className="md:hidden flex justify-between items-center p-4 sticky top-0 z-50 bg-black/20 backdrop-blur-sm">
+        <button
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          className="text-white hover:text-white/80 transition-colors duration-300"
+        >
+          <Menu size={28} />
+        </button>
+        
+        {/* Add Sonder text - only visible on mobile */}
+        <h1 className="text-2xl font-bold text-white hover:text-white/80 transition-colors duration-300">
+          SONDER
+        </h1>
+      </div>
+
       {/* Conditionally render either BusinessSidebar or regular Sidebar */}
       {isBusinessAccount ? (
         <BusinessSidebar
@@ -254,112 +269,117 @@ const Search: React.FC = () => {
 
         {/* Content */}
         <div className="relative z-10 min-h-screen flex flex-col">
-          {/* Search Content */}
-          <div className="flex-1 p-4 pt-20">
-            <div className="max-w-2xl mx-auto">
-              {/* Search Input */}
-              <div className="mb-8 transform hover:scale-105 transition-all duration-300">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Explore"
-                    className="w-full px-6 py-4 rounded-full 
-                             bg-white/10 text-white 
-                             border border-white/20
-                             backdrop-blur-xl
-                             shadow-[0_0_20px_rgba(255,255,255,0.1)]
-                             hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                             transition-all duration-300
-                             text-lg focus:outline-none focus:ring-2 focus:ring-white/30
-                             placeholder-white/50"
-                    minLength={2}
-                  />
-                  <SearchIcon className="absolute right-6 top-1/2 transform -translate-y-1/2 text-white/70" size={24} />
+          {/* Search Content - Make search bar sticky on mobile */}
+          <div className="flex-1 p-4 md:pt-20 flex flex-col">
+            <div className="max-w-2xl mx-auto w-full">
+              {/* Search Input - Sticky on mobile */}
+              <div className="md:mb-8 sticky top-[72px] md:relative md:top-0 z-20">
+                <div className="transform hover:scale-105 transition-all duration-300">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Explore"
+                      className="w-full px-6 py-4 rounded-full 
+                               bg-white/10 text-white 
+                               border border-white/20
+                               backdrop-blur-xl
+                               shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                               hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                               transition-all duration-300
+                               text-lg focus:outline-none focus:ring-2 focus:ring-white/30
+                               placeholder-white/50"
+                      minLength={2}
+                    />
+                    <SearchIcon className="absolute right-6 top-1/2 transform -translate-y-1/2 text-white/70" size={24} />
+                  </div>
                 </div>
               </div>
 
-              {/* Error Message */}
-              {error && (
-                <div className="text-white/90 mb-4 text-center bg-white/10 backdrop-blur-xl rounded-lg p-3 border border-white/20">
-                  {error}
-                </div>
-              )}
-
-              {/* Results */}
-              <div className="space-y-4">
-                {results.length > 0 ? (
-                  results.map((user) => (
-                    <Link
-                      to={`/profile/${user.uid}`}
-                      key={user.uid}
-                      className="block bg-white/10 backdrop-blur-xl py-4 px-6 rounded-2xl
-                               border border-white/20
-                               shadow-[0_0_20px_rgba(255,255,255,0.1)]
-                               hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
-                               transform hover:scale-105 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-4">
-                        {user.photoURL ? (
-                          <img
-                            src={user.photoURL}
-                            alt={user.displayName}
-                            className="w-16 h-16 rounded-full ring-2 ring-white/20"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-white/20
-                                        flex items-center justify-center text-white text-xl font-semibold">
-                            {user.displayName[0]}
-                          </div>
-                        )}
-                        <div className="flex-grow -my-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold text-lg text-white/90">
-                              {user.displayName}
-                            </p>
-                            {user.isBusinessAccount && (
-                              <CheckCircle 
-                                size={20} 
-                                className="text-white/70" 
-                                fill="currentColor"
-                                aria-label="Verified Business Account"
-                              />
-                            )}
-                          </div>
-                          <p className="text-white/50 text-sm -mt-0.5">@{user.username}</p>
-                        </div>
-                        {auth.currentUser && auth.currentUser.uid !== user.uid && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleFollowToggle(user.uid);
-                            }}
-                            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
-                              ${following.has(user.uid)
-                                ? 'bg-white/20 text-white hover:bg-white/30'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                              }`}
-                          >
-                            {following.has(user.uid) ? 'Unfollow' : 'Follow'}
-                          </button>
-                        )}
-                      </div>
-                    </Link>
-                  ))
-                ) : (
-                  <div className="text-center text-white/60 text-lg py-8 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
-                    {loading ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                        <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                      </div>
-                    ) : (
-                      searchTerm ? "No users found" : ""
-                    )}
+              {/* Results Section - Scrollable on mobile */}
+              <div className="mt-4 md:mt-0 flex-1 overflow-y-auto">
+                {/* Error Message */}
+                {error && (
+                  <div className="text-white/90 mb-4 text-center bg-white/10 backdrop-blur-xl rounded-lg p-3 border border-white/20">
+                    {error}
                   </div>
                 )}
+
+                {/* Results */}
+                <div className="space-y-4">
+                  {results.length > 0 ? (
+                    results.map((user) => (
+                      <Link
+                        to={`/profile/${user.uid}`}
+                        key={user.uid}
+                        className="block bg-white/10 backdrop-blur-xl py-4 px-6 rounded-2xl
+                                 border border-white/20
+                                 shadow-[0_0_20px_rgba(255,255,255,0.1)]
+                                 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                                 transform hover:scale-105 transition-all duration-300"
+                      >
+                        <div className="flex items-center gap-4">
+                          {user.photoURL ? (
+                            <img
+                              src={user.photoURL}
+                              alt={user.displayName}
+                              className="w-16 h-16 rounded-full ring-2 ring-white/20"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-full bg-white/20
+                                          flex items-center justify-center text-white text-xl font-semibold">
+                              {user.displayName[0]}
+                            </div>
+                          )}
+                          <div className="flex-grow -my-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-lg text-white/90">
+                                {user.displayName}
+                              </p>
+                              {user.isBusinessAccount && (
+                                <CheckCircle 
+                                  size={20} 
+                                  className="text-white/70" 
+                                  fill="currentColor"
+                                  aria-label="Verified Business Account"
+                                />
+                              )}
+                            </div>
+                            <p className="text-white/50 text-sm -mt-0.5">@{user.username}</p>
+                          </div>
+                          {auth.currentUser && auth.currentUser.uid !== user.uid && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleFollowToggle(user.uid);
+                              }}
+                              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300
+                                ${following.has(user.uid)
+                                  ? 'bg-white/20 text-white hover:bg-white/30'
+                                  : 'bg-white/10 text-white hover:bg-white/20'
+                                }`}
+                            >
+                              {following.has(user.uid) ? 'Unfollow' : 'Follow'}
+                            </button>
+                          )}
+                        </div>
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="text-center text-white/60 text-lg py-8 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20">
+                      {loading ? (
+                        <div className="flex items-center justify-center gap-3">
+                          <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                          <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="w-3 h-3 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
+                      ) : (
+                        searchTerm ? "No users found" : ""
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
