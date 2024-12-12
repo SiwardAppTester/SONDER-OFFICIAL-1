@@ -87,6 +87,119 @@ function InnerSphere() {
   )
 }
 
+const CommentDrawer = ({ isOpen, onClose, post, user, commentText, setCommentText, handleComment, handleCommentLike, handleDeleteComment }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-50 md:hidden">
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Drawer */}
+      <div className="relative bg-black/90 backdrop-blur-xl
+                    rounded-t-[2rem] border-t border-white/20
+                    transform transition-transform duration-300
+                    h-[60vh] max-h-[800px]">
+        {/* Handle */}
+        <div className="flex justify-center pt-4 pb-2">
+          <div className="w-12 h-1 bg-white/20 rounded-full"/>
+        </div>
+
+        {/* Comments Header */}
+        <div className="px-4 pb-4 flex items-center justify-between border-b border-white/10">
+          <h3 className="text-white/90 font-medium">Comments ({post.comments.length})</h3>
+          <button onClick={onClose} className="text-white/60">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Comments List */}
+        <div className="overflow-y-auto p-4 space-y-4" style={{ height: 'calc(100% - 140px)' }}>
+          {post.comments.map((comment) => (
+            <div key={comment.id} className="bg-white/5 p-3 rounded-lg">
+              <div className="flex items-start gap-2">
+                {comment.userPhotoURL ? (
+                  <img
+                    src={comment.userPhotoURL}
+                    alt={comment.userDisplayName}
+                    className="w-8 h-8 rounded-full border border-white/20"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                    <span className="text-white/90 text-sm">
+                      {comment.userDisplayName[0].toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <p className="text-sm font-medium text-white/90">
+                      {comment.userDisplayName}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleCommentLike(post.id, comment.id)}
+                        className="text-white/60 hover:text-white"
+                      >
+                        <Heart
+                          size={14}
+                          className={user && comment.likes?.includes(user.uid) ? 
+                                   "fill-white" : ""}
+                        />
+                      </button>
+                      {/* Only show delete button if comment belongs to current user */}
+                      {user && comment.userId === user.uid && (
+                        <button
+                          onClick={() => handleDeleteComment(post.id, comment.id)}
+                          className="text-white/60 hover:text-red-500 transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-white/80 text-sm mt-1">{comment.text}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Comment Input */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/90 border-t border-white/10">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={commentText[post.id] || ''}
+              onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+              placeholder="Add a comment..."
+              className="flex-1 p-3 rounded-lg bg-white/5 border border-white/20
+                       text-white placeholder-white/50
+                       focus:outline-none focus:ring-2 focus:ring-white/30"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleComment(post.id);
+                }
+              }}
+            />
+            <button
+              onClick={() => handleComment(post.id)}
+              className="p-3 rounded-lg bg-white/10 hover:bg-white/20 
+                        border border-white/20 transition-colors"
+            >
+              <Send size={20} className="text-white" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
@@ -106,6 +219,7 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
   const [shareSuccess, setShareSuccess] = useState(false);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
   const navigate = useNavigate();
+  const [activeCommentDrawer, setActiveCommentDrawer] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
@@ -574,18 +688,18 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
                     </div>
                   </div>
 
-                  {/* Post Content with New Layout */}
-                  <div className="flex gap-4">
+                  {/* Post Content with Responsive Layout */}
+                  <div className="flex flex-col md:flex-row gap-4">
                     {/* Left Side - Media Content and Like Button */}
-                    <div className="relative flex-1 max-w-[800px]">
+                    <div className="relative flex-1">
                       {/* Text Content */}
                       <p className="text-white/90 mb-4">{post.text}</p>
                       
-                      {/* Media Content with Like Button */}
+                      {/* Media Content with Action Buttons */}
                       {post.mediaFiles && post.mediaFiles.length > 0 && (
                         <div className="relative rounded-lg overflow-hidden border border-white/20">
                           {post.mediaFiles.map((media, index) => (
-                            <div key={index} className="relative">
+                            <div key={index} className="relative w-full">
                               {media.type === 'image' ? (
                                 <img
                                   src={media.url}
@@ -602,29 +716,43 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
                             </div>
                           ))}
                           
-                          {/* Like Button */}
+                          {/* Action Buttons */}
                           <div className="absolute bottom-4 right-4 backdrop-blur-md bg-black/30 
-                                        rounded-lg p-2 flex items-center gap-2 
+                                        rounded-lg p-2 flex items-center gap-3 
                                         border border-white/10">
-                            <span className="text-sm text-white/80">{post.likes.length}</span>
-                            <button
-                              onClick={() => handleLike(post.id)}
-                              className="flex items-center"
-                            >
-                              <Heart
-                                size={20}
-                                className={`${user && post.likes.includes(user.uid) ? 
-                                          "fill-white text-white" : "text-white/60"} 
+                            {/* Like Button */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-white/80">{post.likes.length}</span>
+                              <button
+                                onClick={() => handleLike(post.id)}
+                                className="flex items-center"
+                              >
+                                <Heart
+                                  size={20}
+                                  className={`${user && post.likes.includes(user.uid) ? 
+                                            "fill-white text-white" : "text-white/60"} 
                                           hover:text-white transition-colors`}
-                              />
-                            </button>
+                                />
+                              </button>
+                            </div>
+
+                            {/* Comment Button - Mobile Only */}
+                            <div className="flex items-center gap-2 md:hidden">
+                              <span className="text-sm text-white/80">{post.comments.length}</span>
+                              <button
+                                onClick={() => setActiveCommentDrawer(post.id)}
+                                className="flex items-center text-white/60 hover:text-white"
+                              >
+                                <MessageCircle size={20} />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Right Side - Comments Section and Input */}
-                    <div className="w-72 border-l border-white/10 pl-4 flex flex-col">
+                    {/* Right Side - Comments Section (Desktop Only) */}
+                    <div className="w-72 border-l border-white/10 pl-4 flex-col hidden md:flex">
                       {/* Comments Header */}
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-white/90 font-medium">Comments</h3>
@@ -685,24 +813,46 @@ const Discover: React.FC<DiscoverProps> = ({ isBusinessAccount }) => {
 
                       {/* Add Comment Input - Fixed at bottom of comments section */}
                       <div className="mt-auto pt-4 border-t border-white/10">
-                        <input
-                          type="text"
-                          value={commentText[post.id] || ''}
-                          onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
-                          placeholder="Add a comment..."
-                          className="w-full p-3 rounded-lg bg-white/5 border border-white/20
-                                   text-white placeholder-white/50
-                                   focus:outline-none focus:ring-2 focus:ring-white/30"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleComment(post.id);
-                            }
-                          }}
-                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={commentText[post.id] || ''}
+                            onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                            placeholder="Add a comment..."
+                            className="flex-1 p-3 rounded-lg bg-white/5 border border-white/20
+                                     text-white placeholder-white/50
+                                     focus:outline-none focus:ring-2 focus:ring-white/30"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleComment(post.id);
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => handleComment(post.id)}
+                            className="p-3 rounded-lg bg-white/10 hover:bg-white/20 
+                                      border border-white/20 transition-colors"
+                          >
+                            <Send size={20} className="text-white" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* Mobile Comment Drawer */}
+                  <CommentDrawer
+                    isOpen={activeCommentDrawer === post.id}
+                    onClose={() => setActiveCommentDrawer(null)}
+                    post={post}
+                    user={user}
+                    commentText={commentText}
+                    setCommentText={setCommentText}
+                    handleComment={handleComment}
+                    handleCommentLike={handleCommentLike}
+                    handleDeleteComment={handleDeleteComment}
+                  />
                 </div>
               ))
             ) : (
