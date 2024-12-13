@@ -36,10 +36,17 @@ module.exports = {
         'fade-in-up': 'fade-in-up 0.3s ease-out',
         'text': 'text 5s ease infinite',
         'fade-in': 'fadeIn 2s ease-out forwards',
+        'spin-slow': 'spin 20s linear infinite',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-      }
+      },
+      perspective: {
+        '1000': '1000px',
+      },
+      transformStyle: {
+        '3d': 'preserve-3d',
+      },
     },
   },
   variants: {

@@ -50,7 +50,8 @@ interface Festival {
   description: string;
   imageUrl: string;
   date: string;
-  time: string;
+  startTime: string;
+  endTime: string;
   categoryAccessCodes?: AccessCode[];
   categories?: Category[];
   qrCodes?: {
@@ -165,7 +166,8 @@ const AddPost: React.FC = () => {
   const [toast, setToast] = useState<Toast | null>(null);
   const [newFestivalImage, setNewFestivalImage] = useState<File | null>(null);
   const [newFestivalDate, setNewFestivalDate] = useState("");
-  const [newFestivalTime, setNewFestivalTime] = useState("");
+  const [newFestivalStartTime, setNewFestivalStartTime] = useState("");
+  const [newFestivalEndTime, setNewFestivalEndTime] = useState("");
   const [imagePreview, setImagePreview] = useState<string>("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -183,7 +185,8 @@ const AddPost: React.FC = () => {
         description: doc.data().description,
         imageUrl: doc.data().imageUrl,
         date: doc.data().date,
-        time: doc.data().time,
+        startTime: doc.data().startTime,
+        endTime: doc.data().endTime,
         categoryAccessCodes: doc.data().categoryAccessCodes || [],
         categories: doc.data().categories || [],
         qrCodes: doc.data().qrCodes || [],
@@ -205,7 +208,7 @@ const AddPost: React.FC = () => {
   const handleAddFestival = async () => {
     if (isCreating) return;
     
-    if (!newFestivalName.trim() || !newFestivalImage || !newFestivalDate || !newFestivalTime) {
+    if (!newFestivalName.trim() || !newFestivalImage || !newFestivalDate || !newFestivalStartTime || !newFestivalEndTime) {
       setToast({
         message: "Please fill in all required fields",
         type: 'error'
@@ -226,7 +229,8 @@ const AddPost: React.FC = () => {
         description: newFestivalDescription.trim(),
         imageUrl,
         date: newFestivalDate,
-        time: newFestivalTime,
+        startTime: newFestivalStartTime,
+        endTime: newFestivalEndTime,
         createdAt: serverTimestamp(),
         categoryAccessCodes: [],
         categories: [],
@@ -244,7 +248,8 @@ const AddPost: React.FC = () => {
         description: newFestivalDescription.trim(),
         imageUrl,
         date: newFestivalDate,
-        time: newFestivalTime,
+        startTime: newFestivalStartTime,
+        endTime: newFestivalEndTime,
         categoryAccessCodes: [],
         categories: [],
         stats: {
@@ -261,7 +266,8 @@ const AddPost: React.FC = () => {
       setNewFestivalImage(null);
       setImagePreview("");
       setNewFestivalDate("");
-      setNewFestivalTime("");
+      setNewFestivalStartTime("");
+      setNewFestivalEndTime("");
       setShowAddFestival(false);
       setToast({
         message: "Festival created successfully",
@@ -409,8 +415,8 @@ const AddPost: React.FC = () => {
                     {festival.description}
                   </p>
                   <div className="mt-1 text-xs text-white/50 font-['Space_Grotesk']">
-                    {festival.time && (
-                      <span>{festival.time} +18</span>
+                    {festival.startTime && festival.endTime && (
+                      <span>{festival.startTime} - {festival.endTime} +18</span>
                     )}
                   </div>
                 </div>
@@ -465,22 +471,52 @@ const AddPost: React.FC = () => {
                            focus:outline-none focus:ring-2 focus:ring-white/30 
                            min-h-[100px] resize-y"
                 />
-                <input
-                  type="date"
-                  value={newFestivalDate}
-                  onChange={(e) => setNewFestivalDate(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
-                           text-white font-['Space_Grotesk']
-                           focus:outline-none focus:ring-2 focus:ring-white/30"
-                />
-                <input
-                  type="time"
-                  value={newFestivalTime}
-                  onChange={(e) => setNewFestivalTime(e.target.value)}
-                  className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
-                           text-white font-['Space_Grotesk']
-                           focus:outline-none focus:ring-2 focus:ring-white/30"
-                />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={newFestivalDate}
+                      onChange={(e) => setNewFestivalDate(e.target.value)}
+                      className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                               text-white font-['Space_Grotesk']
+                               focus:outline-none focus:ring-2 focus:ring-white/30"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                        Start Time
+                      </label>
+                      <input
+                        type="time"
+                        value={newFestivalStartTime}
+                        onChange={(e) => setNewFestivalStartTime(e.target.value)}
+                        className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                                 text-white font-['Space_Grotesk']
+                                 focus:outline-none focus:ring-2 focus:ring-white/30"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-['Space_Grotesk'] text-white/60 mb-2">
+                        End Time
+                      </label>
+                      <input
+                        type="time"
+                        value={newFestivalEndTime}
+                        onChange={(e) => setNewFestivalEndTime(e.target.value)}
+                        className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+                                 text-white font-['Space_Grotesk']
+                                 focus:outline-none focus:ring-2 focus:ring-white/30"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={handleAddFestival}
