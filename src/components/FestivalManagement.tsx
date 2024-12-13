@@ -7,7 +7,7 @@ import { auth, db, storage } from "../firebase";
 import { useUserProfile } from '../contexts/UserProfileContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject, uploadBytesResumable } from 'firebase/storage';
 import { Plus, X, Upload, Share, Download, Trash2, ArrowLeft, Key, Menu } from 'lucide-react';
 
 interface Festival {
@@ -121,7 +121,7 @@ const FestivalManagement: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<string>("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{post: Post} | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<{post: Post, mediaIndex: number} | null>(null);
 
   useEffect(() => {
     if (toast) {
@@ -229,9 +229,11 @@ const FestivalManagement: React.FC = () => {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
+      // Convert FileList to Array to ensure we keep all files
+      const filesArray = Array.from(event.target.files);
       setSelectedFiles(event.target.files);
       setShowUploadModal(true);
-      setUploadCategory(""); // Reset category selection
+      setUploadCategory("");
     }
   };
 
@@ -244,7 +246,9 @@ const FestivalManagement: React.FC = () => {
       return;
     }
 
-    handleUploadWithCategory(selectedFiles);
+    // Create a new FileList from the selected files
+    const files = selectedFiles;
+    handleUploadWithCategory(files);
     setShowUploadModal(false);
     setUploadCategory("");
     
@@ -260,7 +264,6 @@ const FestivalManagement: React.FC = () => {
       return;
     }
 
-    // Check if user is authenticated
     if (!auth.currentUser) {
       console.error("User not authenticated");
       return;
@@ -271,6 +274,11 @@ const FestivalManagement: React.FC = () => {
     setUploadProgress(0);
 
     try {
+      const uploadPromises = [];
+      const uploadedFiles = [];
+      const totalFiles = files.length;
+
+      // Create upload promises for all files
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const isVideo = file.type.startsWith('video/');
@@ -281,13 +289,15 @@ const FestivalManagement: React.FC = () => {
           continue;
         }
 
-        // Different size limits for images and videos
-        const maxImageSize = 10 * 1024 * 1024; // 10MB for images
-        const maxVideoSize = 100 * 1024 * 1024; // 100MB for videos
+        const maxImageSize = 30 * 1024 * 1024;
+        const maxVideoSize = 300 * 1024 * 1024;
         const maxSize = isVideo ? maxVideoSize : maxImageSize;
 
         if (file.size > maxSize) {
-          alert(`File too large: ${file.name}. Maximum size for ${isVideo ? 'videos' : 'images'} is ${maxSize / (1024 * 1024)}MB`);
+          setToast({
+            message: `File too large: ${file.name}. Maximum size for ${isVideo ? 'videos is 300MB' : 'images is 30MB'}`,
+            type: 'error'
+          });
           continue;
         }
 
@@ -296,39 +306,64 @@ const FestivalManagement: React.FC = () => {
         const filePath = `media/${userId}/${fileName}`;
         const fileRef = ref(storage, filePath);
 
-        try {
-          const snapshot = await uploadBytes(fileRef, file);
-          const downloadURL = await getDownloadURL(snapshot.ref);
+        const uploadPromise = new Promise<{ url: string; type: "image" | "video" }>((resolve, reject) => {
+          const uploadTask = uploadBytesResumable(fileRef, file);
 
-          // Add post to Firestore with uploadCategory instead of selectedCategory
-          const postData = {
-            text: "",
-            mediaFiles: [{
-              url: downloadURL,
-              type: isVideo ? "video" : "image",
-              categoryId: uploadCategory
-            }],
-            userId: userId,
-            createdAt: new Date().toISOString(),
-            festivalId: festivalId
-          };
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              const fileProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              // Update progress for this specific file
+              setToast({
+                message: `Uploading ${i + 1}/${files.length} files: ${fileProgress.toFixed(1)}%`,
+                type: 'success'
+              });
+            },
+            (error) => {
+              console.error("Upload error:", error);
+              reject(error);
+            },
+            async () => {
+              try {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve({
+                  url: downloadURL,
+                  type: isVideo ? "video" : "image"
+                });
+              } catch (error) {
+                reject(error);
+              }
+            }
+          );
+        });
 
-          await addDoc(collection(db, "posts"), postData);
-          setUploadProgress(((i + 1) / files.length) * 100);
-        } catch (uploadError: any) {
-          console.error("Error in upload process:", uploadError);
-          continue;
-        }
+        uploadPromises.push(uploadPromise);
       }
 
-      // Show success toast after upload
+      // Wait for all uploads to complete
+      const results = await Promise.all(uploadPromises);
+
+      // Create the post with all uploaded files
+      const postData = {
+        text: "",
+        mediaFiles: results.map(result => ({
+          ...result,
+          categoryId: uploadCategory
+        })),
+        userId: userId,
+        createdAt: new Date().toISOString(),
+        festivalId: festivalId
+      };
+
+      await addDoc(collection(db, "posts"), postData);
+
       setToast({
-        message: "Files uploaded successfully",
+        message: `Successfully uploaded ${results.length} files`,
         type: 'success'
       });
 
-    } catch (error: any) {
-      console.error("Error in main upload process:", error);
+    } catch (error) {
+      console.error("Error in upload process:", error);
       setToast({
         message: "Error uploading files. Please try again.",
         type: 'error'
@@ -341,6 +376,15 @@ const FestivalManagement: React.FC = () => {
         fileInputRef.current.value = '';
       }
     }
+  };
+
+  // Helper function to format bytes into readable format
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const handleDownload = async (url: string, mediaType: string, postId: string, festivalId: string, categoryId?: string, mediaIndex?: number) => {
@@ -431,8 +475,8 @@ const FestivalManagement: React.FC = () => {
     }
   };
 
-  const handleDelete = async (post: Post) => {
-    setShowDeleteConfirm({ post });
+  const handleDelete = async (post: Post, mediaIndex: number) => {
+    setShowDeleteConfirm({ post, mediaIndex });
   };
 
   const handleConfirmDelete = async () => {
@@ -440,32 +484,49 @@ const FestivalManagement: React.FC = () => {
       return;
     }
 
-    const post = showDeleteConfirm.post;
+    const { post, mediaIndex } = showDeleteConfirm;
+    const mediaFile = post.mediaFiles[mediaIndex];
 
     try {
-      // First, try to delete from Storage
-      for (const mediaFile of post.mediaFiles) {
-        try {
-          const fileUrl = new URL(mediaFile.url);
-          const filePath = decodeURIComponent(fileUrl.pathname.split('/o/')[1].split('?')[0]);
-          const fileRef = ref(storage, filePath);
-          
-          await deleteObject(fileRef);
-        } catch (storageError) {
-          console.error("Error deleting file from storage:", storageError);
-        }
+      // Delete the specific file from Storage
+      try {
+        const fileUrl = new URL(mediaFile.url);
+        const filePath = decodeURIComponent(fileUrl.pathname.split('/o/')[1].split('?')[0]);
+        const fileRef = ref(storage, filePath);
+        await deleteObject(fileRef);
+      } catch (storageError) {
+        console.error("Error deleting file from storage:", storageError);
       }
 
-      // Then delete the post document
-      await deleteDoc(doc(db, "posts", post.id));
+      // Update the post document to remove only the specific media file
+      const updatedMediaFiles = post.mediaFiles.filter((_, index) => index !== mediaIndex);
+
+      if (updatedMediaFiles.length === 0) {
+        // If this was the last media file, delete the entire post
+        await deleteDoc(doc(db, "posts", post.id));
+        setPosts(prevPosts => prevPosts.filter(p => p.id !== post.id));
+      } else {
+        // Otherwise, update the post with the remaining media files
+        await updateDoc(doc(db, "posts", post.id), {
+          mediaFiles: updatedMediaFiles
+        });
+        
+        // Update local state
+        setPosts(prevPosts => prevPosts.map(p => {
+          if (p.id === post.id) {
+            return {
+              ...p,
+              mediaFiles: updatedMediaFiles
+            };
+          }
+          return p;
+        }));
+      }
 
       setToast({
         message: "Content deleted successfully",
         type: 'success'
       });
-
-      // Update local state to remove the deleted post
-      setPosts(prevPosts => prevPosts.filter(p => p.id !== post.id));
 
     } catch (error) {
       console.error("Error deleting content:", error);
@@ -844,10 +905,10 @@ const FestivalManagement: React.FC = () => {
             <div className="flex justify-center">
               <input
                 type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                accept="image/*,video/*"
                 multiple
+                accept="image/*,video/*"
+                onChange={handleFileSelect}
+                ref={fileInputRef}
                 className="hidden"
               />
               <button
@@ -864,7 +925,7 @@ const FestivalManagement: React.FC = () => {
                             ${uploading ? 'animate-bounce' : ''}`}
               >
                 <Upload className={`w-4 h-4 ${uploading ? 'animate-bounce' : ''}`} />
-                {uploading ? `Uploading ${uploadProgress.toFixed(0)}%` : 'Upload Content'}
+                {uploading ? `Uploading ${uploadProgress.toFixed(0)}%` : 'Upload Files'}
               </button>
             </div>
 
@@ -925,7 +986,7 @@ const FestivalManagement: React.FC = () => {
                         )}
                         <div className="absolute top-2 right-2">
                           <button
-                            onClick={() => handleDelete(post)}
+                            onClick={() => handleDelete(post, mediaIndex)}
                             className="bg-red-500/20 text-white p-2 rounded-full opacity-0 
                                      group-hover:opacity-100 transition-all duration-300
                                      hover:bg-red-500/40 border border-red-500/40
@@ -1519,25 +1580,23 @@ const FestivalManagement: React.FC = () => {
                       Are you sure you want to delete this content? This action cannot be undone.
                     </p>
 
-                    {/* Preview of content to be deleted */}
+                    {/* Preview of content to be deleted - show only the selected media */}
                     <div className="rounded-xl overflow-hidden border border-white/10">
-                      {showDeleteConfirm.post.mediaFiles.map((media, index) => (
-                        <div key={index} className="aspect-video relative">
-                          {media.type === "image" ? (
-                            <img
-                              src={media.url}
-                              alt="Content to delete"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <video
-                              src={media.url}
-                              className="w-full h-full object-cover"
-                              controls
-                            />
-                          )}
-                        </div>
-                      ))}
+                      <div className="aspect-video relative">
+                        {showDeleteConfirm.post.mediaFiles[showDeleteConfirm.mediaIndex].type === "image" ? (
+                          <img
+                            src={showDeleteConfirm.post.mediaFiles[showDeleteConfirm.mediaIndex].url}
+                            alt="Content to delete"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={showDeleteConfirm.post.mediaFiles[showDeleteConfirm.mediaIndex].url}
+                            className="w-full h-full object-cover"
+                            controls
+                          />
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex gap-3 pt-4">
