@@ -86,6 +86,22 @@ function Scene() {
 const AboutUs: React.FC = () => {
   return (
     <>
+      {/* Add this style tag at the top of your component */}
+      <style>
+        {`
+          /* Hide scrollbar for Chrome, Safari and Opera */
+          ::-webkit-scrollbar {
+            display: none;
+          }
+
+          /* Hide scrollbar for IE, Edge and Firefox */
+          * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+          }
+        `}
+      </style>
+
       {/* Sphere Container - Fixed height */}
       <div className="relative w-full bg-black pt-24">
         {/* Sign In Button */}
@@ -96,7 +112,7 @@ const AboutUs: React.FC = () => {
         </div>
 
         {/* Background with sphere - Fixed height */}
-        <div className="absolute inset-0 h-[300vh] bg-black">
+        <div className="absolute inset-0 h-[275vh] bg-black">
           <Canvas
             className="w-full h-full"
             gl={{ antialias: true, alpha: true }}
@@ -110,7 +126,7 @@ const AboutUs: React.FC = () => {
         </div>
 
         {/* Content that overlaps with sphere */}
-        <div className="relative h-[300vh]">
+        <div className="relative h-[275vh]">
           {/* Hero Section */}
           <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
             <div className="mt-64">
@@ -145,9 +161,9 @@ const AboutUs: React.FC = () => {
                 </div>
               </div>
 
-              {/* New Text Section */}
+              {/* Spectators Section */}
               <div className="mt-[20vh] max-w-5xl -ml-32 text-left">
-                <h2 className="text-[2.5rem] md:text-[3.5rem] text-white/40 font-light leading-none mb-4">
+                <h2 className="text-[2.5rem] md:text-[3.5rem] text-white/40 font-light leading-none mb-3">
                   We have become spectators<br />
                   of our own lives.
                 </h2>
@@ -157,11 +173,11 @@ const AboutUs: React.FC = () => {
               </div>
 
               {/* Centered Question Section */}
-              <div className="mt-[28rem] text-center max-w-4xl mx-auto">
-                <p className="text-white/40 text-xl mb-4">
+              <div className="mt-[20rem] text-center max-w-4xl mx-auto">
+                <p className="text-white/40 text-base mb-3">
                   and let's face it
                 </p>
-                <h2 className="text-[2rem] md:text-[2.75rem] text-white font-bold tracking-wide leading-tight">
+                <h2 className="text-[1.75rem] md:text-[2.25rem] text-white font-bold tracking-wide leading-tight">
                   ARE WE CAPTURING THESE MOMENTS<br />
                   TO REMEMBER, OR TO PROVE WE WERE<br />
                   THERE?
