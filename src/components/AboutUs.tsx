@@ -45,6 +45,32 @@ function FloatingShell() {
   );
 }
 
+// Add this new component for the bottom sphere
+function BottomFloatingShell() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1;
+      meshRef.current.rotation.y = Math.sin(state.clock.getElapsedTime() * 0.2) * 0.1;
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} position={[0, 0, 0]} scale={[2.5, 2.5, 2.5]} castShadow>
+      <sphereGeometry args={[1, 32, 32]} />
+      <meshStandardMaterial
+        color="#1a1a1a"
+        metalness={0.9}
+        roughness={0.1}
+        envMapIntensity={1}
+        transparent
+        opacity={0.9}
+      />
+    </mesh>
+  );
+}
+
 function Scene() {
   return (
     <>
@@ -158,6 +184,21 @@ const AboutUs: React.FC = () => {
 
       {/* Additional Content Container - Can extend without affecting sphere */}
       <div className="relative w-full bg-black -mt-64">
+        {/* Orange Beam Background - With fixed height container */}
+        <div className="absolute inset-0 overflow-hidden h-[2000px]">
+          {/* Main left-side beam */}
+          <div className="absolute -left-[400px] top-[30%] w-[1200px] h-[1000px] 
+                        bg-[#FF8533] opacity-15 blur-[120px] rotate-[45deg]"></div>
+          
+          {/* Secondary subtle beam */}
+          <div className="absolute -left-[200px] top-[40%] w-[800px] h-[800px] 
+                        bg-[#FF9966] opacity-20 blur-[150px] rotate-[30deg]"></div>
+          
+          {/* Subtle right-side glow */}
+          <div className="absolute right-0 top-[50%] w-[500px] h-[800px] 
+                        bg-[#FFB380] opacity-10 blur-[180px] rotate-[20deg]"></div>
+        </div>
+
         {/* Description Section */}
         <div className="max-w-4xl mx-auto text-right px-4 py-16">
           <p className="text-[1.5rem] md:text-[2rem] text-white/40 leading-tight">
@@ -173,9 +214,9 @@ const AboutUs: React.FC = () => {
         </div>
 
         {/* Partner Section */}
-        <div className="max-w-4xl mx-auto mt-32 px-4">
+        <div className="max-w-7xl mx-auto mt-32 px-4">
           <div className="backdrop-blur-xl bg-white/5 rounded-[2rem] p-16 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-            <div className="space-y-8">
+            <div className="space-y-8 max-w-4xl">
               <div>
                 <h3 className="text-white/60 text-4xl font-light mb-2">
                   partner with
@@ -203,6 +244,180 @@ const AboutUs: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Features Section */}
+        <div className="max-w-7xl mx-auto mt-32 px-4">
+          <div className="space-y-12">
+            <div className="text-center">
+              <p className="text-gray-400 text-lg mb-2">our features</p>
+              <h2 className="text-white text-2xl md:text-3xl font-bold mx-auto leading-tight max-w-5xl">
+                WITH SONDER, YOU WILL NOT ONLY UNDERSTAND WHAT WORKS.
+                YOU WILL KNOW WHY IT WORKS AND HOW TO DO IT <span className="underline">BETTER</span>.
+              </h2>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-4">
+              <button className="bg-[#FF6B00] text-white px-8 py-3 rounded-full">
+                EVENTS
+              </button>
+              <button className="border border-[#FF6B00] text-white px-8 py-3 rounded-full hover:bg-[#FF6B00]/10 transition-colors">
+                CHAT
+              </button>
+              <button className="border border-[#FF6B00] text-white px-8 py-3 rounded-full hover:bg-[#FF6B00]/10 transition-colors">
+                CRM
+              </button>
+              <button className="border border-[#FF6B00] text-white px-8 py-3 rounded-full hover:bg-[#FF6B00]/10 transition-colors">
+                ROLES
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Event Management Description - Separate container */}
+        <div className="relative h-[900px]">
+          {/* iPhone Image Container */}
+          <div className="absolute top-[100px] right-[800px] w-[280px] h-[542px] bg-white/5 rounded-[40px] border-4 border-white/10 backdrop-blur-xl">
+            {/* You can add your image here */}
+            {/* For now using a placeholder container */}
+          </div>
+
+          {/* Text Section - Position maintained */}
+          <div className="absolute top-[200px] right-[300px] max-w-xl">
+            <h3 className="text-white text-4xl font-bold mb-6">
+              Customizable Event<br />
+              Management
+            </h3>
+            <p className="text-white/60 text-xl leading-relaxed max-w-[400px]">
+              Effortlessly create events,<br />
+              define content categories, and<br />
+              assign QR or access codes to<br />
+              ensure attendees view only<br />
+              the content relevant to them.
+            </p>
+          </div>
+        </div>
+
+        {/* Partners Section */}
+        <div className="max-w-7xl mx-auto px-4 pb-32 -mt-16">
+          <div className="space-y-6">
+            <div className="flex items-center justify-end">
+              <p className="text-gray-400 text-4xl">our</p>
+              <p className="text-white text-4xl ml-2">partners</p>
+            </div>
+
+            <div className="bg-[#1A1A1A]/50 backdrop-blur-xl rounded-[32px] p-16">
+              <div className="flex items-center justify-between gap-8">
+                {/* Intercell Logo */}
+                <div className="flex-1">
+                  <img 
+                    src="/images/partners/intercell.jpg" 
+                    alt="Intercell" 
+                    className="h-16 object-contain"
+                  />
+                </div>
+
+                {/* Cova Santa Logo */}
+                <div className="flex-1">
+                  <img 
+                    src="/images/partners/cova-santa.jpg" 
+                    alt="Cova Santa - The Place to Dream" 
+                    className="h-16 object-contain"
+                  />
+                </div>
+
+                {/* DGTL Logo */}
+                <div className="flex-1">
+                  <img 
+                    src="/images/partners/dgtl.jpg" 
+                    alt="DGTL" 
+                    className="h-16 object-contain"
+                  />
+                </div>
+
+                {/* Amnesia Ibiza Logo */}
+                <div className="flex-1">
+                  <img 
+                    src="/images/partners/amnesia.jpg" 
+                    alt="Amnesia Ibiza" 
+                    className="h-16 object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Ready Section with Sphere */}
+        <div className="relative h-screen w-full bg-black overflow-hidden">
+          {/* Canvas Container */}
+          <Canvas
+            className="absolute inset-0"
+            shadows
+            gl={{ antialias: true, alpha: true }}
+            camera={{ position: [0, 0, 8], fov: 75 }}
+          >
+            <Suspense fallback={<Loader />}>
+              <Environment preset="sunset" />
+              <PerspectiveCamera makeDefault position={[0, 0, 8]} />
+              <ambientLight intensity={0.5} />
+              <pointLight position={[10, 10, 10]} intensity={1} castShadow />
+              <BottomFloatingShell />
+            </Suspense>
+          </Canvas>
+
+          {/* Content Overlay */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+            <p className="text-gray-400 text-base mb-3">are you ready?</p>
+            <h2 className="text-white text-3xl md:text-5xl font-bold text-center mb-6 max-w-3xl">
+              BE A PART OF THE<br />
+              NEXT BIG THING
+            </h2>
+            <button className="bg-[#FF6B00] text-white px-10 py-3 rounded-full 
+                           text-base font-medium hover:bg-[#FF8533] transition-colors
+                           hover:scale-105 active:scale-95 transform duration-200">
+              GET STARTED
+            </button>
+          </div>
+        </div>
+
+        {/* Follow Our Journey Section */}
+        <div className="relative w-full bg-black py-32">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="space-y-12">
+              <div className="text-center">
+                <p className="text-gray-400 text-base mb-2">this is just the beginning</p>
+                <h2 className="text-white text-3xl md:text-5xl font-bold mb-12">
+                  FOLLOW OUR JOURNEY
+                </h2>
+              </div>
+
+              <div className="flex items-start justify-between max-w-4xl mx-auto">
+                {/* Video Container */}
+                <div className="flex-1 mr-24">
+                  <div className="bg-[#1A1A1A] rounded-2xl overflow-hidden aspect-video w-full flex items-center justify-center">
+                    {/* Play Button */}
+                    <button className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                      <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div className="text-right self-end mb-1">
+                  <h3 className="text-white text-4xl font-bold leading-tight">
+                    THE<br />
+                    MAKING<br />
+                    OF<br />
+                    SONDER
+                  </h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Extra space at bottom */}
+        <div className="h-[600px]"></div>
       </div>
     </>
   );
