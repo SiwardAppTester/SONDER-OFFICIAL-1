@@ -8,7 +8,8 @@ import { useUserProfile } from '../contexts/UserProfileContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc, arrayUnion, addDoc, collection, query, where, orderBy, onSnapshot, serverTimestamp, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject, uploadBytesResumable } from 'firebase/storage';
-import { Plus, X, Upload, Share, Download, Trash2, ArrowLeft, Key, Menu } from 'lucide-react';
+import { Plus, X, Upload, Share, Download, Trash2, ArrowLeft, Key, Menu, Package, Barcode } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 interface Festival {
   id: string;
@@ -24,6 +25,19 @@ interface Festival {
     name: string;
     categoryIds: string[];
     createdAt: any;
+  }[];
+  qrCodes?: {
+    id: string;
+    name: string;
+    description: string;
+    imageUrl: string;
+    createdAt: any;
+  }[];
+  excelFiles?: {
+    id: string;
+    filename: string;
+    codes: string[];
+    uploadedAt: any;
   }[];
 }
 
@@ -43,6 +57,11 @@ interface Post {
   userId: string;
   createdAt: any;
   festivalId: string;
+}
+
+interface ExcelQRCode {
+  barcode: string;
+  [key: string]: any;
 }
 
 function Loader() {
@@ -122,6 +141,8 @@ const FestivalManagement: React.FC = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadCategory, setUploadCategory] = useState<string>("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{post: Post, mediaIndex: number} | null>(null);
+  const [excelCodes, setExcelCodes] = useState<Set<string>>(new Set());
+  const [showQRCodeModal, setShowQRCodeModal] = useState(false);
 
   useEffect(() => {
     if (toast) {
@@ -731,6 +752,165 @@ const FestivalManagement: React.FC = () => {
     }
   };
 
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0] || !festivalId) return;
+
+    try {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async (event) => {
+        if (!event.target?.result) return;
+
+        try {
+          const workbook = XLSX.read(event.target.result, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const data = XLSX.utils.sheet_to_json<ExcelQRCode>(worksheet);
+
+          // Extract codes
+          const codes = data.map(row => row.barcode?.toString().trim().toLowerCase()).filter(Boolean);
+          
+          if (codes.length === 0) {
+            setToast({
+              message: 'No valid barcodes found in the Excel file',
+              type: 'error'
+            });
+            return;
+          }
+
+          // Create new Excel file entry with regular timestamp
+          const newExcelFile = {
+            id: crypto.randomUUID(),
+            filename: file.name,
+            codes: codes,
+            uploadedAt: new Date().toISOString() // Use ISO string instead of serverTimestamp
+          };
+
+          // Update Firestore
+          const festivalRef = doc(db, "festivals", festivalId);
+          
+          // Get current festival data
+          const festivalDoc = await getDoc(festivalRef);
+          const currentExcelFiles = festivalDoc.data()?.excelFiles || [];
+
+          // Update with new file
+          await updateDoc(festivalRef, {
+            excelFiles: [...currentExcelFiles, newExcelFile]
+          });
+
+          // Update local state
+          setFestival(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              excelFiles: [...(prev.excelFiles || []), newExcelFile]
+            };
+          });
+
+          // Clear the file input
+          if (e.target) {
+            e.target.value = '';
+          }
+
+          setToast({
+            message: `Successfully loaded ${codes.length} barcodes from Excel`,
+            type: 'success'
+          });
+
+        } catch (error) {
+          console.error('Error processing Excel data:', error);
+          setToast({
+            message: 'Error processing Excel file. Make sure it has a "barcode" column.',
+            type: 'error'
+          });
+        }
+      };
+
+      reader.onerror = (error) => {
+        console.error('Error reading Excel file:', error);
+        setToast({
+          message: 'Error reading Excel file',
+          type: 'error'
+        });
+      };
+
+      reader.readAsBinaryString(file);
+    } catch (error) {
+      console.error('Error processing Excel file:', error);
+      setToast({
+        message: 'Error processing Excel file',
+        type: 'error'
+      });
+    }
+  };
+
+  const handleDeleteExcelFile = async (fileId: string) => {
+    if (!festivalId || !festival) return;
+
+    try {
+      const festivalRef = doc(db, "festivals", festivalId);
+      const updatedExcelFiles = festival.excelFiles?.filter(file => file.id !== fileId) || [];
+      
+      await updateDoc(festivalRef, {
+        excelFiles: updatedExcelFiles
+      });
+
+      // Update local state
+      setFestival(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          excelFiles: updatedExcelFiles
+        };
+      });
+
+      setToast({
+        message: 'Excel file deleted successfully',
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Error deleting Excel file:', error);
+      setToast({
+        message: 'Failed to delete Excel file',
+        type: 'error'
+      });
+    }
+  };
+
+  const handleDeleteQRCode = async (qrCodeId: string) => {
+    if (!festivalId || !festival) return;
+
+    try {
+      const festivalRef = doc(db, "festivals", festivalId);
+      const updatedQRCodes = festival.qrCodes?.filter(qr => qr.id !== qrCodeId) || [];
+      
+      await updateDoc(festivalRef, {
+        qrCodes: updatedQRCodes
+      });
+
+      // Update local state
+      setFestival(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          qrCodes: updatedQRCodes
+        };
+      });
+
+      setToast({
+        message: 'QR code deleted successfully',
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Error deleting QR code:', error);
+      setToast({
+        message: 'Failed to delete QR code',
+        type: 'error'
+      });
+    }
+  };
+
   return (
     <div className="relative min-h-screen w-full overflow-y-auto bg-black">
       {/* Three.js Background - Fixed position */}
@@ -829,35 +1009,74 @@ const FestivalManagement: React.FC = () => {
                     Back to Festivals
                   </button>
 
-                  <button
-                    onClick={() => setShowAccessCodeModal(true)}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 
-                              border border-white/20 hover:border-white/30
-                              rounded-xl backdrop-blur-lg
-                              transition-all duration-300 ease-in-out
-                              text-white text-sm font-['Space_Grotesk'] tracking-wide
-                              flex items-center justify-center gap-2
-                              hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
-                              w-fit flex-shrink-0"
-                  >
-                    <Key size={18} />
-                    Access Codes
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowAccessCodeModal(true)}
+                      className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 
+                                border border-white/20 hover:border-white/30
+                                rounded-xl backdrop-blur-lg
+                                transition-all duration-300 ease-in-out
+                                text-white text-sm font-['Space_Grotesk'] tracking-wide
+                                flex items-center justify-center gap-2
+                                hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
+                                w-fit flex-shrink-0"
+                    >
+                      <Key size={18} />
+                      Access Codes
+                    </button>
 
-                  <button
-                    onClick={() => setShowCategoryModal(true)}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 
-                              border border-white/20 hover:border-white/30
-                              rounded-xl backdrop-blur-lg
-                              transition-all duration-300 ease-in-out
-                              text-white text-sm font-['Space_Grotesk'] tracking-wide
-                              flex items-center justify-center gap-2
-                              hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
-                              w-fit flex-shrink-0"
-                  >
-                    <Plus size={18} />
-                    Create Categories
-                  </button>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleExcelUpload}
+                      className="hidden"
+                      id="excel-upload"
+                    />
+                    <label
+                      htmlFor="excel-upload"
+                      className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 
+                                border border-white/20 hover:border-white/30
+                                rounded-xl backdrop-blur-lg
+                                transition-all duration-300 ease-in-out
+                                text-white text-sm font-['Space_Grotesk'] tracking-wide
+                                flex items-center justify-center gap-2
+                                hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
+                                w-fit flex-shrink-0 cursor-pointer"
+                    >
+                      <Package size={18} />
+                      Upload QR Codes
+                    </label>
+
+                    <button
+                      onClick={() => setShowCategoryModal(true)}
+                      className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 
+                                border border-white/20 hover:border-white/30
+                                rounded-xl backdrop-blur-lg
+                                transition-all duration-300 ease-in-out
+                                text-white text-sm font-['Space_Grotesk'] tracking-wide
+                                flex items-center justify-center gap-2
+                                hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
+                                w-fit flex-shrink-0"
+                    >
+                      <Plus size={18} />
+                      Create Categories
+                    </button>
+
+                    <button
+                      onClick={() => setShowQRCodeModal(true)}
+                      className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 
+                                border border-white/20 hover:border-white/30
+                                rounded-xl backdrop-blur-lg
+                                transition-all duration-300 ease-in-out
+                                text-white text-sm font-['Space_Grotesk'] tracking-wide
+                                flex items-center justify-center gap-2
+                                hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
+                                w-fit flex-shrink-0"
+                    >
+                      <Barcode size={18} />
+                      Manage QR Codes
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1108,7 +1327,7 @@ const FestivalManagement: React.FC = () => {
             {showDeleteModal && (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
                 <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full mx-4 
-                              border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                                border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-['Space_Grotesk'] text-white/90">Delete Category</h2>
                     <button
@@ -1618,6 +1837,147 @@ const FestivalManagement: React.FC = () => {
                         Delete
                       </button>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* QR Code Management Modal */}
+            {showQRCodeModal && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+                <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-4xl w-full mx-4 
+                              border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-['Space_Grotesk'] text-white/90">Manage QR Codes</h2>
+                    <button
+                      onClick={() => setShowQRCodeModal(false)}
+                      className="text-white/50 hover:text-white/90 transition-colors"
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* QR Codes Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-['Space_Grotesk'] text-white/80">QR Codes</h3>
+                      <div className="max-h-[60vh] overflow-y-auto p-2">
+                        {festival?.qrCodes && festival.qrCodes.length > 0 ? (
+                          <div className="grid grid-cols-1 gap-4">
+                            {festival.qrCodes.map((qrCode) => (
+                              <div 
+                                key={qrCode.id}
+                                className="p-4 rounded-xl bg-white/5 border border-white/10
+                                         hover:border-white/20 transition-all duration-300
+                                         relative group"
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <h3 className="text-white font-['Space_Grotesk']">{qrCode.name}</h3>
+                                  <button
+                                    onClick={() => handleDeleteQRCode(qrCode.id)}
+                                    className="text-red-400 opacity-0 group-hover:opacity-100
+                                             transition-opacity duration-200 p-1 hover:bg-white/5
+                                             rounded-lg"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                                
+                                {qrCode.imageUrl && (
+                                  <div className="aspect-square w-full mb-2 rounded-lg overflow-hidden
+                                               border border-white/10">
+                                    <img 
+                                      src={qrCode.imageUrl} 
+                                      alt={`QR Code for ${qrCode.name}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="text-white/50 text-sm font-['Space_Grotesk']">
+                                  <p className="mb-1">Code: {qrCode.code}</p>
+                                  <p className="mb-1">Linked Categories: {
+                                    qrCode.linkedCategories
+                                      .map(catId => festival.categories?.find(cat => cat.id === catId)?.name)
+                                      .filter(Boolean)
+                                      .join(", ")
+                                  }</p>
+                                  <p className="text-xs text-white/30">
+                                    Created: {new Date(qrCode.createdAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <p className="text-white/50 font-['Space_Grotesk']">No QR codes created yet</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Uploaded Excel Files Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-['Space_Grotesk'] text-white/80">Uploaded Excel Files</h3>
+                      <div className="max-h-[60vh] overflow-y-auto p-2">
+                        {festival?.excelFiles && festival.excelFiles.length > 0 ? (
+                          <div className="grid grid-cols-1 gap-4">
+                            {festival.excelFiles.map((file) => (
+                              <div 
+                                key={file.id}
+                                className="p-4 rounded-xl bg-white/5 border border-white/10
+                                         hover:border-white/20 transition-all duration-300
+                                         relative group"
+                              >
+                                <div className="flex items-center justify-between gap-3 mb-2">
+                                  <div className="flex items-center gap-3">
+                                    <Package size={16} className="text-white/60" />
+                                    <h4 className="text-white font-['Space_Grotesk'] truncate">
+                                      {file.filename}
+                                    </h4>
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeleteExcelFile(file.id)}
+                                    className="text-red-400 opacity-0 group-hover:opacity-100
+                                             transition-opacity duration-200 p-1 hover:bg-white/5
+                                             rounded-lg"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                                <div className="text-white/50 text-sm font-['Space_Grotesk']">
+                                  <p className="mb-1">Barcodes: {file.codes.length}</p>
+                                  <p className="text-xs text-white/30">
+                                    Uploaded: {new Date(file.uploadedAt).toLocaleString()}
+                                  </p>
+                                </div>
+                                <div className="mt-2 max-h-20 overflow-y-auto">
+                                  <div className="text-xs text-white/40 font-mono bg-white/5 p-2 rounded-lg">
+                                    {file.codes.join(', ')}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <p className="text-white/50 font-['Space_Grotesk']">No Excel files uploaded yet</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end mt-6">
+                    <button
+                      onClick={() => setShowQRCodeModal(false)}
+                      className="px-6 py-3 rounded-xl border border-white/10
+                               text-white/70 font-['Space_Grotesk']
+                               hover:bg-white/5 transition-all duration-300"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
               </div>

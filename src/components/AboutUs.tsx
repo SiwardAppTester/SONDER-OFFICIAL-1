@@ -82,6 +82,35 @@ function Scene() {
   );
 }
 
+// Update the CircularText component
+const CircularText = () => {
+  return (
+    <div className="absolute bottom-32 left-1/2 -translate-x-1/2 w-[400px] h-[400px]">
+      <svg 
+        viewBox="-10 -10 120 120" 
+        width="100%" 
+        height="100%" 
+        style={{ 
+          transform: 'perspective(400px) rotateX(45deg)',
+          transformOrigin: 'center center'
+        }}
+      >
+        <defs>
+          <path
+            id="circle"
+            d="M 50,50 m -37,0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0"
+          />
+        </defs>
+        <text fill="white" fontSize="11" letterSpacing="1" fontWeight="bold">
+          <textPath xlinkHref="#circle" startOffset="0">
+            OUR BRANDING STORY • OUR BRANDING STORY •
+          </textPath>
+        </text>
+      </svg>
+    </div>
+  );
+};
+
 // Then update the main component to use this new navigation
 const AboutUs: React.FC = () => {
   const [selectedFeature, setSelectedFeature] = useState<string>('EVENTS');
@@ -105,6 +134,36 @@ const AboutUs: React.FC = () => {
           * {
             -ms-overflow-style: none;  /* IE and Edge */
             scrollbar-width: none;  /* Firefox */
+          }
+
+          @keyframes rotate {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+
+          .circular-text {
+            opacity: 0.9;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            filter: drop-shadow(0px 2px 4px rgba(255,255,255,0.1));
+          }
+
+          /* Add transform styles */
+          .transform-gpu {
+            transform: translateZ(0);
+            backface-visibility: hidden;
+          }
+
+          .perspective-[1000px] {
+            perspective: 1000px;
+          }
+
+          .rotate-x-[20deg] {
+            transform: rotateX(20deg);
           }
         `}
       </style>
@@ -426,7 +485,7 @@ const AboutUs: React.FC = () => {
               <p className="text-white text-4xl ml-2">partners</p>
             </div>
 
-            <div className="bg-[#1A1A1A]/50 backdrop-blur-xl rounded-[32px] p-16">
+            <div className="bg-[#1A1A1A]/50 backdrop-blur-xl rounded-[32px] p-16 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
               <div className="flex items-center justify-between gap-8">
                 {/* Intercell Logo */}
                 <div className="flex-1">
@@ -515,11 +574,15 @@ const AboutUs: React.FC = () => {
               <div className="flex items-start justify-between max-w-4xl mx-auto">
                 {/* Video Container */}
                 <div className="flex-1 mr-24">
-                  <div className="bg-[#1A1A1A] rounded-2xl overflow-hidden aspect-video w-full flex items-center justify-center">
-                    {/* Play Button */}
-                    <button className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
-                      <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
-                    </button>
+                  <div className="bg-[#1A1A1A] rounded-2xl overflow-hidden aspect-video w-full relative">
+                    <video 
+                      className="w-full h-full object-cover"
+                      controls
+                      playsInline
+                    >
+                      <source src="/videos/making-of-sonder.mp4" type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
                   </div>
                 </div>
 
@@ -539,6 +602,11 @@ const AboutUs: React.FC = () => {
 
         {/* Extra space at bottom */}
         <div className="h-[600px]"></div>
+      </div>
+
+      {/* Add this before the final closing divs */}
+      <div className="relative w-full">
+        <CircularText />
       </div>
     </>
   );

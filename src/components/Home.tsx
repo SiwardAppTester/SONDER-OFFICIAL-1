@@ -12,6 +12,7 @@ import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { Suspense } from 'react';
+import * as XLSX from 'xlsx';
 
 interface Post {
   id: string;
@@ -130,6 +131,16 @@ const Home: React.FC = () => {
   const [scanError, setScanError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   useEffect(() => {
     const postsQuery = query(
@@ -250,94 +261,55 @@ const Home: React.FC = () => {
     
     if (!isScanning) {
       try {
-        await html5Qrcode.start(
-          { facingMode: { exact: "environment" } },
-          {
-            fps: 10,
-            qrbox: {
-              width: 250,
-              height: 250,
+        // Try environment camera first, fall back to any available camera
+        try {
+          await html5Qrcode.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: {
+                width: 250,
+                height: 250,
+              },
             },
-          },
-          async (decodedText: string) => {
-            console.log("Scanned QR code content:", decodedText);
-            
-            try {
-              // Stop scanning immediately
-              await html5Qrcode.stop();
-              setIsScanning(false);
-              setShowQRScanner(false);
-              
-              // Find matching festival and QR code
-              let matchingFestival: Festival | undefined;
-              let matchingQRCode: any;
-
-              // Log all QR codes for debugging
-              festivals.forEach(festival => {
-                console.log("Festival QR codes:", festival.qrCodes);
-              });
-
-              for (const festival of festivals) {
-                const qrCode = festival.qrCodes?.find(qr => {
-                  console.log("Comparing:", {
-                    stored: qr.code,
-                    scanned: decodedText
-                  });
-                  return qr.code === decodedText;
-                });
-                
-                if (qrCode) {
-                  matchingFestival = festival;
-                  matchingQRCode = qrCode;
-                  break;
-                }
-              }
-
-              if (matchingFestival && matchingQRCode && user) {
-                // Update user's access
-                const userRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userRef);
-                const userData = userDoc.data();
-
-                await updateDoc(userRef, {
-                  accessibleFestivals: arrayUnion(matchingFestival.id),
-                  accessibleCategories: {
-                    ...(userData?.accessibleCategories || {}),
-                    [matchingFestival.id]: matchingQRCode.linkedCategories
-                  }
-                });
-
-                // Update local state
-                setAccessibleFestivals(prev => new Set([...prev, matchingFestival.id]));
-                setAccessibleCategories(prev => ({
-                  ...prev,
-                  [matchingFestival.id]: matchingQRCode.linkedCategories
-                }));
-
-                // Navigate directly to content view
-                setSelectedFestival(matchingFestival.id);
-                setShowFestivalList(false);
-                setShowAccessInput(false);
-                setShowQRScanner(false);
-                setSelectedCategory("");
+            async (decodedText: string) => {
+              await processQRCodeContent(decodedText);
+            },
+            (errorMessage: string) => {
+              if (errorMessage.includes("NotFound")) {
+                setScanError("No QR code found. Please try again.");
+              } else if (errorMessage.includes("NotAllowed")) {
+                setScanError("Camera access denied. Please grant camera permissions.");
               } else {
-                setGeneralAccessError("Invalid QR code");
+                setScanError("Error scanning QR code. Please try again.");
               }
-            } catch (error) {
-              console.error("Error processing QR code:", error);
-              setGeneralAccessError("Error processing QR code");
             }
-          },
-          (errorMessage: string) => {
-            if (errorMessage.includes("NotFound")) {
-              setScanError("No QR code found. Please try again.");
-            } else if (errorMessage.includes("NotAllowed")) {
-              setScanError("Camera access denied. Please grant camera permissions.");
-            } else {
-              setScanError("Error scanning QR code. Please try again.");
+          );
+        } catch (envError) {
+          // If environment camera fails, try any camera
+          await html5Qrcode.start(
+            { facingMode: "user" },
+            {
+              fps: 10,
+              qrbox: {
+                width: 250,
+                height: 250,
+              },
+            },
+            async (decodedText: string) => {
+              await processQRCodeContent(decodedText);
+            },
+            (errorMessage: string) => {
+              if (errorMessage.includes("NotFound")) {
+                setScanError("No QR code found. Please try again.");
+              } else if (errorMessage.includes("NotAllowed")) {
+                setScanError("Camera access denied. Please grant camera permissions.");
+              } else {
+                setScanError("Error scanning QR code. Please try again.");
+              }
             }
-          }
-        );
+          );
+        }
         setIsScanning(true);
       } catch (err) {
         console.error("Error starting scanner:", err);
@@ -688,57 +660,125 @@ const Home: React.FC = () => {
 
   const processQRCodeContent = async (cleanedCode: string) => {
     try {
-      // Find matching festival and QR code
-      let matchingFestival: Festival | undefined;
-      let matchingQRCode: any;
-
+      // Stop scanning immediately
+      const html5Qrcode = new Html5Qrcode("qr-reader");
+      if (isScanning) {
+        await html5Qrcode.stop();
+        setIsScanning(false);
+      }
+      
+      // Clean up the code
+      const normalizedCode = cleanedCode.trim().toLowerCase();
+      
+      // Get all festivals to check their Excel files
       for (const festival of festivals) {
+        // Check all Excel files in the festival
+        const excelFiles = festival.excelFiles || [];
+        for (const excelFile of excelFiles) {
+          const codes = excelFile.codes || [];
+          // Check if the scanned code exists in this Excel file
+          if (codes.some(code => code.trim().toLowerCase() === normalizedCode)) {
+            console.log("Found matching code in Excel file:", normalizedCode);
+            
+            // Process the matched code
+            if (user) {
+              // Update user's access
+              const userRef = doc(db, "users", user.uid);
+              const userDoc = await getDoc(userRef);
+              const userData = userDoc.data();
+
+              // Update the user document
+              await updateDoc(userRef, {
+                accessibleFestivals: arrayUnion(festival.id),
+                accessibleCategories: {
+                  ...(userData?.accessibleCategories || {}),
+                  [festival.id]: festival.categories?.map(cat => cat.id) || []
+                }
+              });
+
+              // Update local state
+              setAccessibleFestivals(prev => new Set([...prev, festival.id]));
+              setAccessibleCategories(prev => ({
+                ...prev,
+                [festival.id]: festival.categories?.map(cat => cat.id) || []
+              }));
+
+              // Clean up QR scanner
+              setShowQRScanner(false);
+              
+              // Navigate to content view
+              setSelectedFestival(festival.id);
+              setShowFestivalList(false);
+              setShowAccessInput(false);
+              setSelectedCategory("");
+              
+              setToast({
+                message: 'Successfully accessed festival content',
+                type: 'success'
+              });
+              return;
+            }
+          }
+        }
+
+        // If no Excel match found, check QR codes
         const qrCode = festival.qrCodes?.find(qr => {
           if (!qr?.code) return false;
-          const qrCodeClean = qr.code.trim().toLowerCase();
-          return qrCodeClean === cleanedCode;
+          return qr.code.trim().toLowerCase() === normalizedCode;
         });
         
-        if (qrCode) {
-          matchingFestival = festival;
-          matchingQRCode = qrCode;
-          break;
+        if (qrCode && user) {
+          // Update user's access
+          const userRef = doc(db, "users", user.uid);
+          const userDoc = await getDoc(userRef);
+          const userData = userDoc.data();
+
+          // Update the user document
+          await updateDoc(userRef, {
+            accessibleFestivals: arrayUnion(festival.id),
+            accessibleCategories: {
+              ...(userData?.accessibleCategories || {}),
+              [festival.id]: qrCode.linkedCategories || []
+            }
+          });
+
+          // Update local state
+          setAccessibleFestivals(prev => new Set([...prev, festival.id]));
+          setAccessibleCategories(prev => ({
+            ...prev,
+            [festival.id]: qrCode.linkedCategories || []
+          }));
+
+          // Clean up QR scanner
+          setShowQRScanner(false);
+          
+          // Navigate to content view
+          setSelectedFestival(festival.id);
+          setShowFestivalList(false);
+          setShowAccessInput(false);
+          setSelectedCategory("");
+          
+          setToast({
+            message: 'Successfully accessed festival content',
+            type: 'success'
+          });
+          return;
         }
       }
 
-      if (matchingFestival && matchingQRCode && user) {
-        // Update user's access
-        const userRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userRef);
-        const userData = userDoc.data();
-
-        await updateDoc(userRef, {
-          accessibleFestivals: arrayUnion(matchingFestival.id),
-          accessibleCategories: {
-            ...(userData?.accessibleCategories || {}),
-            [matchingFestival.id]: matchingQRCode.linkedCategories
-          }
-        });
-
-        // Update local state
-        setAccessibleFestivals(prev => new Set([...prev, matchingFestival.id]));
-        setAccessibleCategories(prev => ({
-          ...prev,
-          [matchingFestival.id]: matchingQRCode.linkedCategories
-        }));
-
-        // Navigate directly to content view
-        setSelectedFestival(matchingFestival.id);
-        setShowFestivalList(false);
-        setShowAccessInput(false);
-        setShowQRScanner(false);
-        setSelectedCategory("");
-      } else {
-        setGeneralAccessError("Invalid QR code");
-      }
+      // If no match found in any festival
+      setGeneralAccessError("Invalid QR code");
+      
     } catch (error) {
       console.error("Error processing QR code:", error);
       setGeneralAccessError("Error processing QR code");
+    } finally {
+      // Ensure scanner is always cleaned up
+      if (isScanning) {
+        const html5Qrcode = new Html5Qrcode("qr-reader");
+        await html5Qrcode.stop();
+        setIsScanning(false);
+      }
     }
   };
 
@@ -1238,9 +1278,24 @@ const Home: React.FC = () => {
           isOpen={showShareModal} 
           onClose={() => setShowShareModal(false)} 
         />
+
+        {toast && (
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+            <div className={`px-6 py-3 rounded-full backdrop-blur-xl 
+                    ${toast.type === 'success' 
+                      ? 'bg-white/10 text-white border border-white/20' 
+                      : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    } transition-all transform animate-fade-in-up 
+                    font-['Space_Grotesk'] tracking-wider`}
+            >
+              <p className="text-center whitespace-nowrap">{toast.message}</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default Home;
+
