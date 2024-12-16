@@ -1,8 +1,7 @@
-import React from "react";
+import React, { useState, Suspense, useRef } from "react";
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { Suspense, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 
 // Loader component for Suspense fallback
@@ -83,7 +82,15 @@ function Scene() {
   );
 }
 
+// Then update the main component to use this new navigation
 const AboutUs: React.FC = () => {
+  const [selectedFeature, setSelectedFeature] = useState<string>('EVENTS');
+
+  const handleFeatureClick = (feature: string) => {
+    console.log('Feature clicked:', feature);
+    setSelectedFeature(feature);
+  };
+
   return (
     <>
       {/* Add this style tag at the top of your component */}
@@ -265,24 +272,52 @@ const AboutUs: React.FC = () => {
         <div className="max-w-7xl mx-auto mt-32 px-4">
           <div className="space-y-12">
             <div className="text-center">
-              <p className="text-gray-400 text-lg mb-2">our features</p>
+              <p className="text-gray-400 text-base mb-2">our features</p>
               <h2 className="text-white text-2xl md:text-3xl font-bold mx-auto leading-tight max-w-5xl">
                 WITH SONDER, YOU WILL NOT ONLY UNDERSTAND WHAT WORKS.
                 YOU WILL KNOW WHY IT WORKS AND HOW TO DO IT <span className="underline">BETTER</span>.
               </h2>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-4">
-              <button className="bg-[#FF6B00] text-white px-8 py-3 rounded-full">
+            <div className="flex flex-wrap justify-center gap-4 relative z-50 pointer-events-auto">
+              <button 
+                onClick={() => handleFeatureClick('EVENTS')}
+                className={`px-8 py-3 rounded-full transition-colors ${
+                  selectedFeature === 'EVENTS' 
+                    ? 'bg-[#FF6B00]' 
+                    : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
+                } text-white cursor-pointer`}
+              >
                 EVENTS
               </button>
-              <button className="border border-[#FF6B00] text-white px-8 py-3 rounded-full hover:bg-[#FF6B00]/10 transition-colors">
+              <button 
+                onClick={() => handleFeatureClick('CHAT')}
+                className={`px-8 py-3 rounded-full transition-colors ${
+                  selectedFeature === 'CHAT' 
+                    ? 'bg-[#FF6B00]' 
+                    : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
+                } text-white cursor-pointer`}
+              >
                 CHAT
               </button>
-              <button className="border border-[#FF6B00] text-white px-8 py-3 rounded-full hover:bg-[#FF6B00]/10 transition-colors">
+              <button 
+                onClick={() => handleFeatureClick('CRM')}
+                className={`px-8 py-3 rounded-full transition-colors ${
+                  selectedFeature === 'CRM' 
+                    ? 'bg-[#FF6B00]' 
+                    : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
+                } text-white cursor-pointer`}
+              >
                 CRM
               </button>
-              <button className="border border-[#FF6B00] text-white px-8 py-3 rounded-full hover:bg-[#FF6B00]/10 transition-colors">
+              <button 
+                onClick={() => handleFeatureClick('ROLES')}
+                className={`px-8 py-3 rounded-full transition-colors ${
+                  selectedFeature === 'ROLES' 
+                    ? 'bg-[#FF6B00]' 
+                    : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
+                } text-white cursor-pointer`}
+              >
                 ROLES
               </button>
             </div>
@@ -292,23 +327,93 @@ const AboutUs: React.FC = () => {
         {/* Event Management Description - Separate container */}
         <div className="relative h-[900px]">
           {/* iPhone Image Container */}
-          <div className="absolute top-[100px] right-[800px] w-[280px] h-[542px] bg-white/5 rounded-[40px] border-4 border-white/10 backdrop-blur-xl">
-            {/* You can add your image here */}
-            {/* For now using a placeholder container */}
+          <div className="absolute top-[100px] right-[800px] w-[280px] h-[542px] bg-white/5 rounded-[40px] border-4 border-white/10 backdrop-blur-xl overflow-hidden">
+            {selectedFeature === 'EVENTS' ? (
+              <img 
+                src="/images/features/events-screen.jpg" 
+                alt="Events Management Interface"
+                className="w-full h-full object-cover"
+              />
+            ) : selectedFeature === 'CHAT' ? (
+              <img 
+                src="/images/features/chat-screen.jpg" 
+                alt="Chat Interface"
+                className="w-full h-full object-cover"
+              />
+            ) : selectedFeature === 'CRM' ? (
+              <img 
+                src="/images/features/crm-screen.jpg" 
+                alt="CRM Dashboard"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <img 
+                src="/images/features/roles-screen.jpg" 
+                alt="Role Management Interface"
+                className="w-full h-full object-cover"
+              />
+            )}
           </div>
 
           {/* Text Section - Position maintained */}
           <div className="absolute top-[200px] right-[300px] max-w-xl">
             <h3 className="text-white text-4xl font-bold mb-6">
-              Customizable Event<br />
-              Management
+              {selectedFeature === 'EVENTS' ? (
+                <>
+                  Customizable Event<br />
+                  Management
+                </>
+              ) : selectedFeature === 'CHAT' ? (
+                <>
+                  Audience Communication<br />
+                  Panel
+                </>
+              ) : selectedFeature === 'CRM' ? (
+                <>
+                  Real-Time<br />
+                  Insights
+                </>
+              ) : (
+                <>
+                  Streamlined Role<br />
+                  Management
+                </>
+              )}
             </h3>
             <p className="text-white/60 text-xl leading-relaxed max-w-[400px]">
-              Effortlessly create events,<br />
-              define content categories, and<br />
-              assign QR or access codes to<br />
-              ensure attendees view only<br />
-              the content relevant to them.
+              {selectedFeature === 'EVENTS' ? (
+                <>
+                  Effortlessly create events,<br />
+                  define content categories, and<br />
+                  assign QR or access codes to<br />
+                  ensure attendees view only<br />
+                  the content relevant to them.
+                </>
+              ) : selectedFeature === 'CHAT' ? (
+                <>
+                  Stay connected with your audience<br />
+                  during events with our real-time<br />
+                  communication tools, enabling<br />
+                  direct engagement and enhanced<br />
+                  event experiences.
+                </>
+              ) : selectedFeature === 'CRM' ? (
+                <>
+                  Gain live data on user interactions,<br />
+                  including downloads, shares, and<br />
+                  popular content trends. Use these<br />
+                  insights to refine your marketing<br />
+                  strategies and improve engagement.
+                </>
+              ) : (
+                <>
+                  Effortlessly assign roles within your<br />
+                  team and create individual accounts<br />
+                  tailored to specific responsibilities.<br />
+                  Whether it's uploading content,<br />
+                  analyzing data, or making announcements.
+                </>
+              )}
             </p>
           </div>
         </div>
