@@ -680,19 +680,21 @@ const Home: React.FC = () => {
           if (codes.some(code => code.trim().toLowerCase() === normalizedCode)) {
             console.log("Found matching code in Excel file:", normalizedCode);
             
-            // Process the matched code
             if (user) {
+              // Get only the categories that were selected during Excel file upload
+              const allowedCategories = excelFile.categoryIds || [];
+
               // Update user's access
               const userRef = doc(db, "users", user.uid);
               const userDoc = await getDoc(userRef);
               const userData = userDoc.data();
 
-              // Update the user document
+              // Update the user document with only the allowed categories
               await updateDoc(userRef, {
                 accessibleFestivals: arrayUnion(festival.id),
                 accessibleCategories: {
                   ...(userData?.accessibleCategories || {}),
-                  [festival.id]: festival.categories?.map(cat => cat.id) || []
+                  [festival.id]: allowedCategories // Only use the categories from the Excel file
                 }
               });
 
@@ -700,7 +702,7 @@ const Home: React.FC = () => {
               setAccessibleFestivals(prev => new Set([...prev, festival.id]));
               setAccessibleCategories(prev => ({
                 ...prev,
-                [festival.id]: festival.categories?.map(cat => cat.id) || []
+                [festival.id]: allowedCategories // Only use the categories from the Excel file
               }));
 
               // Clean up QR scanner
@@ -785,10 +787,22 @@ const Home: React.FC = () => {
   const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
+    const handleClose = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+    };
+
     return (
-      <div className="fixed inset-0 backdrop-blur-xl bg-black/90 flex items-center justify-center z-50 p-4">
-        <div className="bg-white/10 rounded-3xl p-8 max-w-md w-full mx-4 relative 
-                       border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+      <div 
+        className="fixed inset-0 backdrop-blur-sm bg-transparent flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <div 
+          className="bg-white/10 rounded-3xl p-8 max-w-md w-full mx-4 relative 
+                    border border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+          onClick={e => e.stopPropagation()}
+        >
           <div className="text-center">
             <h3 className="text-2xl font-['Space_Grotesk'] tracking-[0.1em] text-white/90 mb-4">
               Share to Instagram
@@ -797,10 +811,10 @@ const Home: React.FC = () => {
               Instagram sharing is only available on mobile devices. Please access this content from your mobile device to share.
             </p>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="px-6 py-2.5 rounded-full bg-white/10 border border-white/20
                        text-white/70 hover:bg-white/20 transition-all duration-300
-                       font-['Space_Grotesk'] text-sm tracking-wider"
+                       font-['Space_Grotesk'] text-sm tracking-wider cursor-pointer"
             >
               Close
             </button>
