@@ -301,6 +301,27 @@ const FestivalManagement: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Add this useEffect to handle body scroll locking
+  useEffect(() => {
+    // Check if any modal is open
+    const isAnyModalOpen = showCategoryModal || 
+                          showAccessCodeModal || 
+                          showEditModal || 
+                          showQRCodeModal;
+
+    // Add or remove the no-scroll class on the body
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    // Cleanup function to ensure scroll is restored when component unmounts
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [showCategoryModal, showAccessCodeModal, showEditModal, showQRCodeModal]);
+
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!festival || !festivalId) return;
@@ -1026,106 +1047,117 @@ const FestivalManagement: React.FC = () => {
         {festival && (
           <div className="mb-12 grid grid-cols-1 gap-8 max-w-[1400px] mx-auto pb-24">
             {/* Festival Header */}
-            <div className="backdrop-blur-xl bg-white/10 rounded-2xl 
-                          shadow-[0_0_30px_rgba(255,255,255,0.1)] 
-                          p-4 sm:p-8 border border-white/20">
-              <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
-                {/* Left side with festival info */}
-                <div className="flex flex-col sm:flex-row items-start gap-6">
-                  <div 
-                    className="flex-shrink-0 cursor-pointer"
-                    onClick={handleImageClick}
+            <div className="w-[1000px] mx-auto"> {/* Changed from max-w-[800px] to fixed w-[1000px] */}
+              <div className="backdrop-blur-xl bg-white/10 rounded-xl overflow-hidden
+                              shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-white/20">
+                {/* Festival Banner/Cover */}
+                <div className="relative h-32 w-full">
+                  {/* Back Button - Absolute Top Left */}
+                  <button
+                    onClick={() => navigate('/add-post')}
+                    className="absolute top-4 left-4 px-3 py-1.5 
+                              bg-white/10 hover:bg-white/20 
+                              border border-white/20 hover:border-white/30
+                              rounded-lg backdrop-blur-lg
+                              transition-all duration-300
+                              text-white text-xs font-['Space_Grotesk']
+                              flex items-center gap-1.5
+                              z-10"
                   >
-                    <img
-                      src={festival.imageUrl}
-                      alt={festival.name}
-                      className="h-24 w-24 sm:h-32 sm:w-32 rounded-xl object-cover shadow-lg border border-white/10
-                                hover:border-white/30 transition-all duration-300"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <h1 className="text-2xl sm:text-3xl font-['Space_Grotesk'] tracking-wide text-white/90">
-                      {festival.name}
-                    </h1>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm text-white/50 font-['Space_Grotesk']">
-                      <span>
-                        {new Date(festival.date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </span>
-                      <span className="hidden sm:inline">•</span>
-                      <span>{festival.startTime} - {festival.endTime}</span>
-                    </div>
-                    <p className="text-white/60 text-sm font-['Space_Grotesk'] max-w-2xl">
-                      {festival.description}
-                    </p>
-                  </div>
+                    <ArrowLeft size={14} />
+                    Back
+                  </button>
+
+                  <img
+                    src={festival.imageUrl}
+                    alt={festival.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                 </div>
 
-                {/* Right side with buttons */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => navigate('/add-post')}
-                      className="px-4 sm:px-6 py-2.5 sm:py-3 bg-white/10 hover:bg-white/20 
-                                border border-white/20 hover:border-white/30
-                                rounded-xl backdrop-blur-lg
-                                transition-all duration-300 ease-in-out
-                                text-white text-sm font-['Space_Grotesk'] tracking-wide
-                                flex items-center justify-center
-                                hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
-                                flex-1"
-                    >
-                      Back to Festivals
-                    </button>
+                {/* Festival Details */}
+                <div className="p-4 relative">
+                  {/* Content Container - Remove mx-auto and change padding */}
+                  <div className="space-y-3 pl-4"> {/* Changed from max-w-[800px] mx-auto space-y-3 */}
+                    {/* Title */}
+                    <div>
+                      <h1 className="text-xl font-['Space_Grotesk'] tracking-wide text-white/90">
+                        {festival.name}
+                      </h1>
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-white/50">
+                        <span>{new Date(festival.date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          month: 'long',
+                          day: 'numeric'
+                        })}</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span>{festival.startTime} - {festival.endTime}</span>
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-white/60 text-xs font-['Space_Grotesk']">
+                      {festival.description}
+                    </p>
+
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setShowCategoryModal(true)}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 
+                                  border border-white/20 hover:border-white/30
+                                  rounded-lg backdrop-blur-lg
+                                  transition-all duration-300
+                                  text-white text-xs font-['Space_Grotesk']
+                                  flex items-center gap-1.5"
+                      >
+                        <Plus size={14} />
+                        Category
+                      </button>
+
+                      <button
+                        onClick={() => setShowAccessCodeModal(true)}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 
+                                  border border-white/20 hover:border-white/30
+                                  rounded-lg backdrop-blur-lg
+                                  transition-all duration-300
+                                  text-white text-xs font-['Space_Grotesk']
+                                  flex items-center gap-1.5"
+                      >
+                        <Key size={14} />
+                        Codes
+                      </button>
+
+                      <button
+                        onClick={() => setShowQRCodeModal(true)}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 
+                                  border border-white/20 hover:border-white/30
+                                  rounded-lg backdrop-blur-lg
+                                  transition-all duration-300
+                                  text-white text-xs font-['Space_Grotesk']
+                                  flex items-center gap-1.5"
+                      >
+                        <Barcode size={14} />
+                        QR
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowCategoryModal(true)}
-                      className="p-3 bg-white/10 hover:bg-white/20 
-                                border border-white/20 hover:border-white/30
-                                rounded-xl backdrop-blur-lg
-                                transition-all duration-300 ease-in-out
-                                text-white
-                                flex items-center justify-center
-                                hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
-                                flex-1"
-                    >
-                      <Plus size={18} />
-                    </button>
-
-                    <button
-                      onClick={() => setShowAccessCodeModal(true)}
-                      className="p-3 bg-white/10 hover:bg-white/20 
-                                border border-white/20 hover:border-white/30
-                                rounded-xl backdrop-blur-lg
-                                transition-all duration-300 ease-in-out
-                                text-white
-                                flex items-center justify-center
-                                hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
-                                flex-1"
-                    >
-                      <Key size={18} />
-                    </button>
-
-                    <button
-                      onClick={() => setShowQRCodeModal(true)}
-                      className="p-3 bg-white/10 hover:bg-white/20 
-                                border border-white/20 hover:border-white/30
-                                rounded-xl backdrop-blur-lg
-                                transition-all duration-300 ease-in-out
-                                text-white
-                                flex items-center justify-center
-                                hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]
-                                flex-1"
-                    >
-                      <Barcode size={18} />
-                    </button>
-                  </div>
+                  {/* Edit Button - Keep absolute positioning */}
+                  <button
+                    onClick={handleImageClick}
+                    className="absolute bottom-4 right-4 px-3 py-1.5 
+                              bg-white/10 hover:bg-white/20 
+                              border border-white/20 hover:border-white/30
+                              rounded-lg backdrop-blur-lg
+                              transition-all duration-300
+                              text-white text-xs font-['Space_Grotesk']
+                              flex items-center gap-1.5"
+                  >
+                    <Upload size={14} />
+                    Edit
+                  </button>
                 </div>
               </div>
             </div>
@@ -1316,8 +1348,8 @@ const FestivalManagement: React.FC = () => {
 
             {/* Create Category Modal */}
             {showCategoryModal && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
-                <div className="bg-[#1a1a1a] rounded-2xl p-4 sm:p-6 max-w-md w-full mx-4 
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4 overflow-hidden">
+                <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full mx-4 
                               border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-['Space_Grotesk'] text-white/90">Create New Category</h2>
@@ -1374,7 +1406,7 @@ const FestivalManagement: React.FC = () => {
 
             {/* Delete Confirmation Modal */}
             {showDeleteModal && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4 overflow-hidden">
                 <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full mx-4 
                                 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                   <div className="flex justify-between items-center mb-6">
@@ -1418,7 +1450,7 @@ const FestivalManagement: React.FC = () => {
 
             {/* Access Code Modal */}
             {showAccessCodeModal && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4 overflow-hidden">
                 <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full mx-4 
                               border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                   {!showCreateAccessCode ? (
@@ -1578,7 +1610,7 @@ const FestivalManagement: React.FC = () => {
 
             {/* Edit Festival Modal */}
             {showEditModal && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4 overflow-hidden">
                 <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-2xl w-full mx-4 
                                 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                   <div className="flex justify-between items-center mb-6">
@@ -1743,7 +1775,7 @@ const FestivalManagement: React.FC = () => {
 
             {/* Upload Modal */}
             {showUploadModal && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4 overflow-hidden">
                 <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full mx-4 
                                 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                   <div className="flex justify-between items-center mb-6">
@@ -1830,7 +1862,7 @@ const FestivalManagement: React.FC = () => {
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4 overflow-hidden">
                 <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full mx-4 
                                 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                   <div className="flex justify-between items-center mb-6">
@@ -1893,7 +1925,7 @@ const FestivalManagement: React.FC = () => {
 
             {/* QR Code Management Modal */}
             {showQRCodeModal && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-xl flex items-center justify-center z-50 p-4 overflow-hidden">
                 <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-2xl w-full mx-4 
                               border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                   <div className="flex justify-between items-center mb-6">

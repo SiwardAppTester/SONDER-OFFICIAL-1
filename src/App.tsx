@@ -31,6 +31,7 @@ import { applyActionCode } from 'firebase/auth';
 import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
 import { Suspense } from 'react';
 import ResetPassword from './components/ResetPassword';
+import ReadMore from './pages/ReadMore';
 
 const EmailVerified: React.FC = () => {
   const navigate = useNavigate();
@@ -214,6 +215,7 @@ const App: React.FC = () => {
             <Route path="/business/:businessId" element={<BusinessDashboard />} />
             <Route path="/verified" element={<EmailVerified />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/read-more" element={<ReadMore />} />
           </Routes>
         </main>
       </div>

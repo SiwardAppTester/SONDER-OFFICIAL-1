@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
+import { Link } from 'react-router-dom';
 
 // Loader component for Suspense fallback
 function Loader() {
@@ -82,38 +83,15 @@ function Scene() {
   );
 }
 
-// Update the CircularText component
-const CircularText = () => {
-  return (
-    <div className="absolute bottom-32 left-1/2 -translate-x-1/2 w-[400px] h-[400px]">
-      <svg 
-        viewBox="-10 -10 120 120" 
-        width="100%" 
-        height="100%" 
-        style={{ 
-          transform: 'perspective(400px) rotateX(45deg)',
-          transformOrigin: 'center center'
-        }}
-      >
-        <defs>
-          <path
-            id="circle"
-            d="M 50,50 m -37,0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0"
-          />
-        </defs>
-        <text fill="white" fontSize="11" letterSpacing="1" fontWeight="bold">
-          <textPath xlinkHref="#circle" startOffset="0">
-            OUR BRANDING STORY • OUR BRANDING STORY •
-          </textPath>
-        </text>
-      </svg>
-    </div>
-  );
-};
-
 // Then update the main component to use this new navigation
 const AboutUs: React.FC = () => {
   const [selectedFeature, setSelectedFeature] = useState<string>('EVENTS');
+  const [showSignIn, setShowSignIn] = useState(false);
+  const [showPartnerSection, setShowPartnerSection] = useState(false);
+  const [showFeaturesSection, setShowFeaturesSection] = useState(false);
+  const [showPartnersLogoSection, setShowPartnersLogoSection] = useState(false);
+  const [showJourneySection, setShowJourneySection] = useState(false);
+  const [showBeam, setShowBeam] = useState(false);
 
   const handleFeatureClick = (feature: string) => {
     console.log('Feature clicked:', feature);
@@ -146,6 +124,7 @@ const AboutUs: React.FC = () => {
           }
 
           .circular-text {
+            font-family: 'Space Grotesk', sans-serif;
             opacity: 0.9;
             letter-spacing: 2px;
             text-transform: uppercase;
@@ -165,18 +144,16 @@ const AboutUs: React.FC = () => {
           .rotate-x-[20deg] {
             transform: rotateX(20deg);
           }
+
+          /* Add font styles */
+          h1, h2, h3, h4, h5, h6, p, button, a, span, div {
+            font-family: 'Space Grotesk', sans-serif;
+          }
         `}
       </style>
 
       {/* Sphere Container - Fixed height */}
       <div className="relative w-full bg-black pt-24">
-        {/* Sign In Button */}
-        <div className="fixed top-8 right-8 z-50">
-          <button className="bg-[#FF6B00] text-white px-12 py-2 rounded-full text-sm font-medium tracking-wider hover:bg-[#FF8533] transition-colors">
-            SIGN IN
-          </button>
-        </div>
-
         {/* Background with sphere - Fixed height */}
         <div className="absolute inset-0 h-[275vh] bg-black">
           <Canvas
@@ -267,19 +244,21 @@ const AboutUs: React.FC = () => {
       {/* Additional Content Container - Can extend without affecting sphere */}
       <div className="relative w-full bg-black -mt-64">
         {/* Orange Beam Background - With fixed height container */}
-        <div className="absolute inset-0 overflow-hidden h-[2000px]">
-          {/* Main left-side beam */}
-          <div className="absolute -left-[400px] top-[30%] w-[1200px] h-[1000px] 
-                        bg-[#FF8533] opacity-15 blur-[120px] rotate-[45deg]"></div>
-          
-          {/* Secondary subtle beam */}
-          <div className="absolute -left-[200px] top-[40%] w-[800px] h-[800px] 
-                        bg-[#FF9966] opacity-20 blur-[150px] rotate-[30deg]"></div>
-          
-          {/* Subtle right-side glow */}
-          <div className="absolute right-0 top-[50%] w-[500px] h-[800px] 
-                        bg-[#FFB380] opacity-10 blur-[180px] rotate-[20deg]"></div>
-        </div>
+        {showBeam && (
+          <div className="absolute inset-0 overflow-hidden h-[2000px]">
+            {/* Main left-side beam */}
+            <div className="absolute -left-[400px] top-[30%] w-[1200px] h-[1000px] 
+                          bg-[#FF8533] opacity-15 blur-[120px] rotate-[45deg]"></div>
+            
+            {/* Secondary subtle beam */}
+            <div className="absolute -left-[200px] top-[40%] w-[800px] h-[800px] 
+                          bg-[#FF9966] opacity-20 blur-[150px] rotate-[30deg]"></div>
+            
+            {/* Subtle right-side glow */}
+            <div className="absolute right-0 top-[50%] w-[500px] h-[800px] 
+                          bg-[#FFB380] opacity-10 blur-[180px] rotate-[20deg]"></div>
+          </div>
+        )}
 
         {/* Description Section */}
         <div className="max-w-4xl mx-auto text-right px-4 py-16">
@@ -290,242 +269,253 @@ const AboutUs: React.FC = () => {
             knowing the memory will be<br />
             curated and stored for them.
           </p>
-          <a href="#" className="inline-block mt-8 text-white text-lg border-b-2 border-white hover:text-white/80 transition-colors">
+          <Link 
+            to="/read-more" 
+            className="inline-block mt-8 text-white text-lg border-b-2 border-white hover:text-white/80 transition-colors"
+          >
             READ MORE
-          </a>
+          </Link>
         </div>
 
         {/* Partner Section */}
-        <div className="max-w-7xl mx-auto mt-32 px-4">
-          <div className="backdrop-blur-xl bg-white/5 rounded-[2rem] p-16 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-            <div className="space-y-8 max-w-4xl">
-              <div>
-                <h3 className="text-white/60 text-4xl font-light mb-2">
-                  partner with
-                </h3>
-                <h2 className="text-white text-7xl font-bold">
-                  SONDER
+        {showPartnerSection && (
+          <div className="max-w-7xl mx-auto mt-32 px-4">
+            <div className="backdrop-blur-xl bg-white/5 rounded-[2rem] p-16 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+              <div className="space-y-8 max-w-4xl">
+                <div>
+                  <h3 className="text-white/60 text-4xl font-light mb-2">
+                    partner with
+                  </h3>
+                  <h2 className="text-white text-7xl font-bold">
+                    SONDER
+                  </h2>
+                </div>
+
+                <p className="text-white/40 text-xl leading-relaxed max-w-2xl">
+                  Sonder's platform is designed to take the guesswork 
+                  out of content management and audience engagement. 
+                  By combining real-time metrics, audience insights, and 
+                  effortless organisation, <span className="text-white">we help festivals and events 
+                  transform their content into a strategic advantage.</span>
+                </p>
+
+                <div>
+                  <button className="bg-[#FF6B00] text-white px-10 py-4 rounded-full 
+                                   text-lg font-medium hover:bg-[#FF8533] transition-colors
+                                   hover:scale-105 active:scale-95 transform duration-200">
+                    GET STARTED
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Features Section */}
+        {showFeaturesSection && (
+          <div className="max-w-7xl mx-auto mt-32 px-4">
+            <div className="space-y-12">
+              <div className="text-center">
+                <p className="text-gray-400 text-base mb-2">our features</p>
+                <h2 className="text-white text-2xl md:text-3xl font-bold mx-auto leading-tight max-w-5xl">
+                  WITH SONDER, YOU WILL NOT ONLY UNDERSTAND WHAT WORKS.
+                  YOU WILL KNOW WHY IT WORKS AND HOW TO DO IT <span className="underline">BETTER</span>.
                 </h2>
               </div>
 
-              <p className="text-white/40 text-xl leading-relaxed max-w-2xl">
-                Sonder's platform is designed to take the guesswork 
-                out of content management and audience engagement. 
-                By combining real-time metrics, audience insights, and 
-                effortless organisation, <span className="text-white">we help festivals and events 
-                transform their content into a strategic advantage.</span>
-              </p>
-
-              <div>
-                <button className="bg-[#FF6B00] text-white px-10 py-4 rounded-full 
-                                 text-lg font-medium hover:bg-[#FF8533] transition-colors
-                                 hover:scale-105 active:scale-95 transform duration-200">
-                  GET STARTED
+              <div className="flex flex-wrap justify-center gap-4 relative z-50 pointer-events-auto">
+                <button 
+                  onClick={() => handleFeatureClick('EVENTS')}
+                  className={`px-8 py-3 rounded-full transition-colors ${
+                    selectedFeature === 'EVENTS' 
+                      ? 'bg-[#FF6B00]' 
+                      : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
+                  } text-white cursor-pointer`}
+                >
+                  EVENTS
+                </button>
+                <button 
+                  onClick={() => handleFeatureClick('CHAT')}
+                  className={`px-8 py-3 rounded-full transition-colors ${
+                    selectedFeature === 'CHAT' 
+                      ? 'bg-[#FF6B00]' 
+                      : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
+                  } text-white cursor-pointer`}
+                >
+                  CHAT
+                </button>
+                <button 
+                  onClick={() => handleFeatureClick('CRM')}
+                  className={`px-8 py-3 rounded-full transition-colors ${
+                    selectedFeature === 'CRM' 
+                      ? 'bg-[#FF6B00]' 
+                      : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
+                  } text-white cursor-pointer`}
+                >
+                  CRM
+                </button>
+                <button 
+                  onClick={() => handleFeatureClick('ROLES')}
+                  className={`px-8 py-3 rounded-full transition-colors ${
+                    selectedFeature === 'ROLES' 
+                      ? 'bg-[#FF6B00]' 
+                      : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
+                  } text-white cursor-pointer`}
+                >
+                  ROLES
                 </button>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Features Section */}
-        <div className="max-w-7xl mx-auto mt-32 px-4">
-          <div className="space-y-12">
-            <div className="text-center">
-              <p className="text-gray-400 text-base mb-2">our features</p>
-              <h2 className="text-white text-2xl md:text-3xl font-bold mx-auto leading-tight max-w-5xl">
-                WITH SONDER, YOU WILL NOT ONLY UNDERSTAND WHAT WORKS.
-                YOU WILL KNOW WHY IT WORKS AND HOW TO DO IT <span className="underline">BETTER</span>.
-              </h2>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-4 relative z-50 pointer-events-auto">
-              <button 
-                onClick={() => handleFeatureClick('EVENTS')}
-                className={`px-8 py-3 rounded-full transition-colors ${
-                  selectedFeature === 'EVENTS' 
-                    ? 'bg-[#FF6B00]' 
-                    : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
-                } text-white cursor-pointer`}
-              >
-                EVENTS
-              </button>
-              <button 
-                onClick={() => handleFeatureClick('CHAT')}
-                className={`px-8 py-3 rounded-full transition-colors ${
-                  selectedFeature === 'CHAT' 
-                    ? 'bg-[#FF6B00]' 
-                    : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
-                } text-white cursor-pointer`}
-              >
-                CHAT
-              </button>
-              <button 
-                onClick={() => handleFeatureClick('CRM')}
-                className={`px-8 py-3 rounded-full transition-colors ${
-                  selectedFeature === 'CRM' 
-                    ? 'bg-[#FF6B00]' 
-                    : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
-                } text-white cursor-pointer`}
-              >
-                CRM
-              </button>
-              <button 
-                onClick={() => handleFeatureClick('ROLES')}
-                className={`px-8 py-3 rounded-full transition-colors ${
-                  selectedFeature === 'ROLES' 
-                    ? 'bg-[#FF6B00]' 
-                    : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
-                } text-white cursor-pointer`}
-              >
-                ROLES
-              </button>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Event Management Description - Separate container */}
-        <div className="relative h-[900px]">
-          {/* iPhone Image Container */}
-          <div className="absolute top-[100px] right-[800px] w-[280px] h-[542px] bg-white/5 rounded-[40px] border-4 border-white/10 backdrop-blur-xl overflow-hidden">
-            {selectedFeature === 'EVENTS' ? (
-              <img 
-                src="/images/features/events-screen.jpg" 
-                alt="Events Management Interface"
-                className="w-full h-full object-cover"
-              />
-            ) : selectedFeature === 'CHAT' ? (
-              <img 
-                src="/images/features/chat-screen.jpg" 
-                alt="Chat Interface"
-                className="w-full h-full object-cover"
-              />
-            ) : selectedFeature === 'CRM' ? (
-              <img 
-                src="/images/features/crm-screen.jpg" 
-                alt="CRM Dashboard"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <img 
-                src="/images/features/roles-screen.jpg" 
-                alt="Role Management Interface"
-                className="w-full h-full object-cover"
-              />
-            )}
-          </div>
-
-          {/* Text Section - Position maintained */}
-          <div className="absolute top-[200px] right-[300px] max-w-xl">
-            <h3 className="text-white text-4xl font-bold mb-6">
+        {showFeaturesSection && (
+          <div className="relative h-[900px]">
+            {/* iPhone Image Container */}
+            <div className="absolute top-[100px] right-[800px] w-[280px] h-[542px] bg-white/5 rounded-[40px] border-4 border-white/10 backdrop-blur-xl overflow-hidden">
               {selectedFeature === 'EVENTS' ? (
-                <>
-                  Customizable Event<br />
-                  Management
-                </>
+                <img 
+                  src="/images/features/events-screen.jpg" 
+                  alt="Events Management Interface"
+                  className="w-full h-full object-cover"
+                />
               ) : selectedFeature === 'CHAT' ? (
-                <>
-                  Audience Communication<br />
-                  Panel
-                </>
+                <img 
+                  src="/images/features/chat-screen.jpg" 
+                  alt="Chat Interface"
+                  className="w-full h-full object-cover"
+                />
               ) : selectedFeature === 'CRM' ? (
-                <>
-                  Real-Time<br />
-                  Insights
-                </>
+                <img 
+                  src="/images/features/crm-screen.jpg" 
+                  alt="CRM Dashboard"
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <>
-                  Streamlined Role<br />
-                  Management
-                </>
+                <img 
+                  src="/images/features/roles-screen.jpg" 
+                  alt="Role Management Interface"
+                  className="w-full h-full object-cover"
+                />
               )}
-            </h3>
-            <p className="text-white/60 text-xl leading-relaxed max-w-[400px]">
-              {selectedFeature === 'EVENTS' ? (
-                <>
-                  Effortlessly create events,<br />
-                  define content categories, and<br />
-                  assign QR or access codes to<br />
-                  ensure attendees view only<br />
-                  the content relevant to them.
-                </>
-              ) : selectedFeature === 'CHAT' ? (
-                <>
-                  Stay connected with your audience<br />
-                  during events with our real-time<br />
-                  communication tools, enabling<br />
-                  direct engagement and enhanced<br />
-                  event experiences.
-                </>
-              ) : selectedFeature === 'CRM' ? (
-                <>
-                  Gain live data on user interactions,<br />
-                  including downloads, shares, and<br />
-                  popular content trends. Use these<br />
-                  insights to refine your marketing<br />
-                  strategies and improve engagement.
-                </>
-              ) : (
-                <>
-                  Effortlessly assign roles within your<br />
-                  team and create individual accounts<br />
-                  tailored to specific responsibilities.<br />
-                  Whether it's uploading content,<br />
-                  analyzing data, or making announcements.
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Partners Section */}
-        <div className="max-w-7xl mx-auto px-4 pb-32 -mt-16">
-          <div className="space-y-6">
-            <div className="flex items-center justify-end">
-              <p className="text-gray-400 text-4xl">our</p>
-              <p className="text-white text-4xl ml-2">partners</p>
             </div>
 
-            <div className="bg-[#1A1A1A]/50 backdrop-blur-xl rounded-[32px] p-16 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-              <div className="flex items-center justify-between gap-8">
-                {/* Intercell Logo */}
-                <div className="flex-1">
-                  <img 
-                    src="/images/partners/intercell.jpg" 
-                    alt="Intercell" 
-                    className="h-16 object-contain"
-                  />
-                </div>
+            {/* Text Section - Position maintained */}
+            <div className="absolute top-[200px] right-[300px] max-w-xl">
+              <h3 className="text-white text-4xl font-bold mb-6">
+                {selectedFeature === 'EVENTS' ? (
+                  <>
+                    Customizable Event<br />
+                    Management
+                  </>
+                ) : selectedFeature === 'CHAT' ? (
+                  <>
+                    Audience Communication<br />
+                    Panel
+                  </>
+                ) : selectedFeature === 'CRM' ? (
+                  <>
+                    Real-Time<br />
+                    Insights
+                  </>
+                ) : (
+                  <>
+                    Streamlined Role<br />
+                    Management
+                  </>
+                )}
+              </h3>
+              <p className="text-white/60 text-xl leading-relaxed max-w-[400px]">
+                {selectedFeature === 'EVENTS' ? (
+                  <>
+                    Effortlessly create events,<br />
+                    define content categories, and<br />
+                    assign QR or access codes to<br />
+                    ensure attendees view only<br />
+                    the content relevant to them.
+                  </>
+                ) : selectedFeature === 'CHAT' ? (
+                  <>
+                    Stay connected with your audience<br />
+                    during events with our real-time<br />
+                    communication tools, enabling<br />
+                    direct engagement and enhanced<br />
+                    event experiences.
+                  </>
+                ) : selectedFeature === 'CRM' ? (
+                  <>
+                    Gain live data on user interactions,<br />
+                    including downloads, shares, and<br />
+                    popular content trends. Use these<br />
+                    insights to refine your marketing<br />
+                    strategies and improve engagement.
+                  </>
+                ) : (
+                  <>
+                    Effortlessly assign roles within your<br />
+                    team and create individual accounts<br />
+                    tailored to specific responsibilities.<br />
+                    Whether it's uploading content,<br />
+                    analyzing data, or making announcements.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
 
-                {/* Cova Santa Logo */}
-                <div className="flex-1">
-                  <img 
-                    src="/images/partners/cova-santa.jpg" 
-                    alt="Cova Santa - The Place to Dream" 
-                    className="h-16 object-contain"
-                  />
-                </div>
+        {/* Partners Section */}
+        {showPartnersLogoSection && (
+          <div className="max-w-7xl mx-auto px-4 pb-32 -mt-16">
+            <div className="space-y-6">
+              <div className="flex items-center justify-end">
+                <p className="text-gray-400 text-4xl">our</p>
+                <p className="text-white text-4xl ml-2">partners</p>
+              </div>
 
-                {/* DGTL Logo */}
-                <div className="flex-1">
-                  <img 
-                    src="/images/partners/dgtl.jpg" 
-                    alt="DGTL" 
-                    className="h-16 object-contain"
-                  />
-                </div>
+              <div className="bg-[#1A1A1A]/50 backdrop-blur-xl rounded-[32px] p-16 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                <div className="flex items-center justify-between gap-8">
+                  {/* Intercell Logo */}
+                  <div className="flex-1">
+                    <img 
+                      src="/images/partners/intercell.jpg" 
+                      alt="Intercell" 
+                      className="h-16 object-contain"
+                    />
+                  </div>
 
-                {/* Amnesia Ibiza Logo */}
-                <div className="flex-1">
-                  <img 
-                    src="/images/partners/amnesia.jpg" 
-                    alt="Amnesia Ibiza" 
-                    className="h-16 object-contain"
-                  />
+                  {/* Cova Santa Logo */}
+                  <div className="flex-1">
+                    <img 
+                      src="/images/partners/cova-santa.jpg" 
+                      alt="Cova Santa - The Place to Dream" 
+                      className="h-16 object-contain"
+                    />
+                  </div>
+
+                  {/* DGTL Logo */}
+                  <div className="flex-1">
+                    <img 
+                      src="/images/partners/dgtl.jpg" 
+                      alt="DGTL" 
+                      className="h-16 object-contain"
+                    />
+                  </div>
+
+                  {/* Amnesia Ibiza Logo */}
+                  <div className="flex-1">
+                    <img 
+                      src="/images/partners/amnesia.jpg" 
+                      alt="Amnesia Ibiza" 
+                      className="h-16 object-contain"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Ready Section with Sphere */}
         <div className="relative h-screen w-full bg-black overflow-hidden">
@@ -553,61 +543,67 @@ const AboutUs: React.FC = () => {
               NEXT BIG THING
             </h2>
             <button className="bg-[#FF6B00] text-white px-10 py-3 rounded-full 
-                           text-base font-medium hover:bg-[#FF8533] transition-colors
-                           hover:scale-105 active:scale-95 transform duration-200">
+                             text-base font-medium hover:bg-[#FF8533] transition-colors
+                             hover:scale-105 active:scale-95 transform duration-200">
               GET STARTED
             </button>
           </div>
         </div>
 
         {/* Follow Our Journey Section */}
-        <div className="relative w-full bg-black py-32">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="space-y-12">
-              <div className="text-center">
-                <p className="text-gray-400 text-base mb-2">this is just the beginning</p>
-                <h2 className="text-white text-3xl md:text-5xl font-bold mb-12">
-                  FOLLOW OUR JOURNEY
-                </h2>
-              </div>
-
-              <div className="flex items-start justify-between max-w-4xl mx-auto">
-                {/* Video Container */}
-                <div className="flex-1 mr-24">
-                  <div className="bg-[#1A1A1A] rounded-2xl overflow-hidden aspect-video w-full relative">
-                    <video 
-                      className="w-full h-full object-cover"
-                      controls
-                      playsInline
-                    >
-                      <source src="/videos/making-of-sonder.mp4" type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  </div>
+        {showJourneySection && (
+          <div className="relative w-full bg-black py-32">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="space-y-12">
+                <div className="text-center">
+                  <p className="text-gray-400 text-base mb-2">this is just the beginning</p>
+                  <h2 className="text-white text-3xl md:text-5xl font-bold mb-12">
+                    FOLLOW OUR JOURNEY
+                  </h2>
                 </div>
 
-                {/* Title */}
-                <div className="text-right self-end mb-1">
-                  <h3 className="text-white text-4xl font-bold leading-tight">
-                    THE<br />
-                    MAKING<br />
-                    OF<br />
-                    SONDER
-                  </h3>
+                <div className="flex items-start justify-between max-w-4xl mx-auto">
+                  {/* Video Container */}
+                  <div className="flex-1 mr-24">
+                    <div className="bg-[#1A1A1A] rounded-2xl overflow-hidden aspect-video w-full relative">
+                      <video 
+                        className="w-full h-full object-cover"
+                        controls
+                        playsInline
+                      >
+                        <source src="/videos/making-of-sonder.mp4" type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <div className="text-right self-end mb-1">
+                    <h3 className="text-white text-4xl font-bold leading-tight">
+                      THE<br />
+                      MAKING<br />
+                      OF<br />
+                      SONDER
+                    </h3>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Extra space at bottom */}
         <div className="h-[600px]"></div>
       </div>
 
-      {/* Add this before the final closing divs */}
-      <div className="relative w-full">
-        <CircularText />
-      </div>
+      {/* Sign In Button - temporarily hidden */}
+      {showSignIn && (
+        <div className="fixed top-8 right-8 z-50">
+          <button className="bg-[#FF6B00] text-white px-12 py-2 rounded-full text-sm font-medium tracking-wider hover:bg-[#FF8533] transition-colors">
+            SIGN IN
+          </button>
+        </div>
+      )}
     </>
   );
 };
