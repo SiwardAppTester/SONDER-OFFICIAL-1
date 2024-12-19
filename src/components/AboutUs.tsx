@@ -671,7 +671,7 @@ const AboutUs: React.FC = () => {
 
           {/* Update connect section positioning */}
           <div className="absolute bottom-1 md:bottom-8 right-4 md:right-8 text-right">
-            <div className="flex flex-col items-end">
+            <div className="hidden md:flex md:flex-col items-end">
               <h3 className="text-white text-xs md:text-sm font-bold tracking-[0.2em] mb-1">
                 CLICK
               </h3>

@@ -1,4 +1,4 @@
-import React, { Suspense, useRef, useEffect } from 'react';
+import React, { Suspense, useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, PerspectiveCamera } from '@react-three/drei';
 import { Loader } from '../components/ThreeBackground';
@@ -45,8 +45,27 @@ function QuoteBottomSphere() {
     }
   });
 
+  const [scale, setScale] = useState([3, 3, 3]);
+  const [position, setPosition] = useState([0, 0, -2]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setScale([2.2, 2.2, 2.2]);
+        setPosition([0, -0.5, -2]);
+      } else {
+        setScale([3, 3, 3]);
+        setPosition([0, 0, -2]);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
-    <mesh ref={meshRef} position={[0, 0, -2]} scale={[3, 3, 3]} castShadow>
+    <mesh ref={meshRef} position={position} scale={scale} castShadow>
       <sphereGeometry args={[1, 64, 64]} />
       <meshStandardMaterial
         color="#1a1a1a"
@@ -74,8 +93,8 @@ const fadeInUp = {
   }
 };
 
-// Update the AnimatedText component with matching duration
-function AnimatedText({ children, className, delay = 0 }) {
+// Update the AnimatedText component to handle mobile text sizes
+function AnimatedText({ children, className, delay = 0 }: { children: React.ReactNode; className: string; delay?: number }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-20px" });
 
@@ -86,7 +105,7 @@ function AnimatedText({ children, className, delay = 0 }) {
       animate={isInView ? "visible" : "hidden"}
       variants={fadeInUp}
       style={{ transition: `all 2.4s cubic-bezier(0.17, 0.55, 0.55, 1) ${delay}s` }}
-      className={className}
+      className={`${className} px-4 md:px-0`}
     >
       {children}
     </motion.div>
@@ -192,25 +211,25 @@ const ReadMore: React.FC = () => {
         <div className="content-wrapper">
           {/* First screen - Hero section */}
           <div className="min-h-[80vh] flex items-center justify-center p-4 pt-32">
-            <div className="max-w-[90rem] text-center px-4 mt-64">
-              <AnimatedText className="text-3xl md:text-5xl font-bold leading-relaxed tracking-wider text-white">
+            <div className="max-w-[90rem] text-center px-4 mt-0 md:mt-64">
+              <AnimatedText className="text-xl sm:text-2xl md:text-5xl font-bold leading-relaxed tracking-wider text-white">
                 THE JOY OF BEING FULLY PRESENT IS SLOWLY BEING REPLACED BY A NEED TO DOCUMENT EVERY MOMENT.
               </AnimatedText>
               
               {/* Increase margin for explore more section */}
-              <div className="text-white/60 mt-72">
+              <div className="text-white/60 mt-32 md:mt-72">
                 <div className="flex flex-col items-center gap-2 cursor-pointer hover:text-white/80 transition-colors">
-                  <span className="text-lg">explore more</span>
+                  <span className="text-base md:text-lg">explore more</span>
                   <svg 
-                    width="24" 
-                    height="24" 
+                    width="20" 
+                    height="20" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="2" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
-                    className="animate-bounce"
+                    className="w-4 h-4 md:w-6 md:h-6 animate-bounce"
                   >
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <polyline points="19 12 12 19 5 12"></polyline>
@@ -221,19 +240,19 @@ const ReadMore: React.FC = () => {
           </div>
 
           {/* Second screen - Additional content */}
-          <div className="min-h-[60vh] flex flex-col justify-center space-y-44 mt-32">
-            <div className="max-w-3xl text-left px-4 ml-32">
-              <AnimatedText className="text-lg md:text-2xl leading-relaxed text-white/80">
-                We understand how easy it is to get caught<br />
-                up in capturing memories instead of<br />
+          <div className="min-h-[60vh] flex flex-col justify-center space-y-12 md:space-y-44 mt-0 md:mt-32">
+            <div className="max-w-[280px] md:max-w-3xl text-left px-8 md:px-4 md:ml-32">
+              <AnimatedText className="text-base md:text-2xl leading-relaxed text-white/80">
+                We understand how easy it is to get caught<br className="hidden md:block" />
+                up in capturing memories instead of<br className="hidden md:block" />
                 experiencing them.
               </AnimatedText>
             </div>
 
-            <div className="max-w-3xl text-right px-4 mr-32 self-end mb-8">
-              <AnimatedText className="text-lg md:text-2xl leading-relaxed text-white/80" delay={0.2}>
-                That's why we've created a platform<br />
-                that ensures you never have to choose<br />
+            <div className="max-w-[280px] md:max-w-3xl text-right md:text-right px-8 md:px-4 self-end md:mr-32 md:self-end -mb-24 md:mb-8">
+              <AnimatedText className="text-base md:text-2xl leading-relaxed text-white/80" delay={0.2}>
+                That's why we've created a platform<br className="hidden md:block" />
+                that ensures you never have to choose<br className="hidden md:block" />
                 between the two.
               </AnimatedText>
             </div>
@@ -264,11 +283,11 @@ const ReadMore: React.FC = () => {
             <div className="absolute inset-0 dark-gradient-overlay z-10" />
 
             {/* Text overlay */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center translate-y-32 z-20 px-4">
-              <AnimatedText className="text-3xl md:text-4xl font-bold text-white mb-4">
+            <div className="absolute inset-0 flex flex-col items-center justify-center -translate-y-48 md:translate-y-32 z-20 px-4">
+              <AnimatedText className="text-2xl md:text-4xl font-bold text-white mb-4">
                 BUT, WHO ARE WE?
               </AnimatedText>
-              <AnimatedText className="text-xl md:text-2xl text-white/90 max-w-4xl text-center leading-relaxed" delay={0.2}>
+              <AnimatedText className="text-base md:text-2xl text-white/90 max-w-4xl text-center leading-relaxed" delay={0.2}>
                 We are three friends brought together by our shared love for festivals and events. 
                 Over the years, we've traveled the world, experiencing countless events together, 
                 and noticed a growing shift in how people engage with festivals.
@@ -277,12 +296,12 @@ const ReadMore: React.FC = () => {
           </div>
 
           {/* Add this section after the sphere section, inside the content container */}
-          <div className="relative min-h-[120vh] w-full bg-black pt-96">
-            <div className="max-w-7xl mx-auto px-4 md:px-64">
+          <div className="relative min-h-[60vh] md:min-h-[120vh] w-full bg-black pt-0 md:pt-96">
+            <div className="max-w-7xl mx-auto px-8 md:px-64">
               <div className="flex flex-col md:flex-row items-start">
                 {/* Left title section */}
-                <div className="md:w-[15%] pr-0 -mt-48">
-                  <AnimatedText className="text-4xl md:text-5xl font-bold text-white leading-none mb-0">
+                <div className="w-full md:w-[15%] pr-0 mb-8 md:mb-0 md:-mt-48 -mt-64">
+                  <AnimatedText className="text-3xl md:text-5xl font-bold text-white leading-none mb-0">
                     The<br />
                     Good<br />
                     Old<br />
@@ -291,8 +310,8 @@ const ReadMore: React.FC = () => {
                 </div>
 
                 {/* Right content section */}
-                <div className="md:w-[85%] md:pl-24 -mt-8 mb-32">
-                  <AnimatedText className="text-xl md:text-2xl text-white/80 leading-relaxed" delay={0.2}>
+                <div className="w-full md:w-[85%] md:pl-24 md:-mt-8 mb-32 relative z-20">
+                  <AnimatedText className="text-base md:text-2xl text-white/80 leading-relaxed" delay={0.2}>
                     The debate around whether phones belong on the dance floor has become a hot topic, 
                     with some events experimenting with concepts like no-phone policies or camera stickers. 
                     While these ideas spark conversations and hint at a desire to return to the "good old days," 
@@ -319,7 +338,15 @@ const ReadMore: React.FC = () => {
                 <PerspectiveCamera makeDefault position={[0, 0, 8]} />
                 <ambientLight intensity={0.5} />
                 <pointLight position={[10, 10, 10]} intensity={1} castShadow />
-                <mesh position={[0, 4, 0]} scale={[5, 5, 5]} castShadow>
+                <mesh 
+                  position={[0, 4, 0]} 
+                  scale={[
+                    window.innerWidth < 768 ? 3 : 5, 
+                    window.innerWidth < 768 ? 3 : 5, 
+                    window.innerWidth < 768 ? 3 : 5
+                  ]} 
+                  castShadow
+                >
                   <sphereGeometry args={[1, 32, 32]} />
                   <meshStandardMaterial
                     color="#1a1a1a"
@@ -344,12 +371,12 @@ const ReadMore: React.FC = () => {
             <div className="absolute top-0 left-0 right-0 top-sphere-blend z-[12]" />
 
             {/* Text overlay */}
-            <div className="absolute inset-0 flex flex-col items-center -mt-24 z-[13]">
-              <AnimatedText className="text-[10rem] md:text-[18rem] font-[500] text-white mb-0 w-full text-center font-['Outfit'] tracking-[0.12em]">
+            <div className="absolute inset-0 flex flex-col items-center -mt-24 md:-mt-24 pt-32 md:pt-0 z-[13]">
+              <AnimatedText className="text-[5rem] sm:text-[6rem] md:text-[18rem] font-[500] text-white mb-0 w-full text-center font-['Outfit'] tracking-[0.12em]">
                 SONDER
               </AnimatedText>
-              <AnimatedText className="text-3xl md:text-5xl text-white/90 max-w-7xl text-center leading-relaxed -mt-8" delay={0.2}>
-                RATHER THAN RESISTING TECHNOLOGY, WE<br />
+              <AnimatedText className="text-sm sm:text-2xl md:text-5xl text-white/90 max-w-7xl text-center leading-relaxed -mt-4 md:-mt-8 px-4" delay={0.2}>
+                RATHER THAN RESISTING TECHNOLOGY, WE<br className="hidden md:block" />
                 BELIEVE IN UTILIZING IT TO ENHANCE OUR LIVES.
               </AnimatedText>
             </div>
@@ -364,12 +391,12 @@ const ReadMore: React.FC = () => {
           </div>
 
           {/* Add the "BUT, WHAT ARE WE?" section with minimal padding */}
-          <div className="relative h-screen w-full bg-black pl-32 pr-8 -mt-[65rem] z-[14]">
-            <AnimatedText className="text-2xl md:text-3xl font-bold text-white mb-8">
+          <div className="relative h-[130vh] md:h-screen w-full bg-black px-8 md:pl-32 md:pr-8 -mt-[75rem] md:-mt-[65rem] z-[14]">
+            <AnimatedText className="text-xl md:text-3xl font-bold text-white mb-8 pt-16 md:pt-0">
               BUT, WHAT ARE WE?
             </AnimatedText>
             
-            <div className="space-y-16 max-w-md">
+            <div className="space-y-8 md:space-y-16 max-w-md">
               <AnimatedText className="text-base md:text-xl text-white/80 leading-relaxed" delay={0.2}>
                 SONDER is a platform that lets you be present in the moment, knowing we'll 
                 provide you with all the curated content you need. By giving festival-goers 
@@ -379,7 +406,7 @@ const ReadMore: React.FC = () => {
                 the gap between event experiences and content sharing.
               </AnimatedText>
 
-              <AnimatedText className="text-base md:text-xl text-white/80 leading-relaxed" delay={0.4}>
+              <AnimatedText className="text-base md:text-xl text-white/80 leading-relaxed pb-16 md:pb-0" delay={0.4}>
                 By combining innovative technology with a people-first approach, we help 
                 event-goers enjoy every second while guaranteeing access to exclusive, 
                 high-quality content linked directly to their tickets. From VIP backstage 
@@ -390,9 +417,9 @@ const ReadMore: React.FC = () => {
           </div>
 
           {/* Add the quote section after the "BUT, WHAT ARE WE?" section */}
-          <div className="relative h-screen w-full bg-black z-[14] pt-32">
-            <div className="max-w-7xl mx-auto px-8">
-              <AnimatedText className="text-3xl md:text-4xl leading-relaxed text-center">
+          <div className="relative h-screen w-full bg-black z-[14] pt-0 md:pt-32 -mt-32 md:mt-0">
+            <div className="max-w-7xl mx-auto px-4 md:px-8">
+              <AnimatedText className="text-xl md:text-4xl leading-relaxed text-center">
                 <span className="text-white/30">"we redefine the way people engage with events, creating a seamless experience </span>
                 <span className="text-white">where technology complements, rather than distracts from, the actual moment. </span>
                 <span className="text-white/30">changing from the moments you have missed to moments you lived."</span>
@@ -401,7 +428,7 @@ const ReadMore: React.FC = () => {
           </div>
 
           {/* Update the final black section to include the sphere */}
-          <div className="relative h-screen w-full bg-black z-[14] -mt-[30rem]">
+          <div className="relative h-[80vh] md:h-screen w-full bg-black z-[14] -mt-[30rem]">
             <Canvas
               className="absolute inset-0"
               shadows
@@ -418,16 +445,16 @@ const ReadMore: React.FC = () => {
             </Canvas>
 
             {/* Add text and button overlay */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-              <AnimatedText className="text-gray-400 text-lg mb-2">
+            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 mt-24 md:mt-0">
+              <AnimatedText className="text-gray-400 text-sm md:text-lg mb-2">
                 are you ready?
               </AnimatedText>
-              <AnimatedText className="text-4xl md:text-5xl font-bold text-white mb-8 text-center" delay={0.2}>
+              <AnimatedText className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-6 md:mb-8 text-center" delay={0.2}>
                 BE A PART OF THE<br />
                 NEXT BIG THING
               </AnimatedText>
               <AnimatedText delay={0.4}>
-                <button className="px-8 py-3 bg-[#F4A261] text-white rounded-full font-medium hover:bg-[#E76F51] transition-colors">
+                <button className="px-6 md:px-8 py-2 md:py-3 bg-[#F4A261] text-white rounded-full text-sm md:text-base font-medium hover:bg-[#E76F51] transition-colors">
                   GET STARTED
                 </button>
               </AnimatedText>
@@ -443,24 +470,24 @@ const ReadMore: React.FC = () => {
           </div>
 
           {/* Add extra black section for extended background */}
-          <div className="relative h-[6vh] w-full bg-black z-[14]">
+          <div className="relative h-[12vh] md:h-[6vh] w-full bg-black z-[14]">
             {/* Add Sonder logo in bottom left */}
-            <div className="absolute bottom-8 left-8">
-              <h2 className="text-2xl font-[500] text-white font-['Outfit'] tracking-[0.12em]">
+            <div className="absolute bottom-4 md:bottom-8 left-4 md:left-8">
+              <h2 className="text-xl md:text-2xl font-[500] text-white font-['Outfit'] tracking-[0.12em]">
                 SONDER
               </h2>
             </div>
 
             {/* Add connect section in bottom right */}
-            <div className="absolute bottom-8 right-8 text-right">
+            <div className="absolute bottom-4 md:bottom-8 right-4 md:right-8 text-right">
               <div className="flex flex-col items-end">
-                <h3 className="text-white text-sm font-bold tracking-[0.2em] mb-1">
+                <h3 className="hidden md:block text-white text-sm font-bold tracking-[0.2em] mb-1">
                   CLICK
                 </h3>
-                <h3 className="text-white text-sm font-bold tracking-[0.2em] mb-1">
+                <h3 className="hidden md:block text-white text-sm font-bold tracking-[0.2em] mb-1">
                   2
                 </h3>
-                <h3 className="text-white text-sm font-bold tracking-[0.2em] mb-4">
+                <h3 className="hidden md:block text-white text-sm font-bold tracking-[0.2em] mb-4">
                   CONNECT
                 </h3>
               </div>
