@@ -281,7 +281,7 @@ const AboutUs: React.FC = () => {
                 HAVE MISSED
               </AnimatedText>
               
-              <div className="text-white/60 text-base sm:text-lg md:text-xl space-y-1">
+              <div className="text-white/60 text-sm sm:text-lg md:text-xl space-y-1">
                 <AnimatedText className="px-4" delay={0.2}>
                   we're not here to fight the new technology.
                 </AnimatedText>
@@ -291,7 +291,7 @@ const AboutUs: React.FC = () => {
               </div>
 
               {/* Explore More Button */}
-              <AnimatedText className="text-white/60 mt-24 md:mt-48" delay={0.6}>
+              <AnimatedText className="text-white/60 mt-24 pb-4 sm:pb-0 md:mt-48" delay={0.6}>
                 <div className="flex flex-col items-center gap-2 cursor-pointer hover:text-white/80 transition-colors">
                   <span className="text-base md:text-lg">explore more</span>
                   <svg 
