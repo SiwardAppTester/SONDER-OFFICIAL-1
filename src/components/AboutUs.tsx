@@ -1,9 +1,11 @@
-import React, { useState, Suspense, useRef } from "react";
+import React, { useState, Suspense, useRef, useEffect } from "react";
 import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useInView } from 'framer-motion';
 
 // Loader component for Suspense fallback
 function Loader() {
@@ -29,8 +31,32 @@ function FloatingShell() {
     }
   });
 
+  // Update scale values for better mobile visibility
+  const [scale, setScale] = useState([6, 6, 6]);
+  const [position, setPosition] = useState([0, 2, 0]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) { // mobile
+        setScale([4.2, 4.2, 4.2]);
+        setPosition([0, 6, 0]);
+      } else if (width < 768) { // tablet
+        setScale([5, 5, 5]);
+        setPosition([0, 3, 0]);
+      } else { // desktop
+        setScale([6, 6, 6]);
+        setPosition([0, 2, 0]);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
-    <mesh ref={meshRef} position={[0, 2, 0]} scale={[6, 6, 6]} castShadow>
+    <mesh ref={meshRef} position={position} scale={scale} castShadow>
       <sphereGeometry args={[1, 64, 64]} />
       <meshStandardMaterial
         color="#1a1a1a"
@@ -45,7 +71,7 @@ function FloatingShell() {
   );
 }
 
-// Add this new component for the bottom sphere
+// Update the BottomFloatingShell component
 function BottomFloatingShell() {
   const meshRef = useRef<THREE.Mesh>(null);
   
@@ -56,8 +82,31 @@ function BottomFloatingShell() {
     }
   });
 
+  const [scale, setScale] = useState([2.5, 2.5, 2.5]);
+  const [position, setPosition] = useState([0, 0, 0]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) { // mobile
+        setScale([1.5, 1.5, 1.5]);
+        setPosition([0, 0.5, 0]);
+      } else if (width < 768) { // tablet
+        setScale([2, 2, 2]);
+        setPosition([0, 0, 0]);
+      } else { // desktop
+        setScale([2.5, 2.5, 2.5]);
+        setPosition([0, 0, 0]);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
-    <mesh ref={meshRef} position={[0, 0, 0]} scale={[2.5, 2.5, 2.5]} castShadow>
+    <mesh ref={meshRef} position={position} scale={scale} castShadow>
       <sphereGeometry args={[1, 32, 32]} />
       <meshStandardMaterial
         color="#1a1a1a"
@@ -72,14 +121,68 @@ function BottomFloatingShell() {
 }
 
 function Scene() {
+  const [cameraPosition, setCameraPosition] = useState([0, 0, 20]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) { // mobile
+        setCameraPosition([0, 0, 25]); // Move camera back for better mobile view
+      } else if (width < 768) { // tablet
+        setCameraPosition([0, 0, 22]);
+      } else { // desktop
+        setCameraPosition([0, 0, 20]);
+      }
+    };
+
+    handleResize(); // Initial call
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <>
       <Environment preset="sunset" />
-      <PerspectiveCamera makeDefault position={[0, 0, 20]} />
+      <PerspectiveCamera makeDefault position={cameraPosition} />
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} intensity={1} castShadow />
       <FloatingShell />
     </>
+  );
+}
+
+// Add these animation variants after the imports
+const fadeInUp = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 2.4,
+      ease: "easeOut"
+    }
+  }
+};
+
+// Add this AnimatedText component before the main AboutUs component
+function AnimatedText({ children, className = '', delay = 0 }: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-20px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={fadeInUp}
+      style={{ transition: `all 2.4s cubic-bezier(0.17, 0.55, 0.55, 1) ${delay}s` }}
+      className={className}
+    >
+      {children}
+    </motion.div>
   );
 }
 
@@ -159,7 +262,7 @@ const AboutUs: React.FC = () => {
           <Canvas
             className="w-full h-full"
             gl={{ antialias: true, alpha: true }}
-            camera={{ position: [0, 0, 20], fov: 75 }}
+            camera={{ position: [0, 0, 20], fov: window.innerWidth < 640 ? 85 : 75 }}
           >
             <Suspense fallback={<Loader />}>
               <Scene />
@@ -172,19 +275,23 @@ const AboutUs: React.FC = () => {
         <div className="relative h-[275vh]">
           {/* Hero Section */}
           <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
-            <div className="mt-64">
-              <h1 className="text-[4rem] md:text-[6rem] font-bold text-white leading-[0.8] tracking-wide mb-6">
+            <div className="mt-32 md:mt-64">
+              <AnimatedText className="text-[2.5rem] sm:text-[4rem] md:text-[6rem] font-bold text-white leading-[0.8] tracking-wide mb-6">
                 MOMENTS YOU<br />
                 HAVE MISSED
-              </h1>
+              </AnimatedText>
               
-              <div className="text-white/60 text-lg md:text-xl space-y-1">
-                <p>we're not here to fight the new technology.</p>
-                <p>we're here to <span className="text-white">reclaim connection</span>.</p>
+              <div className="text-white/60 text-base sm:text-lg md:text-xl space-y-1">
+                <AnimatedText className="px-4" delay={0.2}>
+                  we're not here to fight the new technology.
+                </AnimatedText>
+                <AnimatedText className="px-4" delay={0.4}>
+                  we're here to <span className="text-white">reclaim connection</span>.
+                </AnimatedText>
               </div>
 
               {/* Explore More Button */}
-              <div className="text-white/60 mt-48">
+              <AnimatedText className="text-white/60 mt-24 md:mt-48" delay={0.6}>
                 <div className="flex flex-col items-center gap-2 cursor-pointer hover:text-white/80 transition-colors">
                   <span className="text-lg">explore more</span>
                   <svg 
@@ -202,34 +309,37 @@ const AboutUs: React.FC = () => {
                     <polyline points="19 12 12 19 5 12"></polyline>
                   </svg>
                 </div>
-              </div>
+              </AnimatedText>
 
               {/* Spectators Section */}
-              <div className="mt-[20vh] max-w-5xl -ml-32 text-left">
-                <h2 className="text-[2.5rem] md:text-[3.5rem] text-white/40 font-light leading-none mb-3">
+              <div className="mt-[20vh] max-w-5xl mx-4 md:-ml-32 text-left">
+                <AnimatedText className="text-[2rem] sm:text-[2.5rem] md:text-[3.5rem] text-white/40 font-light leading-none mb-3">
                   We have become spectators<br />
                   of our own lives.
-                </h2>
-                <p className="text-lg md:text-xl text-white">
+                </AnimatedText>
+                <AnimatedText className="text-base sm:text-lg md:text-xl text-white" delay={0.2}>
                   Capturing, but not living.
-                </p>
+                </AnimatedText>
               </div>
 
               {/* Centered Question Section */}
-              <div className="mt-[20rem] text-center max-w-4xl mx-auto">
-                <p className="text-white/40 text-base mb-3">
+              <div className="mt-[10rem] md:mt-[20rem] text-center max-w-4xl mx-auto px-4">
+                <AnimatedText className="text-white/40 text-sm sm:text-base mb-3">
                   and let's face it
-                </p>
-                <h2 className="text-[1.75rem] md:text-[2.25rem] text-white font-bold tracking-wide leading-tight">
+                </AnimatedText>
+                <AnimatedText 
+                  className="text-[1rem] sm:text-[1.75rem] md:text-[2.25rem] text-white font-bold tracking-wide leading-tight" 
+                  delay={0.2}
+                >
                   ARE WE CAPTURING THESE MOMENTS<br />
                   TO REMEMBER, OR TO PROVE WE WERE<br />
                   THERE?
-                </h2>
+                </AnimatedText>
               </div>
 
-              {/* New Wave Section */}
-              <div className="mt-96 text-left max-w-4xl mx-auto">
-                <h2 className="text-[2rem] md:text-[3rem] text-white font-bold leading-[1.1]">
+              {/* New Wave Section - Updated mobile margin */}
+              <div className="mt-32 md:mt-96 text-left max-w-4xl mx-auto px-4">
+                <h2 className="text-[1.75rem] sm:text-[2rem] md:text-[3rem] text-white font-bold leading-[1.1]">
                   Entering<br />
                   The New<br />
                   Wave Of<br />
@@ -261,8 +371,8 @@ const AboutUs: React.FC = () => {
         )}
 
         {/* Description Section */}
-        <div className="max-w-4xl mx-auto text-right px-4 py-16">
-          <p className="text-[1.5rem] md:text-[2rem] text-white/40 leading-tight">
+        <div className="max-w-4xl mx-auto text-right px-4 py-0 -mt-[48rem] md:mt-0 md:py-16">
+          <p className="text-[1rem] sm:text-[1.5rem] md:text-[2rem] text-white/40 leading-tight">
             It's not just about capturing<br />
             memories; it's about <span className="text-white">giving</span><br />
             people the <span className="text-white">space to be present</span>,<br />
@@ -271,7 +381,7 @@ const AboutUs: React.FC = () => {
           </p>
           <Link 
             to="/read-more" 
-            className="inline-block mt-8 text-white text-lg border-b-2 border-white hover:text-white/80 transition-colors"
+            className="inline-block mt-4 md:mt-8 text-base md:text-lg text-white border-b-2 border-white hover:text-white/80 transition-colors"
           >
             READ MORE
           </Link>
@@ -279,19 +389,19 @@ const AboutUs: React.FC = () => {
 
         {/* Partner Section */}
         {showPartnerSection && (
-          <div className="max-w-7xl mx-auto mt-32 px-4">
-            <div className="backdrop-blur-xl bg-white/5 rounded-[2rem] p-16 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-              <div className="space-y-8 max-w-4xl">
+          <div className="max-w-7xl mx-auto mt-16 md:mt-32 px-4">
+            <div className="backdrop-blur-xl bg-white/5 rounded-[2rem] p-8 md:p-16 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+              <div className="space-y-6 md:space-y-8 max-w-4xl">
                 <div>
-                  <h3 className="text-white/60 text-4xl font-light mb-2">
+                  <h3 className="text-white/60 text-2xl md:text-4xl font-light mb-2">
                     partner with
                   </h3>
-                  <h2 className="text-white text-7xl font-bold">
+                  <h2 className="text-white text-5xl md:text-7xl font-bold">
                     SONDER
                   </h2>
                 </div>
 
-                <p className="text-white/40 text-xl leading-relaxed max-w-2xl">
+                <p className="text-white/40 text-lg md:text-xl leading-relaxed max-w-2xl">
                   Sonder's platform is designed to take the guesswork 
                   out of content management and audience engagement. 
                   By combining real-time metrics, audience insights, and 
@@ -300,8 +410,8 @@ const AboutUs: React.FC = () => {
                 </p>
 
                 <div>
-                  <button className="bg-[#FF6B00] text-white px-10 py-4 rounded-full 
-                                   text-lg font-medium hover:bg-[#FF8533] transition-colors
+                  <button className="bg-[#F4A261] text-white px-8 md:px-10 py-3 md:py-4 rounded-full 
+                                   text-base md:text-lg font-medium hover:bg-[#E76F51] transition-colors
                                    hover:scale-105 active:scale-95 transform duration-200">
                     GET STARTED
                   </button>
@@ -518,7 +628,7 @@ const AboutUs: React.FC = () => {
         )}
 
         {/* Ready Section with Sphere */}
-        <div className="relative h-screen w-full bg-black overflow-hidden">
+        <div className="relative h-[90vh] md:h-screen w-full bg-black overflow-hidden">
           {/* Canvas Container */}
           <Canvas
             className="absolute inset-0"
@@ -536,64 +646,77 @@ const AboutUs: React.FC = () => {
           </Canvas>
 
           {/* Content Overlay */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-            <p className="text-gray-400 text-base mb-3">are you ready?</p>
-            <h2 className="text-white text-3xl md:text-5xl font-bold text-center mb-6 max-w-3xl">
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-10 -mt-48 md:mt-0">
+            <p className="text-gray-400 text-xs sm:text-base mb-3 mt-24 md:mt-0">are you ready?</p>
+            <h2 className="text-white text-2xl sm:text-3xl md:text-5xl font-bold text-center mb-6 max-w-3xl">
               BE A PART OF THE<br />
               NEXT BIG THING
             </h2>
-            <button className="bg-[#FF6B00] text-white px-10 py-3 rounded-full 
-                             text-base font-medium hover:bg-[#FF8533] transition-colors
+            <button className="bg-[#F4A261] text-white px-6 sm:px-8 py-2 sm:py-3 rounded-full 
+                             text-sm sm:text-base font-medium hover:bg-[#E76F51] transition-colors
                              hover:scale-105 active:scale-95 transform duration-200">
               GET STARTED
             </button>
           </div>
         </div>
 
-        {/* Follow Our Journey Section */}
-        {showJourneySection && (
-          <div className="relative w-full bg-black py-32">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="space-y-12">
-                <div className="text-center">
-                  <p className="text-gray-400 text-base mb-2">this is just the beginning</p>
-                  <h2 className="text-white text-3xl md:text-5xl font-bold mb-12">
-                    FOLLOW OUR JOURNEY
-                  </h2>
-                </div>
+        {/* Extra space at bottom - Update positioning for mobile */}
+        <div className="relative h-[20px] md:h-[20px] -mt-12 md:mt-0">
+          {/* Update Sonder logo positioning */}
+          <div className="absolute bottom-1 md:bottom-8 left-4 md:left-8">
+            <h2 className="text-xl md:text-2xl font-[500] text-white font-['Outfit'] tracking-[0.12em]">
+              SONDER
+            </h2>
+          </div>
 
-                <div className="flex items-start justify-between max-w-4xl mx-auto">
-                  {/* Video Container */}
-                  <div className="flex-1 mr-24">
-                    <div className="bg-[#1A1A1A] rounded-2xl overflow-hidden aspect-video w-full relative">
-                      <video 
-                        className="w-full h-full object-cover"
-                        controls
-                        playsInline
-                      >
-                        <source src="/videos/making-of-sonder.mp4" type="video/mp4" />
-                        Your browser does not support the video tag.
-                      </video>
-                    </div>
-                  </div>
-
-                  {/* Title */}
-                  <div className="text-right self-end mb-1">
-                    <h3 className="text-white text-4xl font-bold leading-tight">
-                      THE<br />
-                      MAKING<br />
-                      OF<br />
-                      SONDER
-                    </h3>
-                  </div>
-                </div>
-              </div>
+          {/* Update connect section positioning */}
+          <div className="absolute bottom-1 md:bottom-8 right-4 md:right-8 text-right">
+            <div className="flex flex-col items-end">
+              <h3 className="text-white text-xs md:text-sm font-bold tracking-[0.2em] mb-1">
+                CLICK
+              </h3>
+              <h3 className="text-white text-xs md:text-sm font-bold tracking-[0.2em] mb-1">
+                2
+              </h3>
+              <h3 className="text-white text-xs md:text-sm font-bold tracking-[0.2em] mb-4">
+                CONNECT
+              </h3>
+            </div>
+            <div className="flex gap-4 justify-end text-white/80">
+              <a 
+                href="https://tiktok.com/@sonder__ofc" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="transition-colors hover:text-white"
+                aria-label="Follow us on TikTok"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 448 512">
+                  <path fill="currentColor" d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z"/>
+                </svg>
+              </a>
+              <a 
+                href="https://www.instagram.com/sonder__ofc/?utm_source=ig_web_button_share_sheet" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="transition-colors hover:text-white"
+                aria-label="Follow us on Instagram"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" />
+                </svg>
+              </a>
+              <a 
+                href="mailto:info@sonder-official.com" 
+                className="transition-colors hover:text-white"
+                aria-label="Email us"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z" />
+                </svg>
+              </a>
             </div>
           </div>
-        )}
-
-        {/* Extra space at bottom */}
-        <div className="h-[600px]"></div>
+        </div>
       </div>
 
       {/* Sign In Button - temporarily hidden */}
