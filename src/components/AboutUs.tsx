@@ -293,17 +293,17 @@ const AboutUs: React.FC = () => {
               {/* Explore More Button */}
               <AnimatedText className="text-white/60 mt-24 md:mt-48" delay={0.6}>
                 <div className="flex flex-col items-center gap-2 cursor-pointer hover:text-white/80 transition-colors">
-                  <span className="text-lg">explore more</span>
+                  <span className="text-base md:text-lg">explore more</span>
                   <svg 
-                    width="24" 
-                    height="24" 
+                    width="20" 
+                    height="20" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="2" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
-                    className="animate-bounce"
+                    className="animate-bounce w-4 h-4 md:w-6 md:h-6"
                   >
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <polyline points="19 12 12 19 5 12"></polyline>
@@ -381,7 +381,7 @@ const AboutUs: React.FC = () => {
           </p>
           <Link 
             to="/read-more" 
-            className="inline-block mt-4 md:mt-8 text-base md:text-lg text-white border-b-2 border-white hover:text-white/80 transition-colors"
+            className="inline-block mt-4 md:mt-8 text-sm md:text-lg text-white border-b border-b-white md:border-b-2 hover:text-white/80 transition-colors"
           >
             READ MORE
           </Link>
