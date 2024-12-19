@@ -3,7 +3,8 @@ import { Canvas } from '@react-three/fiber';
 import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { scrollToTop } from '../utils/scrollUtils';
 
 // Loader component for Suspense fallback
 function Loader() {
@@ -85,6 +86,7 @@ function Scene() {
 
 // Then update the main component to use this new navigation
 const AboutUs: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedFeature, setSelectedFeature] = useState<string>('EVENTS');
   const [showSignIn, setShowSignIn] = useState(false);
   const [showPartnerSection, setShowPartnerSection] = useState(false);
@@ -96,6 +98,12 @@ const AboutUs: React.FC = () => {
   const handleFeatureClick = (feature: string) => {
     console.log('Feature clicked:', feature);
     setSelectedFeature(feature);
+  };
+
+  const handleReadMoreClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/read-more');
+    scrollToTop();
   };
 
   return (
@@ -271,6 +279,7 @@ const AboutUs: React.FC = () => {
           </p>
           <Link 
             to="/read-more" 
+            onClick={handleReadMoreClick}
             className="inline-block mt-8 text-white text-lg border-b-2 border-white hover:text-white/80 transition-colors"
           >
             READ MORE

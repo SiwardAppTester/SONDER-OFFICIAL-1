@@ -1,8 +1,9 @@
-import React, { Suspense, useRef } from 'react';
+import React, { Suspense, useRef, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, PerspectiveCamera } from '@react-three/drei';
 import { Loader } from '../components/ThreeBackground';
 import * as THREE from 'three';
+import { scrollToTop } from '../utils/scrollUtils';
 
 // Bottom floating sphere component
 function BottomFloatingShell() {
@@ -61,6 +62,10 @@ function QuoteBottomSphere() {
 }
 
 const ReadMore: React.FC = () => {
+  useEffect(() => {
+    scrollToTop();
+  }, []);
+
   return (
     <>
       <style>
@@ -70,10 +75,13 @@ const ReadMore: React.FC = () => {
             font-family: 'Space Grotesk', sans-serif;
           }
 
+          /* Update scroll container styles */
           .scroll-container {
-            overflow-y: scroll;
+            overflow-y: auto;
+            height: 100vh;
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* Internet Explorer 10+ */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
           }
 
           .scroll-container::-webkit-scrollbar { 
@@ -128,26 +136,25 @@ const ReadMore: React.FC = () => {
         `}
       </style>
       
-      <div className="scroll-container relative w-full bg-black">
-        {/* Background container with fixed height */}
-        <div className="absolute inset-0 h-[600vh] bg-black">
-          {/* Add any background effects here if needed */}
+      <div className="w-full bg-black">
+        {/* Remove fixed height from background container */}
+        <div className="absolute inset-0 bg-black">
           <div className="absolute inset-0 bg-gradient-to-b from-black via-black/95 to-black/90" />
         </div>
 
-        {/* Content container */}
-        <div className="relative h-[600vh]">
-          {/* First screen - Hero section */}
-          <div className="h-[80vh] flex items-center justify-center p-4 pt-32">
-            <div className="max-w-[90rem] text-center px-4 mt-20">
+        {/* Remove fixed height from content container and make it relative */}
+        <div className="relative w-full">
+          {/* Update sections to use min-height instead of fixed height */}
+          <div className="min-h-screen flex items-center justify-center p-4 pt-8">
+            <div className="max-w-[90rem] text-center px-4 mt-4">
               <p className="text-3xl md:text-5xl font-bold leading-relaxed tracking-wider text-white">
                 THE JOY OF BEING FULLY PRESENT IS SLOWLY BEING REPLACED BY A NEED TO DOCUMENT EVERY MOMENT.
               </p>
             </div>
           </div>
 
-          {/* Second screen - Additional content */}
-          <div className="h-[60vh] flex flex-col justify-center space-y-44 mt-32">
+          {/* Update other sections similarly */}
+          <div className="min-h-screen flex flex-col justify-center space-y-44 mt-32">
             <div className="max-w-3xl text-left px-4 ml-32">
               <p className="text-lg md:text-2xl leading-relaxed text-white/80">
                 We understand how easy it is to get caught<br />
@@ -166,7 +173,7 @@ const ReadMore: React.FC = () => {
           </div>
 
           {/* Ready Section with Sphere - Similar to AboutUs implementation */}
-          <div className="relative h-screen w-full bg-black overflow-hidden mt-16">
+          <div className="relative min-h-screen w-full bg-black overflow-hidden mt-16">
             {/* Canvas Container */}
             <Canvas
               className="absolute inset-0"
