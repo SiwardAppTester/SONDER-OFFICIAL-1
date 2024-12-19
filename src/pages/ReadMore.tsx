@@ -5,6 +5,10 @@ import { Loader } from '../components/ThreeBackground';
 import * as THREE from 'three';
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
+import { EmailPopup } from '../components/EmailPopup';
+import { Toast } from '../components/Toast';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 // Bottom floating sphere component
 function BottomFloatingShell() {
@@ -116,6 +120,91 @@ const ReadMore: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const [isEmailPopupOpen, setIsEmailPopupOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [showToast, setShowToast] = useState(false);
+
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const minLength = 5;
+    const maxLength = 100;
+    const forbiddenDomains = ['tempmail.com', 'throwaway.com'];
+    
+    if (!emailRegex.test(email)) {
+      return false;
+    }
+    
+    if (email.length < minLength || email.length > maxLength) {
+      return false;
+    }
+    
+    const domain = email.split('@')[1].toLowerCase();
+    if (forbiddenDomains.includes(domain)) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleEmailSubmit = async (email: string) => {
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      if (!isValidEmail(normalizedEmail)) {
+        setToastMessage('Please enter a valid email address');
+        setToastType('error');
+        setShowToast(true);
+        return;
+      }
+
+      const emailQuery = query(
+        collection(db, 'earlyAccess'),
+        where('email', '==', normalizedEmail)
+      );
+      
+      const querySnapshot = await getDocs(emailQuery);
+      
+      if (!querySnapshot.empty) {
+        setToastMessage('This email is already on the waitlist! 🎉');
+        setToastType('error');
+        setShowToast(true);
+        setIsEmailPopupOpen(false);
+        return;
+      }
+
+      await addDoc(collection(db, 'earlyAccess'), {
+        email: normalizedEmail,
+        timestamp: serverTimestamp(),
+        source: 'website_popup',
+        userAgent: navigator.userAgent,
+        referrer: document.referrer || 'direct',
+        locale: navigator.language || 'unknown'
+      });
+      
+      setToastMessage('Welcome to the future of partying 🎉');
+      setToastType('success');
+      setShowToast(true);
+      setIsEmailPopupOpen(false);
+      
+    } catch (error) {
+      console.error('Error adding email to waitlist:', error);
+      
+      let errorMessage = 'Something went wrong. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('permission-denied')) {
+          errorMessage = 'Unable to join waitlist at this time.';
+        } else if (error.message.includes('quota-exceeded')) {
+          errorMessage = 'Service is currently busy. Please try again later.';
+        }
+      }
+      
+      setToastMessage(errorMessage);
+      setToastType('error');
+      setShowToast(true);
+    }
+  };
 
   return (
     <>
@@ -454,8 +543,11 @@ const ReadMore: React.FC = () => {
                 NEXT BIG THING
               </AnimatedText>
               <AnimatedText delay={0.4}>
-                <button className="px-6 md:px-8 py-2 md:py-3 bg-[#F4A261] text-white rounded-full text-sm md:text-base font-medium hover:bg-[#E76F51] transition-colors">
-                  GET STARTED
+                <button 
+                  onClick={() => setIsEmailPopupOpen(true)}
+                  className="px-6 md:px-8 py-2 md:py-3 bg-[#F4A261] text-white rounded-full text-sm md:text-base font-medium hover:bg-[#E76F51] transition-colors hover:scale-105 active:scale-95 transform duration-200"
+                >
+                  EARLY ACCESS
                 </button>
               </AnimatedText>
             </div>
@@ -493,7 +585,7 @@ const ReadMore: React.FC = () => {
               </div>
               <div className="flex gap-4 justify-end text-white/80">
                 <a 
-                  href="https://tiktok.com/@sonder__ofc" 
+                  href="https://www.tiktok.com/@sonder__ofc?_t=8sLe4DVlm6A&_r=1" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="transition-colors hover:text-white"
@@ -529,6 +621,19 @@ const ReadMore: React.FC = () => {
 
         </div>
       </div>
+
+      <EmailPopup 
+        isOpen={isEmailPopupOpen}
+        closeModal={() => setIsEmailPopupOpen(false)}
+        onSubmit={handleEmailSubmit}
+      />
+
+      <Toast 
+        message={toastMessage}
+        type={toastType}
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+      />
     </>
   );
 };

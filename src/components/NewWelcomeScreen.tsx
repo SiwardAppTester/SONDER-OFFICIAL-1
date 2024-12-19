@@ -185,6 +185,7 @@ const NewWelcomeScreen: React.FC = () => {
   const [showIntro, setShowIntro] = React.useState(() => {
     return !location.state || location.state.from !== 'about';
   });
+  const [showSignIn, setShowSignIn] = React.useState(false);
 
   React.useEffect(() => {
     if (!showIntro) return;
@@ -269,15 +270,15 @@ const NewWelcomeScreen: React.FC = () => {
     <div className="h-screen w-full relative bg-black overflow-hidden">
       {showIntro && (
         <div className="absolute inset-0 bg-black flex items-center justify-center z-40">
-          <div className="intro-text text-center md:px-4 px-6">
-            <p className="text-[#808080] text-xl md:text-3xl md:mb-2 mb-4 font-['Space_Grotesk'] md:leading-normal leading-relaxed">
+          <div className="intro-text text-center md:px-4 px-8">
+            <p className="text-[#808080] text-lg md:text-3xl md:mb-2 mb-1 font-['Space_Grotesk'] leading-relaxed md:leading-normal">
               <span className="word-in">In</span>{' '}
               <span className="word-a">A</span>{' '}
               <span className="word-hyper text-white">Hyper</span>
               <span className="word-connected text-white">-Connected</span>{' '}
               <span className="word-world">World</span>
             </p>
-            <p className="text-[#808080] text-xl md:text-3xl font-['Space_Grotesk'] md:leading-normal leading-relaxed">
+            <p className="text-[#808080] text-lg md:text-3xl font-['Space_Grotesk'] leading-relaxed md:leading-normal">
               <span className="word-weve">We've</span>{' '}
               <span className="word-never">Never</span>{' '}
               <span className="word-felt">Felt</span>{' '}
@@ -308,13 +309,28 @@ const NewWelcomeScreen: React.FC = () => {
         <h1 className="md:text-[160px] text-[70px] font-[500] md:mb-12 mb-6 tracking-[0.12em]
                       text-white/95 font-['Outfit']
                       drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
-                      transform md:-translate-y-48 -translate-y-40
+                      transform md:-translate-y-56 -translate-y-48
                       transition-all duration-700 ease-out
                       hover:tracking-[0.2em] hover:drop-shadow-[0_0_40px_rgba(255,255,255,0.35)]">
           SONDER
         </h1>
+        {showSignIn && (
+          <button 
+            onClick={handleSignIn}
+            className="relative md:px-12 px-8 md:py-3.5 py-2.5 border-2 border-white/30 rounded-full
+                      text-white md:text-base text-sm font-['Space_Grotesk'] md:tracking-[0.2em] tracking-[0.15em]
+                      transform md:translate-y-40 translate-y-32
+                      transition-all duration-300 
+                      hover:border-white/60 hover:scale-105
+                      hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
+                      active:scale-95
+                      cursor-pointer"
+          >
+            JOIN THE REVOLUTION
+          </button>
+        )}
         <button 
-          onClick={handleSignIn}
+          onClick={handleAboutClick}
           className="relative md:px-12 px-8 md:py-3.5 py-2.5 border-2 border-white/30 rounded-full
                     text-white md:text-base text-sm font-['Space_Grotesk'] md:tracking-[0.2em] tracking-[0.15em]
                     transform md:translate-y-40 translate-y-32
@@ -323,20 +339,6 @@ const NewWelcomeScreen: React.FC = () => {
                     hover:bg-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]
                     active:scale-95
                     cursor-pointer"
-        >
-          JOIN THE REVOLUTION
-        </button>
-        <button 
-          onClick={handleAboutClick}
-          className="relative md:px-10 px-6 md:py-2.5 py-2 border border-white/20 rounded-full
-                    text-white/70 md:text-sm text-xs font-['Space_Grotesk'] md:tracking-[0.15em] tracking-[0.1em]
-                    transform md:translate-y-40 translate-y-32
-                    transition-all duration-300 
-                    hover:border-white/40 hover:scale-105
-                    hover:text-white/90 hover:bg-white/5
-                    active:scale-95
-                    cursor-pointer
-                    mt-2 md:mb-0 mb-12"
         >
           ABOUT US
         </button>

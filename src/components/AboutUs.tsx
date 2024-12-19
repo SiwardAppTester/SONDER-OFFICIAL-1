@@ -6,6 +6,10 @@ import { useFrame } from '@react-three/fiber';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';  // Make sure this import path is correct
 
 // Loader component for Suspense fallback
 function Loader() {
@@ -186,6 +190,207 @@ function AnimatedText({ children, className = '', delay = 0 }: {
   );
 }
 
+// Add this interface after the other interfaces
+interface EmailPopupProps {
+  isOpen: boolean;
+  closeModal: () => void;
+  onSubmit: (email: string) => void;
+}
+
+// Update the EmailPopup component with enhanced styling
+const EmailPopup: React.FC<EmailPopupProps> = ({ isOpen, closeModal, onSubmit }) => {
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      await onSubmit(email);
+      closeModal();
+      setEmail('');
+    } catch (error) {
+      console.error('Error submitting email:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={closeModal}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-[8px]" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4 text-center">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden 
+                                    bg-black/40 backdrop-blur-xl p-8 text-left align-middle transition-all
+                                    rounded-2xl border border-white/10">
+                <div className="relative">
+                  {/* Close button */}
+                  <button
+                    onClick={closeModal}
+                    className="absolute -top-2 -right-2 text-white/40 hover:text-white transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+
+                  <Dialog.Title as="div" className="text-center mb-8">
+                    <h2 className="text-3xl font-light text-white/90 tracking-wide">
+                      Early Access
+                    </h2>
+                  </Dialog.Title>
+
+                  <form onSubmit={handleSubmit} className="mt-6">
+                    <div className="relative mb-6">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        required
+                        className="w-full px-0 py-3 bg-transparent text-white/90 placeholder-white/40 
+                                 border-b border-white/20 focus:outline-none focus:border-white/60
+                                 transition-colors text-lg"
+                      />
+                    </div>
+
+                    <div className="flex justify-center mt-8">
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="px-12 py-3 bg-white/10 backdrop-blur-sm hover:bg-white/15
+                                 text-white/90 rounded-full transition-all duration-300
+                                 disabled:opacity-50 text-sm tracking-wider
+                                 transform hover:scale-[1.01] active:scale-[0.99]"
+                      >
+                        {isSubmitting ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/80 animate-[bounce_1s_infinite_0ms]"></div>
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/80 animate-[bounce_1s_infinite_200ms]"></div>
+                            <div className="w-1.5 h-1.5 rounded-full bg-white/80 animate-[bounce_1s_infinite_400ms]"></div>
+                          </div>
+                        ) : (
+                          'JOIN WAITLIST'
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition>
+  );
+};
+
+// Add this interface and component before the AboutUs component
+interface ToastProps {
+  message: string;
+  type: 'success' | 'error';
+  isVisible: boolean;
+  onClose: () => void;
+}
+
+// Update the Toast component with new styling
+const Toast: React.FC<ToastProps> = ({ message, type, isVisible, onClose }) => {
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, onClose]);
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-up">
+      <div className={`rounded-full px-6 py-3 shadow-lg backdrop-blur-xl border 
+        ${type === 'success' 
+          ? 'bg-[#FF6B00]/10 border-[#FF6B00]/20 text-white/90' 
+          : 'bg-red-500/10 border-red-500/20 text-white/90'
+        }`}>
+        <div className="flex items-center gap-3">
+          {type === 'success' ? (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
+          <p className="text-sm tracking-wide font-light">{message}</p>
+          <button 
+            onClick={onClose}
+            className="ml-2 hover:opacity-70 transition-opacity"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Add email validation helper function
+const isValidEmail = (email: string): boolean => {
+  // Basic email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  
+  // Additional validation rules
+  const minLength = 5;
+  const maxLength = 100;
+  const forbiddenDomains = ['tempmail.com', 'throwaway.com']; // Add more as needed
+  
+  // Check basic format
+  if (!emailRegex.test(email)) {
+    return false;
+  }
+  
+  // Check length
+  if (email.length < minLength || email.length > maxLength) {
+    return false;
+  }
+  
+  // Check against forbidden domains
+  const domain = email.split('@')[1].toLowerCase();
+  if (forbiddenDomains.includes(domain)) {
+    return false;
+  }
+  
+  return true;
+};
+
 // Then update the main component to use this new navigation
 const AboutUs: React.FC = () => {
   const [selectedFeature, setSelectedFeature] = useState<string>('EVENTS');
@@ -195,10 +400,95 @@ const AboutUs: React.FC = () => {
   const [showPartnersLogoSection, setShowPartnersLogoSection] = useState(false);
   const [showJourneySection, setShowJourneySection] = useState(false);
   const [showBeam, setShowBeam] = useState(false);
+  const [isEmailPopupOpen, setIsEmailPopupOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [showToast, setShowToast] = useState(false);
 
   const handleFeatureClick = (feature: string) => {
     console.log('Feature clicked:', feature);
     setSelectedFeature(feature);
+  };
+
+  const handleEmailSubmit = async (email: string) => {
+    try {
+      // Normalize email
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Validate email format
+      if (!isValidEmail(normalizedEmail)) {
+        setToastMessage('Please enter a valid email address');
+        setToastType('error');
+        setShowToast(true);
+        return;
+      }
+
+      // Check for existing email
+      const emailQuery = query(
+        collection(db, 'earlyAccess'),
+        where('email', '==', normalizedEmail)
+      );
+      
+      const querySnapshot = await getDocs(emailQuery);
+      
+      if (!querySnapshot.empty) {
+        setToastMessage('This email is already on the waitlist! 🎉');
+        setToastType('error');
+        setShowToast(true);
+        setIsEmailPopupOpen(false);
+        return;
+      }
+
+      // Rate limiting check (optional)
+      const now = new Date();
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000);
+      
+      const recentSignupsQuery = query(
+        collection(db, 'earlyAccess'),
+        where('timestamp', '>', fiveMinutesAgo)
+      );
+      
+      const recentSignups = await getDocs(recentSignupsQuery);
+      
+      if (recentSignups.size >= 10) { // Adjust limit as needed
+        setToastMessage('Too many signup attempts. Please try again later.');
+        setToastType('error');
+        setShowToast(true);
+        return;
+      }
+
+      // If all checks pass, add to Firestore
+      await addDoc(collection(db, 'earlyAccess'), {
+        email: normalizedEmail,
+        timestamp: serverTimestamp(),
+        source: 'website_popup',
+        userAgent: navigator.userAgent,
+        referrer: document.referrer || 'direct',
+        locale: navigator.language || 'unknown'
+      });
+      
+      setToastMessage('Welcome to the future of partying 🎉');
+      setToastType('success');
+      setShowToast(true);
+      setIsEmailPopupOpen(false);
+      
+    } catch (error) {
+      console.error('Error adding email to waitlist:', error);
+      
+      // Provide more specific error messages
+      let errorMessage = 'Something went wrong. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('permission-denied')) {
+          errorMessage = 'Unable to join waitlist at this time.';
+        } else if (error.message.includes('quota-exceeded')) {
+          errorMessage = 'Service is currently busy. Please try again later.';
+        }
+      }
+      
+      setToastMessage(errorMessage);
+      setToastType('error');
+      setShowToast(true);
+    }
   };
 
   return (
@@ -251,6 +541,36 @@ const AboutUs: React.FC = () => {
           /* Add font styles */
           h1, h2, h3, h4, h5, h6, p, button, a, span, div {
             font-family: 'Space Grotesk', sans-serif;
+          }
+
+          @keyframes fade-in-down {
+            0% {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .animate-fade-in-down {
+            animation: fade-in-down 0.3s ease-out forwards;
+          }
+
+          @keyframes fade-up {
+            0% {
+              opacity: 0;
+              transform: translate(-50%, 20px);
+            }
+            100% {
+              opacity: 1;
+              transform: translate(-50%, 0);
+            }
+          }
+
+          .animate-fade-up {
+            animation: fade-up 0.3s ease-out forwards;
           }
         `}
       </style>
@@ -410,10 +730,12 @@ const AboutUs: React.FC = () => {
                 </p>
 
                 <div>
-                  <button className="bg-[#F4A261] text-white px-8 md:px-10 py-3 md:py-4 rounded-full 
-                                   text-base md:text-lg font-medium hover:bg-[#E76F51] transition-colors
-                                   hover:scale-105 active:scale-95 transform duration-200">
-                    GET STARTED
+                  <button 
+                    onClick={() => setIsEmailPopupOpen(true)}
+                    className="bg-[#F4A261] text-white px-8 md:px-10 py-3 md:py-4 rounded-full 
+                             text-base md:text-lg font-medium hover:bg-[#E76F51] transition-colors
+                             hover:scale-105 active:scale-95 transform duration-200">
+                    EARLY ACCESS
                   </button>
                 </div>
               </div>
@@ -652,10 +974,12 @@ const AboutUs: React.FC = () => {
               BE A PART OF THE<br />
               NEXT BIG THING
             </h2>
-            <button className="bg-[#F4A261] text-white px-6 sm:px-8 py-2 sm:py-3 rounded-full 
-                             text-sm sm:text-base font-medium hover:bg-[#E76F51] transition-colors
-                             hover:scale-105 active:scale-95 transform duration-200">
-              GET STARTED
+            <button 
+              onClick={() => setIsEmailPopupOpen(true)}
+              className="bg-[#F4A261] text-white px-6 sm:px-8 py-2 sm:py-3 rounded-full 
+                       text-sm sm:text-base font-medium hover:bg-[#E76F51] transition-colors
+                       hover:scale-105 active:scale-95 transform duration-200">
+              EARLY ACCESS
             </button>
           </div>
         </div>
@@ -684,7 +1008,7 @@ const AboutUs: React.FC = () => {
             </div>
             <div className="flex gap-4 justify-end text-white/80">
               <a 
-                href="https://tiktok.com/@sonder__ofc" 
+                href="https://www.tiktok.com/@sonder__ofc?_t=8sLe4DVlm6A&_r=1" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="transition-colors hover:text-white"
@@ -727,6 +1051,19 @@ const AboutUs: React.FC = () => {
           </button>
         </div>
       )}
+
+      <EmailPopup 
+        isOpen={isEmailPopupOpen}
+        closeModal={() => setIsEmailPopupOpen(false)}
+        onSubmit={handleEmailSubmit}
+      />
+
+      <Toast 
+        message={toastMessage}
+        type={toastType}
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+      />
     </>
   );
 };
