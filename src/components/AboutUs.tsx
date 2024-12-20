@@ -36,8 +36,8 @@ function FloatingShell() {
   });
 
   // Update scale values for better mobile visibility
-  const [scale, setScale] = useState([6, 6, 6]);
-  const [position, setPosition] = useState([0, 2, 0]);
+  const [scale, setScale] = useState<any>([6, 6, 6]);
+  const [position, setPosition] = useState<any>([0, 2, 0]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -86,8 +86,8 @@ function BottomFloatingShell() {
     }
   });
 
-  const [scale, setScale] = useState([2.5, 2.5, 2.5]);
-  const [position, setPosition] = useState([0, 0, 0]);
+  const [scale, setScale] = useState<any>([2.5, 2.5, 2.5]);
+  const [position, setPosition] = useState<any>([0, 0, 0]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -125,7 +125,7 @@ function BottomFloatingShell() {
 }
 
 function Scene() {
-  const [cameraPosition, setCameraPosition] = useState([0, 0, 20]);
+  const [cameraPosition, setCameraPosition] = useState<any>([0, 0, 20]);
 
   useEffect(() => {
     const handleResize = () => {

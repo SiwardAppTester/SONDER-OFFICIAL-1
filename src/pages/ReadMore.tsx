@@ -49,8 +49,8 @@ function QuoteBottomSphere() {
     }
   });
 
-  const [scale, setScale] = useState([3, 3, 3]);
-  const [position, setPosition] = useState([0, 0, -2]);
+  const [scale, setScale] = useState<any>([3, 3, 3]);
+  const [position, setPosition] = useState<any>([0, 0, -2]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -98,7 +98,7 @@ const fadeInUp = {
 };
 
 // Update the AnimatedText component to handle mobile text sizes
-function AnimatedText({ children, className, delay = 0 }: { children: React.ReactNode; className: string; delay?: number }) {
+function AnimatedText({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-20px" });
 

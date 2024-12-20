@@ -1,36 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
 import Home from "./components/Home";
-import AddPost from "./components/AddPost";
 import SignIn from "./components/SignIn";
 import { User as FirebaseUser } from "firebase/auth";
-import Search from "./components/Search";
-import AdminPage from "./components/AdminPage";
-import Chat from "./components/Chat";
-import Profile from "./components/Profile";
-import Calendar from "./components/Calendar";
-import BusinessCalendar from './components/BusinessCalendar';
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "./firebase";
-import CompleteProfile from "./components/CompleteProfile";
-import BusinessDashboard from './components/BusinessDashboard';
-import Discover from "./components/Discover";
 import NewWelcomeScreen from "./components/NewWelcomeScreen";
 import { Loader, InnerSphere, ThreeBackground } from './components/ThreeBackground';
 import AboutUs from "./components/AboutUs";
-import BusinessSettings from './components/BusinessSettings';
 import { UserProfileProvider } from './contexts/UserProfileContext';
-import FestivalManagement from "./components/FestivalManagement";
-import UserSettings from './components/UserSettings';
-import BusinessTermsAndConditions from './components/BusinessTermsAndConditions';
-import TermsAndConditions from './components/TermsAndConditions';
-import UserManagement from './components/UserManagement';
-import HelpAndSupport from './components/HelpAndSupport';
 import { applyActionCode } from 'firebase/auth';
-import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { Suspense } from 'react';
-import ResetPassword from './components/ResetPassword';
 import ReadMore from './pages/ReadMore';
 
 const EmailVerified: React.FC = () => {
@@ -169,21 +151,21 @@ const App: React.FC = () => {
             />
             
             {/* Protected routes */}
-            <Route path="/complete-profile" element={user ? <CompleteProfile /> : <Navigate to="/signin" />} />
+            {/* <Route path="/complete-profile" element={user ? <CompleteProfile /> : <Navigate to="/signin" />} /> */}
             
             {/* Business user routes */}
             {isBusinessAccount && user && (
               <>
                 <Route path="/home" element={<Navigate to="/add-post" replace />} />
-                <Route path="/add-post" element={<AddPost />} />
-                <Route path="/chat" element={<Chat isBusinessAccount={isBusinessAccount} />} />
-                <Route path="/chat/:userId" element={<Chat isBusinessAccount={isBusinessAccount} />} />
-                <Route path="/business-calendar" element={<BusinessCalendar />} />
-                <Route path="/business-dashboard" element={<BusinessDashboard />} />
-                <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} />
-                <Route path="/business-settings" element={<BusinessSettings />} />
-                <Route path="/search" element={<Search />} />
-                <Route path="/profile/:userId" element={<Profile />} />
+                {/* <Route path="/add-post" element={<AddPost />} /> */}
+                {/* <Route path="/chat" element={<Chat isBusinessAccount={isBusinessAccount} />} /> */}
+                {/* <Route path="/chat/:userId" element={<Chat isBusinessAccount={isBusinessAccount} />} /> */}
+                {/* <Route path="/business-calendar" element={<BusinessCalendar />} />
+                <Route path="/business-dashboard" element={<BusinessDashboard />} /> */}
+                {/* <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} /> */}
+                {/* <Route path="/business-settings" element={<BusinessSettings />} /> */}
+                {/* <Route path="/search" element={<Search />} /> */}
+                {/* <Route path="/profile/:userId" element={<Profile />} /> */}
               </>
             )}
 
@@ -191,30 +173,30 @@ const App: React.FC = () => {
             {!isBusinessAccount && user && (
               <>
                 <Route path="/home" element={<Home />} />
-                <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} />
-                <Route path="/add-post" element={<AddPost />} />
+                {/* <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} /> */}
+                {/* <Route path="/add-post" element={<AddPost />} />
                 <Route path="/search" element={<Search />} />
                 <Route path="/chat" element={<Chat isBusinessAccount={isBusinessAccount} />} />
                 <Route path="/chat/:userId" element={<Chat isBusinessAccount={isBusinessAccount} />} />
                 <Route path="/profile/:userId" element={<Profile />} />
                 <Route path="/calendar" element={<Calendar />} />
-                <Route path="/business-calendar" element={<BusinessCalendar />} />
-                {isAdmin(user) && <Route path="/admin" element={<AdminPage />} />}
+                <Route path="/business-calendar" element={<BusinessCalendar />} /> */}
+                {/* {isAdmin(user) && <Route path="/admin" element={<AdminPage />} />} */}
               </>
             )}
 
             {/* Catch all route */}
             <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
             <Route path="/about" element={<AboutUs />} />
-            <Route path="/festival-management/:festivalId" element={<FestivalManagement />} />
+            {/* <Route path="/festival-management/:festivalId" element={<FestivalManagement />} />
             <Route path="/settings" element={<UserSettings />} />
             <Route path="/business-terms" element={<BusinessTermsAndConditions />} />
             <Route path="/terms" element={<TermsAndConditions />} />
-            <Route path="/user-management" element={<UserManagement />} />
-            <Route path="/help-support" element={<HelpAndSupport />} />
-            <Route path="/business/:businessId" element={<BusinessDashboard />} />
-            <Route path="/verified" element={<EmailVerified />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/user-management" element={<UserManagement />} /> */}
+            {/* <Route path="/help-support" element={<HelpAndSupport />} /> */}
+            {/* <Route path="/business/:businessId" element={<BusinessDashboard />} /> */}
+            {/* <Route path="/verified" element={<EmailVerified />} />
+            <Route path="/reset-password" element={<ResetPassword />} /> */}
             <Route path="/read-more" element={<ReadMore />} />
           </Routes>
         </main>
