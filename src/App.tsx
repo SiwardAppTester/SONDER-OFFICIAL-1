@@ -137,7 +137,7 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-black min-h-screen">
-      <ThreeBackground />
+      {/* <ThreeBackground /> */}
       <div className="app flex flex-col min-h-screen relative z-10">
         <main className="flex-grow">
           <Routes>
