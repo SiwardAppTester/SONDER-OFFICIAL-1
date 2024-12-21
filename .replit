@@ -1,5 +1,5 @@
 run = "npm run dev"
-run = "node server.js"
+run = "npx ts-node server.ts"
 
 modules = ["nodejs-20"]
 hidden = [".config", "tsconfig.json", "tsconfig.node.json", "vite.config.js", ".gitignore"]
