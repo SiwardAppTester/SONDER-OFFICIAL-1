@@ -306,7 +306,7 @@ const NewWelcomeScreen: React.FC = () => {
       
       {/* Text layer with mobile-only responsive changes */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-30 content-fade">
-        <h1 className="md:text-[160px] text-[70px] font-[500] md:mb-12 mb-6 tracking-[0.12em]
+        <h1 className="md:text-[160px] text-[70px] font-[500] md:mb-12 mb-6 tracking-[0.07em]
                       text-white/95 font-['Outfit']
                       drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
                       transform md:-translate-y-56 -translate-y-48

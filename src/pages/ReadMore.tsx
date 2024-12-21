@@ -9,7 +9,7 @@ import { EmailPopup } from '../components/EmailPopup';
 import { Toast } from '../components/Toast';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
-
+import { Helmet } from "react-helmet";
 // Bottom floating sphere component
 function BottomFloatingShell() {
   const meshRef = useRef<THREE.Mesh>(null);
@@ -208,6 +208,10 @@ const ReadMore: React.FC = () => {
 
   return (
     <>
+       <Helmet>
+        <title></title>
+          <meta name="description" content="" />
+        </Helmet>
       <style>
         {`
           /* Add font styles */
