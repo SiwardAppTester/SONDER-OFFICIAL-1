@@ -203,7 +203,7 @@ const App: React.FC = () => {
             )}
 
             {/* Catch all route */}
-            {/* <Route path="/about" element={<AboutUs />} /> */}
+            <Route path="/about" element={<AboutUs />} />
             {/* <Route path="/festival-management/:festivalId" element={<FestivalManagement />} />
             <Route path="/settings" element={<UserSettings />} />
             <Route path="/business-terms" element={<BusinessTermsAndConditions />} />
