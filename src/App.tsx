@@ -155,7 +155,8 @@ const App: React.FC = () => {
       <div className="app flex flex-col min-h-screen relative z-10">
         <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<NewWelcomeScreen />} />
+            {/* <Route path="/" element={<NewWelcomeScreen />} /> */}
+            <Route path="/" element={<AboutUs />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/read-more" element={<ReadMore />} />
           </Routes>
