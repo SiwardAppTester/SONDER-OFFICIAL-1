@@ -37,7 +37,7 @@ const EmailVerified: React.FC = () => {
       try {
         // Get the action code from the URL
         const actionCode = new URLSearchParams(window.location.search).get(
-          "oobCode"
+          "oobCode",
         );
 
         if (actionCode) {
@@ -155,9 +155,69 @@ const App: React.FC = () => {
       <div className="app flex flex-col min-h-screen relative z-10">
         <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<NewWelcomeScreen />} />
+            {/* Public routes */}
+            <Route
+              path="/"
+              element={!user ? <NewWelcomeScreen /> : <Navigate to="/home" />}
+            />
+
+            {/* Move signin route after root path */}
+            <Route path="/signin" element={<SignIn />} />
+
+            {/* Protected routes */}
+            {/* <Route path="/complete-profile" element={user ? <CompleteProfile /> : <Navigate to="/signin" />} /> */}
+
+            {/* Business user routes */}
+            {isBusinessAccount && user && (
+              <>
+                <Route
+                  path="/home"
+                  element={<Navigate to="/add-post" replace />}
+                />
+                {/* <Route path="/add-post" element={<AddPost />} /> */}
+                {/* <Route path="/chat" element={<Chat isBusinessAccount={isBusinessAccount} />} /> */}
+                {/* <Route path="/chat/:userId" element={<Chat isBusinessAccount={isBusinessAccount} />} /> */}
+                {/* <Route path="/business-calendar" element={<BusinessCalendar />} />
+                <Route path="/business-dashboard" element={<BusinessDashboard />} /> */}
+                {/* <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} /> */}
+                {/* <Route path="/business-settings" element={<BusinessSettings />} /> */}
+                {/* <Route path="/search" element={<Search />} /> */}
+                {/* <Route path="/profile/:userId" element={<Profile />} /> */}
+              </>
+            )}
+
+            {/* Regular user routes */}
+            {!isBusinessAccount && user && (
+              <>
+                <Route path="/home" element={<Home />} />
+                {/* <Route path="/discover" element={<Discover isBusinessAccount={isBusinessAccount} />} /> */}
+                {/* <Route path="/add-post" element={<AddPost />} />
+                <Route path="/search" element={<Search />} />
+                <Route path="/chat" element={<Chat isBusinessAccount={isBusinessAccount} />} />
+                <Route path="/chat/:userId" element={<Chat isBusinessAccount={isBusinessAccount} />} />
+                <Route path="/profile/:userId" element={<Profile />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/business-calendar" element={<BusinessCalendar />} /> */}
+                {/* {isAdmin(user) && <Route path="/admin" element={<AdminPage />} />} */}
+              </>
+            )}
+
+            {/* Catch all route */}
             <Route path="/about" element={<AboutUs />} />
+            {/* <Route path="/festival-management/:festivalId" element={<FestivalManagement />} />
+            <Route path="/settings" element={<UserSettings />} />
+            <Route path="/business-terms" element={<BusinessTermsAndConditions />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/user-management" element={<UserManagement />} /> */}
+            {/* <Route path="/help-support" element={<HelpAndSupport />} /> */}
+            {/* <Route path="/business/:businessId" element={<BusinessDashboard />} /> */}
+            {/* <Route path="/verified" element={<EmailVerified />} />
+            <Route path="/reset-password" element={<ResetPassword />} /> */}
             <Route path="/read-more" element={<ReadMore />} />
+            <Route
+              path="*"
+              element={<Navigate to={user ? "/home" : "/"} replace />}
+            />
           </Routes>
         </main>
       </div>
