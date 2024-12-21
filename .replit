@@ -1,5 +1,4 @@
 run = "npm run dev"
-run = "npx ts-node server.ts"
 
 modules = ["nodejs-20"]
 hidden = [".config", "tsconfig.json", "tsconfig.node.json", "vite.config.js", ".gitignore"]
@@ -31,3 +30,7 @@ externalPort = 3000
 [[ports]]
 localPort = 9006
 externalPort = 3001
+
+[[deployment.rewrites]]
+from = "/*"
+to = "index.html"
