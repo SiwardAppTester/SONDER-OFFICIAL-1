@@ -1,16 +1,11 @@
-import React, {  } from "react";
-import {
-  BrowserRouter,
-  Route,
-  Routes,
-} from "react-router-dom";
-import {
-  ThreeBackground,
-} from "./components/ThreeBackground";
+import React from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ThreeBackground } from "./components/ThreeBackground";
 import AboutUs from "./components/AboutUs";
 import { UserProfileProvider } from "./contexts/UserProfileContext";
 import ReadMore from "./pages/ReadMore";
 import NoPage from "./pages/NoPage";
+import NewWelcomeScreen from "./components/NewWelcomeScreen";
 
 // const EmailVerified: React.FC = () => {
 //   const navigate = useNavigate();
@@ -135,33 +130,42 @@ const App: React.FC = () => {
   //   );
   // }
 
-  return (
-    <div className="bg-black min-h-screen">
-      {/* <ThreeBackground /> */}
-      <div className="app flex flex-col min-h-screen relative z-10">
-        <main className="flex-grow">
-          <Routes>
-            {/* <Route path="/" element={<NewWelcomeScreen />} /> */}
-            <Route index element={<AboutUs />} />
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/read-more" element={<ReadMore />} />
-            <Route path="*" element={<NoPage />} />
-          </Routes>
-        </main>
-      </div>
-    </div>
-  );
-};
-
-// Wrap the App with BrowserRouter
-const AppWrapper: React.FC = () => {
+  // return (
+  //   <div className="bg-black min-h-screen">
+  //     {/* <ThreeBackground /> */}
+  //     <div className="app flex flex-col min-h-screen relative z-10">
+  //       <main className="flex-grow">
+  //         <Routes>
+  //           <Route path="/" element={<NewWelcomeScreen />} />
+  //           <Route path="/about" element={<AboutUs />} />
+  //           <Route path="/read-more" element={<ReadMore />} />
+  //           <Route path="*" element={<NoPage />} />
+  //         </Routes>
+  //       </main>
+  //     </div>
+  //   </div>
+  // );
   return (
     <BrowserRouter>
-      <UserProfileProvider>
-        <App />
-      </UserProfileProvider>
+      <Routes>
+        <Route index element={<NewWelcomeScreen />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/read-more" element={<ReadMore />} />
+        <Route path="*" element={<NoPage />} />
+      </Routes>
     </BrowserRouter>
   );
 };
 
-export default AppWrapper;
+// Wrap the App with BrowserRouter
+// const AppWrapper: React.FC = () => {
+//   return (
+//     <BrowserRouter>
+//       <UserProfileProvider>
+//         <App />
+//       </UserProfileProvider>
+//     </BrowserRouter>
+//   );
+// };
+
+export default App;
