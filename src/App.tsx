@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { auth } from "./firebase";
 import Home from "./components/Home";
 import SignIn from "./components/SignIn";
@@ -7,42 +14,50 @@ import { User as FirebaseUser } from "firebase/auth";
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "./firebase";
 import NewWelcomeScreen from "./components/NewWelcomeScreen";
-import { Loader, InnerSphere, ThreeBackground } from './components/ThreeBackground';
+import {
+  Loader,
+  InnerSphere,
+  ThreeBackground,
+} from "./components/ThreeBackground";
 import AboutUs from "./components/AboutUs";
-import { UserProfileProvider } from './contexts/UserProfileContext';
-import { applyActionCode } from 'firebase/auth';
-import { Canvas } from '@react-three/fiber';
-import { Suspense } from 'react';
-import ReadMore from './pages/ReadMore';
+import { UserProfileProvider } from "./contexts/UserProfileContext";
+import { applyActionCode } from "firebase/auth";
+import { Canvas } from "@react-three/fiber";
+import { Suspense } from "react";
+import ReadMore from "./pages/ReadMore";
 
 const EmailVerified: React.FC = () => {
   const navigate = useNavigate();
-  const [verificationStatus, setVerificationStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
-  
+  const [verificationStatus, setVerificationStatus] = useState<
+    "verifying" | "success" | "error"
+  >("verifying");
+
   useEffect(() => {
     const verifyEmail = async () => {
       try {
         // Get the action code from the URL
-        const actionCode = new URLSearchParams(window.location.search).get('oobCode');
-        
+        const actionCode = new URLSearchParams(window.location.search).get(
+          "oobCode",
+        );
+
         if (actionCode) {
           // Apply the action code
           await applyActionCode(auth, actionCode);
-          setVerificationStatus('success');
-          
+          setVerificationStatus("success");
+
           // Redirect to signin after a short delay
           setTimeout(() => {
-            navigate('/signin', { 
-              state: { 
+            navigate("/signin", {
+              state: {
                 verificationSuccess: true,
-                message: 'Email verified successfully! Please sign in.' 
-              }
+                message: "Email verified successfully! Please sign in.",
+              },
             });
           }, 3000);
         }
       } catch (error) {
-        console.error('Error verifying email:', error);
-        setVerificationStatus('error');
+        console.error("Error verifying email:", error);
+        setVerificationStatus("error");
       }
     };
 
@@ -63,19 +78,21 @@ const EmailVerified: React.FC = () => {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col justify-center items-center">
         <div className="w-full max-w-md mx-auto px-4 text-center">
-          <div className="text-[50px] md:text-[100px] font-[500] mb-8 tracking-[0.12em]
+          <div
+            className="text-[50px] md:text-[100px] font-[500] mb-8 tracking-[0.12em]
                         text-white/95 font-['Outfit']
-                        drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]">
+                        drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]"
+          >
             SONDER
           </div>
-          
+
           <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-8 border border-white/20">
-            {verificationStatus === 'verifying' && (
+            {verificationStatus === "verifying" && (
               <p className="text-white/90 text-xl font-['Space_Grotesk']">
                 Verifying your email...
               </p>
             )}
-            {verificationStatus === 'success' && (
+            {verificationStatus === "success" && (
               <>
                 <h2 className="text-2xl font-['Space_Grotesk'] text-white/90 mb-4">
                   Email Verified Successfully!
@@ -85,7 +102,7 @@ const EmailVerified: React.FC = () => {
                 </p>
               </>
             )}
-            {verificationStatus === 'error' && (
+            {verificationStatus === "error" && (
               <p className="text-red-400 font-['Space_Grotesk']">
                 Error verifying email. Please try again or contact support.
               </p>
@@ -139,24 +156,24 @@ const App: React.FC = () => {
         <main className="flex-grow">
           <Routes>
             {/* Public routes */}
-            <Route 
-              path="/" 
-              element={!user ? <NewWelcomeScreen /> : <Navigate to="/home" />} 
+            <Route
+              path="/"
+              element={!user ? <NewWelcomeScreen /> : <Navigate to="/home" />}
             />
-            
+
             {/* Move signin route after root path */}
-            <Route 
-              path="/signin" 
-              element={<SignIn />} 
-            />
-            
+            <Route path="/signin" element={<SignIn />} />
+
             {/* Protected routes */}
             {/* <Route path="/complete-profile" element={user ? <CompleteProfile /> : <Navigate to="/signin" />} /> */}
-            
+
             {/* Business user routes */}
             {isBusinessAccount && user && (
               <>
-                <Route path="/home" element={<Navigate to="/add-post" replace />} />
+                <Route
+                  path="/home"
+                  element={<Navigate to="/add-post" replace />}
+                />
                 {/* <Route path="/add-post" element={<AddPost />} /> */}
                 {/* <Route path="/chat" element={<Chat isBusinessAccount={isBusinessAccount} />} /> */}
                 {/* <Route path="/chat/:userId" element={<Chat isBusinessAccount={isBusinessAccount} />} /> */}
@@ -186,7 +203,6 @@ const App: React.FC = () => {
             )}
 
             {/* Catch all route */}
-            <Route path="*" element={<Navigate to={user ? "/home" : "/"} replace />} />
             <Route path="/about" element={<AboutUs />} />
             {/* <Route path="/festival-management/:festivalId" element={<FestivalManagement />} />
             <Route path="/settings" element={<UserSettings />} />
@@ -198,6 +214,10 @@ const App: React.FC = () => {
             {/* <Route path="/verified" element={<EmailVerified />} />
             <Route path="/reset-password" element={<ResetPassword />} /> */}
             <Route path="/read-more" element={<ReadMore />} />
+            <Route
+              path="*"
+              element={<Navigate to={user ? "/home" : "/"} replace />}
+            />
           </Routes>
         </main>
       </div>
