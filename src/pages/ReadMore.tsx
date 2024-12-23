@@ -210,7 +210,7 @@ const ReadMore: React.FC = () => {
     <>
        <Helmet>
         <title></title>
-          <meta name="description" content="" />
+          <meta name="description" content="Discover how Sonder helps you live in the moment at festivals. Enjoy professionally captured memories without needing your phone—experience more, share effortlessly." />
         </Helmet>
       <style>
         {`
