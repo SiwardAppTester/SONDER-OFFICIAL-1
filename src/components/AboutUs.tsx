@@ -1135,8 +1135,8 @@ const AboutUs: React.FC = () => {
             </h2>
           </div>
 
-          {/* Update connect section positioning */}
-          <div className="absolute bottom-1 md:bottom-8 right-4 md:right-8 text-right">
+          {/* Update connect section positioning - Added z-50 to ensure it's above other elements */}
+          <div className="absolute bottom-1 md:bottom-8 right-4 md:right-8 text-right z-50">
             <div className="hidden md:flex md:flex-col items-end">
               <h3 className="text-white text-xs md:text-sm font-bold tracking-[0.2em] mb-1">
                 CLICK
@@ -1148,12 +1148,17 @@ const AboutUs: React.FC = () => {
                 CONNECT
               </h3>
             </div>
-            <div className="flex gap-4 justify-end text-white/80">
+            {/* Added pointer-events-auto to ensure clicks are registered */}
+            <div className="flex gap-4 justify-end text-white/80 pointer-events-auto relative">
               <a
-                href="https://www.tiktok.com/@sonder__ofc?_t=8sLe4DVlm6A&_r=1"
+                href="https://www.tiktok.com/@sonder__ofc"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors hover:text-white"
+                className="transition-colors hover:text-white cursor-pointer z-50"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.open('https://www.tiktok.com/@sonder__ofc', '_blank');
+                }}
                 aria-label="Follow us on TikTok"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 448 512">
@@ -1161,10 +1166,14 @@ const AboutUs: React.FC = () => {
                 </svg>
               </a>
               <a
-                href="https://www.instagram.com/sonder__ofc/?utm_source=ig_web_button_share_sheet"
+                href="https://www.instagram.com/sonder__ofc/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="transition-colors hover:text-white"
+                className="transition-colors hover:text-white cursor-pointer z-50"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.open('https://www.instagram.com/sonder__ofc/', '_blank');
+                }}
                 aria-label="Follow us on Instagram"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
@@ -1173,7 +1182,11 @@ const AboutUs: React.FC = () => {
               </a>
               <a
                 href="mailto:info@sonder-official.com"
-                className="transition-colors hover:text-white"
+                className="transition-colors hover:text-white cursor-pointer z-50"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = 'mailto:info@sonder-official.com';
+                }}
                 aria-label="Email us"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
