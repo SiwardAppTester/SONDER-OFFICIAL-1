@@ -706,7 +706,7 @@ const AboutUs: React.FC = () => {
                 className="text-white/60 mt-24 pb-4 sm:pb-0 md:mt-48"
                 delay={0.6}
               >
-                <div className="flex flex-col items-center gap-2 cursor-pointer hover:text-white/80 transition-colors">
+                <div className="flex flex-col items-center gap-2">
                   <span className="text-base md:text-lg">explore more</span>
                   <svg
                     width="20"

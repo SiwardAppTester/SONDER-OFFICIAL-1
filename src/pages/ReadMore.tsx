@@ -311,7 +311,7 @@ const ReadMore: React.FC = () => {
 
               {/* Increase margin for explore more section */}
               <div className="text-white/60 mt-32 md:mt-72">
-                <div className="flex flex-col items-center gap-2 cursor-pointer hover:text-white/80 transition-colors">
+                <div className="flex flex-col items-center gap-2">
                   <span className="text-base md:text-lg">explore more</span>
                   <svg 
                     width="20" 
