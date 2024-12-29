@@ -336,17 +336,13 @@ const ReadMore: React.FC = () => {
           <div className="min-h-[60vh] flex flex-col justify-center space-y-12 md:space-y-44 mt-0 md:mt-32">
             <div className="max-w-[280px] md:max-w-3xl text-left px-8 md:px-4 md:ml-32">
               <AnimatedText className="text-base md:text-2xl leading-relaxed text-white/80">
-                We understand how easy it is to get caught<br className="hidden md:block" />
-                up in capturing memories instead of<br className="hidden md:block" />
-                experiencing them.
+                We understand how easy it is to get caught up in capturing memories instead of experiencing them.
               </AnimatedText>
             </div>
 
             <div className="max-w-[280px] md:max-w-3xl text-right md:text-right px-8 md:px-4 self-end md:mr-32 md:self-end -mb-24 md:mb-8">
               <AnimatedText className="text-base md:text-2xl leading-relaxed text-white/80" delay={0.2}>
-                That's why we've created a platform<br className="hidden md:block" />
-                that ensures you never have to choose<br className="hidden md:block" />
-                between the two.
+                That's why we've created a platform that ensures you never have to choose between the two.
               </AnimatedText>
             </div>
           </div>
