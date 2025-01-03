@@ -1,6 +1,3 @@
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
-import { auth, db } from '../firebase';  // Make sure this import path is correct
-
 export const trackDownload = async (
   postId: string,
   mediaType: 'image' | 'video',

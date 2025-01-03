@@ -9,11 +9,11 @@ import { EmailPopup } from '../components/EmailPopup';
 import { Toast } from '../components/Toast';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Helmet } from "react-helmet";
+
 // Bottom floating sphere component
 function BottomFloatingShell() {
   const meshRef = useRef<THREE.Mesh>(null);
-
+  
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1;
@@ -41,7 +41,7 @@ function BottomFloatingShell() {
 // Add this new component near the top of the file, after BottomFloatingShell
 function QuoteBottomSphere() {
   const meshRef = useRef<THREE.Mesh>(null);
-
+  
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.2) * 0.1;
@@ -49,8 +49,8 @@ function QuoteBottomSphere() {
     }
   });
 
-  const [scale, setScale] = useState<any>([3, 3, 3]);
-  const [position, setPosition] = useState<any>([0, 0, -2]);
+  const [scale, setScale] = useState([3, 3, 3]);
+  const [position, setPosition] = useState([0, 0, -2]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -98,7 +98,7 @@ const fadeInUp = {
 };
 
 // Update the AnimatedText component to handle mobile text sizes
-function AnimatedText({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+function AnimatedText({ children, className, delay = 0 }: { children: React.ReactNode; className: string; delay?: number }) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-20px" });
 
@@ -131,27 +131,27 @@ const ReadMore: React.FC = () => {
     const minLength = 5;
     const maxLength = 100;
     const forbiddenDomains = ['tempmail.com', 'throwaway.com'];
-
+    
     if (!emailRegex.test(email)) {
       return false;
     }
-
+    
     if (email.length < minLength || email.length > maxLength) {
       return false;
     }
-
+    
     const domain = email.split('@')[1].toLowerCase();
     if (forbiddenDomains.includes(domain)) {
       return false;
     }
-
+    
     return true;
   };
 
   const handleEmailSubmit = async (email: string) => {
     try {
       const normalizedEmail = email.toLowerCase().trim();
-
+      
       if (!isValidEmail(normalizedEmail)) {
         setToastMessage('Please enter a valid email address');
         setToastType('error');
@@ -163,9 +163,9 @@ const ReadMore: React.FC = () => {
         collection(db, 'earlyAccess'),
         where('email', '==', normalizedEmail)
       );
-
+      
       const querySnapshot = await getDocs(emailQuery);
-
+      
       if (!querySnapshot.empty) {
         setToastMessage('This email is already on the waitlist! 🎉');
         setToastType('error');
@@ -182,15 +182,15 @@ const ReadMore: React.FC = () => {
         referrer: document.referrer || 'direct',
         locale: navigator.language || 'unknown'
       });
-
+      
       setToastMessage('Welcome to the future of partying 🎉');
       setToastType('success');
       setShowToast(true);
       setIsEmailPopupOpen(false);
-
+      
     } catch (error) {
       console.error('Error adding email to waitlist:', error);
-
+      
       let errorMessage = 'Something went wrong. Please try again.';
       if (error instanceof Error) {
         if (error.message.includes('permission-denied')) {
@@ -199,7 +199,7 @@ const ReadMore: React.FC = () => {
           errorMessage = 'Service is currently busy. Please try again later.';
         }
       }
-
+      
       setToastMessage(errorMessage);
       setToastType('error');
       setShowToast(true);
@@ -208,10 +208,6 @@ const ReadMore: React.FC = () => {
 
   return (
     <>
-       <Helmet>
-        <title></title>
-          <meta name="description" content="Discover how Sonder helps you live in the moment at festivals. Enjoy professionally captured memories without needing your phone—experience more, share effortlessly." />
-        </Helmet>
       <style>
         {`
           /* Add font styles */
@@ -293,7 +289,7 @@ const ReadMore: React.FC = () => {
           }
         `}
       </style>
-
+      
       <div className="relative w-full bg-black">
         {/* Background container */}
         <div className="fixed inset-0 bg-black">
@@ -308,10 +304,10 @@ const ReadMore: React.FC = () => {
               <AnimatedText className="text-xl sm:text-2xl md:text-5xl font-bold leading-relaxed tracking-wider text-white">
                 THE JOY OF BEING FULLY PRESENT IS SLOWLY BEING REPLACED BY A NEED TO DOCUMENT EVERY MOMENT.
               </AnimatedText>
-
+              
               {/* Increase margin for explore more section */}
               <div className="text-white/60 mt-32 md:mt-72">
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-2 cursor-pointer hover:text-white/80 transition-colors">
                   <span className="text-base md:text-lg">explore more</span>
                   <svg 
                     width="20" 
@@ -336,13 +332,17 @@ const ReadMore: React.FC = () => {
           <div className="min-h-[60vh] flex flex-col justify-center space-y-12 md:space-y-44 mt-0 md:mt-32">
             <div className="max-w-[280px] md:max-w-3xl text-left px-8 md:px-4 md:ml-32">
               <AnimatedText className="text-base md:text-2xl leading-relaxed text-white/80">
-                We understand how easy it is to get caught up in capturing memories instead of experiencing them.
+                We understand how easy it is to get caught<br className="hidden md:block" />
+                up in capturing memories instead of<br className="hidden md:block" />
+                experiencing them.
               </AnimatedText>
             </div>
 
             <div className="max-w-[280px] md:max-w-3xl text-right md:text-right px-8 md:px-4 self-end md:mr-32 md:self-end -mb-24 md:mb-8">
               <AnimatedText className="text-base md:text-2xl leading-relaxed text-white/80" delay={0.2}>
-                That's why we've created a platform that ensures you never have to choose between the two.
+                That's why we've created a platform<br className="hidden md:block" />
+                that ensures you never have to choose<br className="hidden md:block" />
+                between the two.
               </AnimatedText>
             </div>
           </div>
@@ -367,7 +367,7 @@ const ReadMore: React.FC = () => {
 
             {/* Top blending gradient */}
             <div className="absolute top-0 left-0 right-0 top-blend-gradient z-10" />
-
+            
             {/* Dark gradient overlay */}
             <div className="absolute inset-0 dark-gradient-overlay z-10" />
 
@@ -484,7 +484,7 @@ const ReadMore: React.FC = () => {
             <AnimatedText className="text-xl md:text-3xl font-bold text-white mb-8 pt-16 md:pt-0">
               BUT, WHAT ARE WE?
             </AnimatedText>
-
+            
             <div className="space-y-8 md:space-y-16 max-w-md">
               <AnimatedText className="text-base md:text-xl text-white/80 leading-relaxed" delay={0.2}>
                 SONDER is a platform that lets you be present in the moment, knowing we'll 

@@ -185,31 +185,7 @@ const NewWelcomeScreen: React.FC = () => {
   const [showIntro, setShowIntro] = React.useState(() => {
     return !location.state || location.state.from !== 'about';
   });
-  const [showSignIn, setShowSignIn] = React.useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  // Add this function to handle user interaction
-  const handleStartVideo = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = false;
-      videoRef.current.play().catch(error => {
-        console.log("Video playback failed:", error);
-        // Fallback to muted playback if autoplay with sound fails
-        if (videoRef.current) {
-          videoRef.current.muted = true;
-          videoRef.current.play();
-        }
-      });
-    }
-  };
-
-  // Add this effect to handle initial video state
-  React.useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = true; // Start muted
-      videoRef.current.play(); // Autoplay muted initially
-    }
-  }, []);
+  const [showSignIn, setShowSignIn] = React.useState(true);
 
   React.useEffect(() => {
     if (!showIntro) return;
@@ -291,7 +267,7 @@ const NewWelcomeScreen: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-full relative bg-black overflow-hidden" onClick={handleStartVideo}>
+    <div className="h-screen w-full relative bg-black overflow-hidden">
       {showIntro && (
         <div className="absolute inset-0 bg-black flex items-center justify-center z-40">
           <div className="intro-text text-center md:px-4 px-8">
@@ -315,9 +291,9 @@ const NewWelcomeScreen: React.FC = () => {
 
       {/* Video background - lowest layer */}
       <video 
-        ref={videoRef}
         autoPlay 
         loop 
+        muted 
         playsInline
         className="absolute inset-0 w-full h-full object-cover z-0 content-fade"
         style={{
@@ -330,7 +306,7 @@ const NewWelcomeScreen: React.FC = () => {
       
       {/* Text layer with mobile-only responsive changes */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-30 content-fade">
-        <h1 className="md:text-[160px] text-[70px] font-[500] md:mb-12 mb-6 tracking-[0.07em]
+        <h1 className="md:text-[160px] text-[70px] font-[500] md:mb-12 mb-6 tracking-[0.12em]
                       text-white/95 font-['Outfit']
                       drop-shadow-[0_0_30px_rgba(255,255,255,0.25)]
                       transform md:-translate-y-56 -translate-y-48
@@ -379,12 +355,6 @@ const NewWelcomeScreen: React.FC = () => {
           <Scene isAnimating={isAnimating} />
         </Suspense>
       </Canvas>
-
-      {/* Add this before the video element */}
-      <div className="absolute bottom-4 right-4 z-10 text-white/50 text-sm font-['Space_Grotesk'] 
-              bg-black/30 px-3 py-1 rounded-full backdrop-blur-sm content-fade">
-        Click anywhere for sound
-      </div>
     </div>
   )
 }

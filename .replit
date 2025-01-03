@@ -1,5 +1,4 @@
 run = "npm run dev"
-
 modules = ["nodejs-20"]
 hidden = [".config", "tsconfig.json", "tsconfig.node.json", "vite.config.js", ".gitignore"]
 entrypoint = "src/App.tsx"
@@ -15,10 +14,18 @@ deploymentTarget = "static"
 build = ["npm", "run", "build"]
 publicDir = "dist"
 
-[[deployment.rewrites]]
-from = "/*"
-to = "index.html"
-
 [[ports]]
 localPort = 5173
 externalPort = 80
+
+[[ports]]
+localPort = 5174
+externalPort = 3002
+
+[[ports]]
+localPort = 9005
+externalPort = 3000
+
+[[ports]]
+localPort = 9006
+externalPort = 3001

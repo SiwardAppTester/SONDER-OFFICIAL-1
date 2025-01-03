@@ -1,28 +1,15 @@
 import React, { useState, Suspense, useRef, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
-import {
-  Environment,
-  PerspectiveCamera,
-  useProgress,
-  Html,
-} from "@react-three/drei";
-import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { useInView } from "framer-motion";
-import { Dialog, Transition } from "@headlessui/react";
-import { Fragment } from "react";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
-import { db } from "../firebase"; // Make sure this import path is correct
-import { Helmet } from "react-helmet";
+import { Canvas } from '@react-three/fiber';
+import { Environment, PerspectiveCamera, useProgress, Html } from '@react-three/drei';
+import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useInView } from 'framer-motion';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';  // Make sure this import path is correct
 
 // Loader component for Suspense fallback
 function Loader() {
@@ -40,41 +27,36 @@ function Loader() {
 // Sphere component
 function FloatingShell() {
   const meshRef = useRef<THREE.Mesh>(null);
-
+  
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.x =
-        Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1;
-      meshRef.current.rotation.y =
-        Math.sin(state.clock.getElapsedTime() * 0.2) * 0.1;
+      meshRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1;
+      meshRef.current.rotation.y = Math.sin(state.clock.getElapsedTime() * 0.2) * 0.1;
     }
   });
 
   // Update scale values for better mobile visibility
-  const [scale, setScale] = useState<any>([6, 6, 6]);
-  const [position, setPosition] = useState<any>([0, 2, 0]);
+  const [scale, setScale] = useState([6, 6, 6]);
+  const [position, setPosition] = useState([0, 2, 0]);
 
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      if (width < 640) {
-        // mobile
+      if (width < 640) { // mobile
         setScale([4.2, 4.2, 4.2]);
         setPosition([0, 6, 0]);
-      } else if (width < 768) {
-        // tablet
+      } else if (width < 768) { // tablet
         setScale([5, 5, 5]);
         setPosition([0, 3, 0]);
-      } else {
-        // desktop
+      } else { // desktop
         setScale([6, 6, 6]);
         setPosition([0, 2, 0]);
       }
     };
 
     handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
@@ -96,40 +78,35 @@ function FloatingShell() {
 // Update the BottomFloatingShell component
 function BottomFloatingShell() {
   const meshRef = useRef<THREE.Mesh>(null);
-
+  
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.x =
-        Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1;
-      meshRef.current.rotation.y =
-        Math.sin(state.clock.getElapsedTime() * 0.2) * 0.1;
+      meshRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.3) * 0.1;
+      meshRef.current.rotation.y = Math.sin(state.clock.getElapsedTime() * 0.2) * 0.1;
     }
   });
 
-  const [scale, setScale] = useState<any>([2.5, 2.5, 2.5]);
-  const [position, setPosition] = useState<any>([0, 0, 0]);
+  const [scale, setScale] = useState([2.5, 2.5, 2.5]);
+  const [position, setPosition] = useState([0, 0, 0]);
 
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      if (width < 640) {
-        // mobile
+      if (width < 640) { // mobile
         setScale([1.5, 1.5, 1.5]);
         setPosition([0, 0.5, 0]);
-      } else if (width < 768) {
-        // tablet
+      } else if (width < 768) { // tablet
         setScale([2, 2, 2]);
         setPosition([0, 0, 0]);
-      } else {
-        // desktop
+      } else { // desktop
         setScale([2.5, 2.5, 2.5]);
         setPosition([0, 0, 0]);
       }
     };
 
     handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
@@ -148,26 +125,23 @@ function BottomFloatingShell() {
 }
 
 function Scene() {
-  const [cameraPosition, setCameraPosition] = useState<any>([0, 0, 20]);
+  const [cameraPosition, setCameraPosition] = useState([0, 0, 20]);
 
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      if (width < 640) {
-        // mobile
+      if (width < 640) { // mobile
         setCameraPosition([0, 0, 25]); // Move camera back for better mobile view
-      } else if (width < 768) {
-        // tablet
+      } else if (width < 768) { // tablet
         setCameraPosition([0, 0, 22]);
-      } else {
-        // desktop
+      } else { // desktop
         setCameraPosition([0, 0, 20]);
       }
     };
 
     handleResize(); // Initial call
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
@@ -188,17 +162,13 @@ const fadeInUp = {
     opacity: 1,
     transition: {
       duration: 2.4,
-      ease: "easeOut",
-    },
-  },
+      ease: "easeOut"
+    }
+  }
 };
 
 // Add this AnimatedText component before the main AboutUs component
-function AnimatedText({
-  children,
-  className = "",
-  delay = 0,
-}: {
+function AnimatedText({ children, className = '', delay = 0 }: {
   children: React.ReactNode;
   className?: string;
   delay?: number;
@@ -212,9 +182,7 @@ function AnimatedText({
       initial="hidden"
       animate={isInView ? "visible" : "hidden"}
       variants={fadeInUp}
-      style={{
-        transition: `all 2.4s cubic-bezier(0.17, 0.55, 0.55, 1) ${delay}s`,
-      }}
+      style={{ transition: `all 2.4s cubic-bezier(0.17, 0.55, 0.55, 1) ${delay}s` }}
       className={className}
     >
       {children}
@@ -230,24 +198,20 @@ interface EmailPopupProps {
 }
 
 // Update the EmailPopup component with enhanced styling
-const EmailPopup: React.FC<EmailPopupProps> = ({
-  isOpen,
-  closeModal,
-  onSubmit,
-}) => {
-  const [email, setEmail] = useState("");
+const EmailPopup: React.FC<EmailPopupProps> = ({ isOpen, closeModal, onSubmit }) => {
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
+    
     try {
       await onSubmit(email);
       closeModal();
-      setEmail("");
+      setEmail('');
     } catch (error) {
-      console.error("Error submitting email:", error);
+      console.error('Error submitting email:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -279,30 +243,17 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel
-                className="w-full max-w-md transform overflow-hidden 
-                                      bg-black/40 backdrop-blur-xl p-8 text-left align-middle transition-all
-                                      rounded-2xl border border-white/10"
-              >
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden 
+                                    bg-black/40 backdrop-blur-xl p-8 text-left align-middle transition-all
+                                    rounded-2xl border border-white/10">
                 <div className="relative">
                   {/* Close button */}
                   <button
                     onClick={closeModal}
                     className="absolute -top-2 -right-2 text-white/40 hover:text-white transition-colors"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
 
@@ -321,8 +272,8 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
                         placeholder="your@email.com"
                         required
                         className="w-full px-0 py-3 bg-transparent text-white/90 placeholder-white/40 
-                                   border-b border-white/20 focus:outline-none focus:border-white/60
-                                   transition-colors text-lg"
+                                 border-b border-white/20 focus:outline-none focus:border-white/60
+                                 transition-colors text-lg"
                       />
                     </div>
 
@@ -331,9 +282,9 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
                         type="submit"
                         disabled={isSubmitting}
                         className="px-12 py-3 bg-white/10 backdrop-blur-sm hover:bg-white/15
-                                   text-white/90 rounded-full transition-all duration-300
-                                   disabled:opacity-50 text-sm tracking-wider
-                                   transform hover:scale-[1.01] active:scale-[0.99]"
+                                 text-white/90 rounded-full transition-all duration-300
+                                 disabled:opacity-50 text-sm tracking-wider
+                                 transform hover:scale-[1.01] active:scale-[0.99]"
                       >
                         {isSubmitting ? (
                           <div className="flex items-center justify-center gap-1">
@@ -342,7 +293,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
                             <div className="w-1.5 h-1.5 rounded-full bg-white/80 animate-[bounce_1s_infinite_400ms]"></div>
                           </div>
                         ) : (
-                          "JOIN WAITLIST"
+                          'JOIN WAITLIST'
                         )}
                       </button>
                     </div>
@@ -360,7 +311,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
 // Add this interface and component before the AboutUs component
 interface ToastProps {
   message: string;
-  type: "success" | "error";
+  type: 'success' | 'error';
   isVisible: boolean;
   onClose: () => void;
 }
@@ -381,61 +332,28 @@ const Toast: React.FC<ToastProps> = ({ message, type, isVisible, onClose }) => {
 
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-fade-up">
-      <div
-        className={`rounded-full px-6 py-3 shadow-lg backdrop-blur-xl border 
-        ${
-          type === "success"
-            ? "bg-[#FF6B00]/10 border-[#FF6B00]/20 text-white/90"
-            : "bg-red-500/10 border-red-500/20 text-white/90"
-        }`}
-      >
+      <div className={`rounded-full px-6 py-3 shadow-lg backdrop-blur-xl border 
+        ${type === 'success' 
+          ? 'bg-[#FF6B00]/10 border-[#FF6B00]/20 text-white/90' 
+          : 'bg-red-500/10 border-red-500/20 text-white/90'
+        }`}>
         <div className="flex items-center gap-3">
-          {type === "success" ? (
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              />
+          {type === 'success' ? (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
             </svg>
           ) : (
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           )}
           <p className="text-sm tracking-wide font-light">{message}</p>
-          <button
+          <button 
             onClick={onClose}
             className="ml-2 hover:opacity-70 transition-opacity"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
@@ -448,34 +366,34 @@ const Toast: React.FC<ToastProps> = ({ message, type, isVisible, onClose }) => {
 const isValidEmail = (email: string): boolean => {
   // Basic email validation regex
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+  
   // Additional validation rules
   const minLength = 5;
   const maxLength = 100;
-  const forbiddenDomains = ["tempmail.com", "throwaway.com"]; // Add more as needed
-
+  const forbiddenDomains = ['tempmail.com', 'throwaway.com']; // Add more as needed
+  
   // Check basic format
   if (!emailRegex.test(email)) {
     return false;
   }
-
+  
   // Check length
   if (email.length < minLength || email.length > maxLength) {
     return false;
   }
-
+  
   // Check against forbidden domains
-  const domain = email.split("@")[1].toLowerCase();
+  const domain = email.split('@')[1].toLowerCase();
   if (forbiddenDomains.includes(domain)) {
     return false;
   }
-
+  
   return true;
 };
 
 // Then update the main component to use this new navigation
 const AboutUs: React.FC = () => {
-  const [selectedFeature, setSelectedFeature] = useState<string>("EVENTS");
+  const [selectedFeature, setSelectedFeature] = useState<string>('EVENTS');
   const [showSignIn, setShowSignIn] = useState(false);
   const [showPartnerSection, setShowPartnerSection] = useState(false);
   const [showFeaturesSection, setShowFeaturesSection] = useState(false);
@@ -483,12 +401,12 @@ const AboutUs: React.FC = () => {
   const [showJourneySection, setShowJourneySection] = useState(false);
   const [showBeam, setShowBeam] = useState(false);
   const [isEmailPopupOpen, setIsEmailPopupOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [showToast, setShowToast] = useState(false);
 
   const handleFeatureClick = (feature: string) => {
-    console.log("Feature clicked:", feature);
+    console.log('Feature clicked:', feature);
     setSelectedFeature(feature);
   };
 
@@ -496,26 +414,26 @@ const AboutUs: React.FC = () => {
     try {
       // Normalize email
       const normalizedEmail = email.toLowerCase().trim();
-
+      
       // Validate email format
       if (!isValidEmail(normalizedEmail)) {
-        setToastMessage("Please enter a valid email address");
-        setToastType("error");
+        setToastMessage('Please enter a valid email address');
+        setToastType('error');
         setShowToast(true);
         return;
       }
 
       // Check for existing email
       const emailQuery = query(
-        collection(db, "earlyAccess"),
-        where("email", "==", normalizedEmail),
+        collection(db, 'earlyAccess'),
+        where('email', '==', normalizedEmail)
       );
-
+      
       const querySnapshot = await getDocs(emailQuery);
-
+      
       if (!querySnapshot.empty) {
-        setToastMessage("This email is already on the waitlist! 🎉");
-        setToastType("error");
+        setToastMessage('This email is already on the waitlist! 🎉');
+        setToastType('error');
         setShowToast(true);
         setIsEmailPopupOpen(false);
         return;
@@ -524,61 +442,57 @@ const AboutUs: React.FC = () => {
       // Rate limiting check (optional)
       const now = new Date();
       const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000);
-
+      
       const recentSignupsQuery = query(
-        collection(db, "earlyAccess"),
-        where("timestamp", ">", fiveMinutesAgo),
+        collection(db, 'earlyAccess'),
+        where('timestamp', '>', fiveMinutesAgo)
       );
-
+      
       const recentSignups = await getDocs(recentSignupsQuery);
-
-      if (recentSignups.size >= 10) {
-        // Adjust limit as needed
-        setToastMessage("Too many signup attempts. Please try again later.");
-        setToastType("error");
+      
+      if (recentSignups.size >= 10) { // Adjust limit as needed
+        setToastMessage('Too many signup attempts. Please try again later.');
+        setToastType('error');
         setShowToast(true);
         return;
       }
 
       // If all checks pass, add to Firestore
-      await addDoc(collection(db, "earlyAccess"), {
+      await addDoc(collection(db, 'earlyAccess'), {
         email: normalizedEmail,
         timestamp: serverTimestamp(),
-        source: "website_popup",
+        source: 'website_popup',
         userAgent: navigator.userAgent,
-        referrer: document.referrer || "direct",
-        locale: navigator.language || "unknown",
+        referrer: document.referrer || 'direct',
+        locale: navigator.language || 'unknown'
       });
-
-      setToastMessage("Welcome to the future of partying 🎉");
-      setToastType("success");
+      
+      setToastMessage('Welcome to the future of partying 🎉');
+      setToastType('success');
       setShowToast(true);
       setIsEmailPopupOpen(false);
+      
     } catch (error) {
-      console.error("Error adding email to waitlist:", error);
-
+      console.error('Error adding email to waitlist:', error);
+      
       // Provide more specific error messages
-      let errorMessage = "Something went wrong. Please try again.";
+      let errorMessage = 'Something went wrong. Please try again.';
       if (error instanceof Error) {
-        if (error.message.includes("permission-denied")) {
-          errorMessage = "Unable to join waitlist at this time.";
-        } else if (error.message.includes("quota-exceeded")) {
-          errorMessage = "Service is currently busy. Please try again later.";
+        if (error.message.includes('permission-denied')) {
+          errorMessage = 'Unable to join waitlist at this time.';
+        } else if (error.message.includes('quota-exceeded')) {
+          errorMessage = 'Service is currently busy. Please try again later.';
         }
       }
-
+      
       setToastMessage(errorMessage);
-      setToastType("error");
+      setToastType('error');
       setShowToast(true);
     }
   };
 
   return (
     <>
-      <Helmet>
-      <title></title>
-        <meta name="description" content="Learn how Sonder empowers festival-goers to be present in the moment. Our mission is to reduce phone use at events by providing professional, shareable memories." />
-      </Helmet>
       {/* Add this style tag at the top of your component */}
       <style>
         {`
@@ -668,10 +582,7 @@ const AboutUs: React.FC = () => {
           <Canvas
             className="w-full h-full"
             gl={{ antialias: true, alpha: true }}
-            camera={{
-              position: [0, 0, 20],
-              fov: window.innerWidth < 640 ? 85 : 75,
-            }}
+            camera={{ position: [0, 0, 20], fov: window.innerWidth < 640 ? 85 : 75 }}
           >
             <Suspense fallback={<Loader />}>
               <Scene />
@@ -686,36 +597,31 @@ const AboutUs: React.FC = () => {
           <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
             <div className="mt-32 md:mt-64">
               <AnimatedText className="text-[2.5rem] sm:text-[4rem] md:text-[6rem] font-bold text-white leading-[0.8] tracking-wide mb-6">
-                MOMENTS YOU
-                <br />
+                MOMENTS YOU<br />
                 HAVE MISSED
               </AnimatedText>
-
+              
               <div className="text-white/60 text-sm sm:text-lg md:text-xl space-y-1">
                 <AnimatedText className="px-4" delay={0.2}>
                   we're not here to fight the new technology.
                 </AnimatedText>
                 <AnimatedText className="px-4" delay={0.4}>
-                  we're here to{" "}
-                  <span className="text-white">reclaim connection</span>.
+                  we're here to <span className="text-white">reclaim connection</span>.
                 </AnimatedText>
               </div>
 
               {/* Explore More Button */}
-              <AnimatedText
-                className="text-white/60 mt-24 pb-4 sm:pb-0 md:mt-48"
-                delay={0.6}
-              >
-                <div className="flex flex-col items-center gap-2">
+              <AnimatedText className="text-white/60 mt-24 pb-4 sm:pb-0 md:mt-48" delay={0.6}>
+                <div className="flex flex-col items-center gap-2 cursor-pointer hover:text-white/80 transition-colors">
                   <span className="text-base md:text-lg">explore more</span>
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
+                  <svg 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
                     strokeLinejoin="round"
                     className="animate-bounce w-4 h-4 md:w-6 md:h-6"
                   >
@@ -728,14 +634,10 @@ const AboutUs: React.FC = () => {
               {/* Spectators Section */}
               <div className="mt-[20vh] max-w-5xl mx-4 md:-ml-32 text-left">
                 <AnimatedText className="text-[2rem] sm:text-[2.5rem] md:text-[3.5rem] text-white/40 font-light leading-none mb-3">
-                  We have become spectators
-                  <br />
+                  We have become spectators<br />
                   of our own lives.
                 </AnimatedText>
-                <AnimatedText
-                  className="text-base sm:text-lg md:text-xl text-white"
-                  delay={0.2}
-                >
+                <AnimatedText className="text-base sm:text-lg md:text-xl text-white" delay={0.2}>
                   Capturing, but not living.
                 </AnimatedText>
               </div>
@@ -745,14 +647,12 @@ const AboutUs: React.FC = () => {
                 <AnimatedText className="text-white/40 text-sm sm:text-base mb-3">
                   and let's face it
                 </AnimatedText>
-                <AnimatedText
-                  className="text-[1rem] sm:text-[1.75rem] md:text-[2.25rem] text-white font-bold tracking-wide leading-tight"
+                <AnimatedText 
+                  className="text-[1rem] sm:text-[1.75rem] md:text-[2.25rem] text-white font-bold tracking-wide leading-tight" 
                   delay={0.2}
                 >
-                  ARE WE CAPTURING THESE MOMENTS
-                  <br />
-                  TO REMEMBER, OR TO PROVE WE WERE
-                  <br />
+                  ARE WE CAPTURING THESE MOMENTS<br />
+                  TO REMEMBER, OR TO PROVE WE WERE<br />
                   THERE?
                 </AnimatedText>
               </div>
@@ -760,12 +660,9 @@ const AboutUs: React.FC = () => {
               {/* New Wave Section - Updated mobile margin */}
               <div className="mt-32 md:mt-96 text-left max-w-4xl mx-auto px-4">
                 <h2 className="text-[1.75rem] sm:text-[2rem] md:text-[3rem] text-white font-bold leading-[1.1]">
-                  Entering
-                  <br />
-                  The New
-                  <br />
-                  Wave Of
-                  <br />
+                  Entering<br />
+                  The New<br />
+                  Wave Of<br />
                   Partying
                 </h2>
               </div>
@@ -780,40 +677,30 @@ const AboutUs: React.FC = () => {
         {showBeam && (
           <div className="absolute inset-0 overflow-hidden h-[2000px]">
             {/* Main left-side beam */}
-            <div
-              className="absolute -left-[400px] top-[30%] w-[1200px] h-[1000px] 
-                          bg-[#FF8533] opacity-15 blur-[120px] rotate-[45deg]"
-            ></div>
-
+            <div className="absolute -left-[400px] top-[30%] w-[1200px] h-[1000px] 
+                          bg-[#FF8533] opacity-15 blur-[120px] rotate-[45deg]"></div>
+            
             {/* Secondary subtle beam */}
-            <div
-              className="absolute -left-[200px] top-[40%] w-[800px] h-[800px] 
-                          bg-[#FF9966] opacity-20 blur-[150px] rotate-[30deg]"
-            ></div>
-
+            <div className="absolute -left-[200px] top-[40%] w-[800px] h-[800px] 
+                          bg-[#FF9966] opacity-20 blur-[150px] rotate-[30deg]"></div>
+            
             {/* Subtle right-side glow */}
-            <div
-              className="absolute right-0 top-[50%] w-[500px] h-[800px] 
-                          bg-[#FFB380] opacity-10 blur-[180px] rotate-[20deg]"
-            ></div>
+            <div className="absolute right-0 top-[50%] w-[500px] h-[800px] 
+                          bg-[#FFB380] opacity-10 blur-[180px] rotate-[20deg]"></div>
           </div>
         )}
 
         {/* Description Section */}
         <div className="max-w-4xl mx-auto text-right px-4 py-0 -mt-[48rem] md:mt-0 md:py-16">
           <p className="text-[1rem] sm:text-[1.5rem] md:text-[2rem] text-white/40 leading-tight">
-            It's not just about capturing
-            <br />
-            memories; it's about <span className="text-white">giving</span>
-            <br />
-            people the <span className="text-white">space to be present</span>,
-            <br />
-            knowing the memory will be
-            <br />
+            It's not just about capturing<br />
+            memories; it's about <span className="text-white">giving</span><br />
+            people the <span className="text-white">space to be present</span>,<br />
+            knowing the memory will be<br />
             curated and stored for them.
           </p>
-          <Link
-            to="/read-more"
+          <Link 
+            to="/read-more" 
             className="inline-block mt-4 md:mt-8 text-sm md:text-lg text-white border-b border-b-white md:border-b-2 hover:text-white/80 transition-colors"
           >
             READ MORE
@@ -835,23 +722,19 @@ const AboutUs: React.FC = () => {
                 </div>
 
                 <p className="text-white/40 text-lg md:text-xl leading-relaxed max-w-2xl">
-                  Sonder's platform is designed to take the guesswork out of
-                  content management and audience engagement. By combining
-                  real-time metrics, audience insights, and effortless
-                  organisation,{" "}
-                  <span className="text-white">
-                    we help festivals and events transform their content into a
-                    strategic advantage.
-                  </span>
+                  Sonder's platform is designed to take the guesswork 
+                  out of content management and audience engagement. 
+                  By combining real-time metrics, audience insights, and 
+                  effortless organisation, <span className="text-white">we help festivals and events 
+                  transform their content into a strategic advantage.</span>
                 </p>
 
                 <div>
-                  <button
+                  <button 
                     onClick={() => setIsEmailPopupOpen(true)}
                     className="bg-[#F4A261] text-white px-8 md:px-10 py-3 md:py-4 rounded-full 
                              text-base md:text-lg font-medium hover:bg-[#E76F51] transition-colors
-                             hover:scale-105 active:scale-95 transform duration-200"
-                  >
+                             hover:scale-105 active:scale-95 transform duration-200">
                     EARLY ACCESS
                   </button>
                 </div>
@@ -867,49 +750,48 @@ const AboutUs: React.FC = () => {
               <div className="text-center">
                 <p className="text-gray-400 text-base mb-2">our features</p>
                 <h2 className="text-white text-2xl md:text-3xl font-bold mx-auto leading-tight max-w-5xl">
-                  WITH SONDER, YOU WILL NOT ONLY UNDERSTAND WHAT WORKS. YOU WILL
-                  KNOW WHY IT WORKS AND HOW TO DO IT{" "}
-                  <span className="underline">BETTER</span>.
+                  WITH SONDER, YOU WILL NOT ONLY UNDERSTAND WHAT WORKS.
+                  YOU WILL KNOW WHY IT WORKS AND HOW TO DO IT <span className="underline">BETTER</span>.
                 </h2>
               </div>
 
               <div className="flex flex-wrap justify-center gap-4 relative z-50 pointer-events-auto">
-                <button
-                  onClick={() => handleFeatureClick("EVENTS")}
+                <button 
+                  onClick={() => handleFeatureClick('EVENTS')}
                   className={`px-8 py-3 rounded-full transition-colors ${
-                    selectedFeature === "EVENTS"
-                      ? "bg-[#FF6B00]"
-                      : "border border-[#FF6B00] hover:bg-[#FF6B00]/10"
+                    selectedFeature === 'EVENTS' 
+                      ? 'bg-[#FF6B00]' 
+                      : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
                   } text-white cursor-pointer`}
                 >
                   EVENTS
                 </button>
-                <button
-                  onClick={() => handleFeatureClick("CHAT")}
+                <button 
+                  onClick={() => handleFeatureClick('CHAT')}
                   className={`px-8 py-3 rounded-full transition-colors ${
-                    selectedFeature === "CHAT"
-                      ? "bg-[#FF6B00]"
-                      : "border border-[#FF6B00] hover:bg-[#FF6B00]/10"
+                    selectedFeature === 'CHAT' 
+                      ? 'bg-[#FF6B00]' 
+                      : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
                   } text-white cursor-pointer`}
                 >
                   CHAT
                 </button>
-                <button
-                  onClick={() => handleFeatureClick("CRM")}
+                <button 
+                  onClick={() => handleFeatureClick('CRM')}
                   className={`px-8 py-3 rounded-full transition-colors ${
-                    selectedFeature === "CRM"
-                      ? "bg-[#FF6B00]"
-                      : "border border-[#FF6B00] hover:bg-[#FF6B00]/10"
+                    selectedFeature === 'CRM' 
+                      ? 'bg-[#FF6B00]' 
+                      : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
                   } text-white cursor-pointer`}
                 >
                   CRM
                 </button>
-                <button
-                  onClick={() => handleFeatureClick("ROLES")}
+                <button 
+                  onClick={() => handleFeatureClick('ROLES')}
                   className={`px-8 py-3 rounded-full transition-colors ${
-                    selectedFeature === "ROLES"
-                      ? "bg-[#FF6B00]"
-                      : "border border-[#FF6B00] hover:bg-[#FF6B00]/10"
+                    selectedFeature === 'ROLES' 
+                      ? 'bg-[#FF6B00]' 
+                      : 'border border-[#FF6B00] hover:bg-[#FF6B00]/10'
                   } text-white cursor-pointer`}
                 >
                   ROLES
@@ -924,27 +806,27 @@ const AboutUs: React.FC = () => {
           <div className="relative h-[900px]">
             {/* iPhone Image Container */}
             <div className="absolute top-[100px] right-[800px] w-[280px] h-[542px] bg-white/5 rounded-[40px] border-4 border-white/10 backdrop-blur-xl overflow-hidden">
-              {selectedFeature === "EVENTS" ? (
-                <img
-                  src="/images/features/events-screen.jpg"
+              {selectedFeature === 'EVENTS' ? (
+                <img 
+                  src="/images/features/events-screen.jpg" 
                   alt="Events Management Interface"
                   className="w-full h-full object-cover"
                 />
-              ) : selectedFeature === "CHAT" ? (
-                <img
-                  src="/images/features/chat-screen.jpg"
+              ) : selectedFeature === 'CHAT' ? (
+                <img 
+                  src="/images/features/chat-screen.jpg" 
                   alt="Chat Interface"
                   className="w-full h-full object-cover"
                 />
-              ) : selectedFeature === "CRM" ? (
-                <img
-                  src="/images/features/crm-screen.jpg"
+              ) : selectedFeature === 'CRM' ? (
+                <img 
+                  src="/images/features/crm-screen.jpg" 
                   alt="CRM Dashboard"
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <img
-                  src="/images/features/roles-screen.jpg"
+                <img 
+                  src="/images/features/roles-screen.jpg" 
                   alt="Role Management Interface"
                   className="w-full h-full object-cover"
                 />
@@ -954,79 +836,59 @@ const AboutUs: React.FC = () => {
             {/* Text Section - Position maintained */}
             <div className="absolute top-[200px] right-[300px] max-w-xl">
               <h3 className="text-white text-4xl font-bold mb-6">
-                {selectedFeature === "EVENTS" ? (
+                {selectedFeature === 'EVENTS' ? (
                   <>
-                    Customizable Event
-                    <br />
+                    Customizable Event<br />
                     Management
                   </>
-                ) : selectedFeature === "CHAT" ? (
+                ) : selectedFeature === 'CHAT' ? (
                   <>
-                    Audience Communication
-                    <br />
+                    Audience Communication<br />
                     Panel
                   </>
-                ) : selectedFeature === "CRM" ? (
+                ) : selectedFeature === 'CRM' ? (
                   <>
-                    Real-Time
-                    <br />
+                    Real-Time<br />
                     Insights
                   </>
                 ) : (
                   <>
-                    Streamlined Role
-                    <br />
+                    Streamlined Role<br />
                     Management
                   </>
                 )}
               </h3>
               <p className="text-white/60 text-xl leading-relaxed max-w-[400px]">
-                {selectedFeature === "EVENTS" ? (
+                {selectedFeature === 'EVENTS' ? (
                   <>
-                    Effortlessly create events,
-                    <br />
-                    define content categories, and
-                    <br />
-                    assign QR or access codes to
-                    <br />
-                    ensure attendees view only
-                    <br />
+                    Effortlessly create events,<br />
+                    define content categories, and<br />
+                    assign QR or access codes to<br />
+                    ensure attendees view only<br />
                     the content relevant to them.
                   </>
-                ) : selectedFeature === "CHAT" ? (
+                ) : selectedFeature === 'CHAT' ? (
                   <>
-                    Stay connected with your audience
-                    <br />
-                    during events with our real-time
-                    <br />
-                    communication tools, enabling
-                    <br />
-                    direct engagement and enhanced
-                    <br />
+                    Stay connected with your audience<br />
+                    during events with our real-time<br />
+                    communication tools, enabling<br />
+                    direct engagement and enhanced<br />
                     event experiences.
                   </>
-                ) : selectedFeature === "CRM" ? (
+                ) : selectedFeature === 'CRM' ? (
                   <>
-                    Gain live data on user interactions,
-                    <br />
-                    including downloads, shares, and
-                    <br />
-                    popular content trends. Use these
-                    <br />
-                    insights to refine your marketing
-                    <br />
+                    Gain live data on user interactions,<br />
+                    including downloads, shares, and<br />
+                    popular content trends. Use these<br />
+                    insights to refine your marketing<br />
                     strategies and improve engagement.
                   </>
                 ) : (
                   <>
-                    Effortlessly assign roles within your
-                    <br />
-                    team and create individual accounts
-                    <br />
-                    tailored to specific responsibilities.
-                    <br />
-                    Whether it's uploading content,
-                    <br />
+                    Effortlessly assign roles within your<br />
+                    team and create individual accounts<br />
+                    tailored to specific responsibilities.<br />
+                    Whether it's uploading content,<br />
                     analyzing data, or making announcements.
                   </>
                 )}
@@ -1048,36 +910,36 @@ const AboutUs: React.FC = () => {
                 <div className="flex items-center justify-between gap-8">
                   {/* Intercell Logo */}
                   <div className="flex-1">
-                    <img
-                      src="/images/partners/intercell.jpg"
-                      alt="Intercell"
+                    <img 
+                      src="/images/partners/intercell.jpg" 
+                      alt="Intercell" 
                       className="h-16 object-contain"
                     />
                   </div>
 
                   {/* Cova Santa Logo */}
                   <div className="flex-1">
-                    <img
-                      src="/images/partners/cova-santa.jpg"
-                      alt="Cova Santa - The Place to Dream"
+                    <img 
+                      src="/images/partners/cova-santa.jpg" 
+                      alt="Cova Santa - The Place to Dream" 
                       className="h-16 object-contain"
                     />
                   </div>
 
                   {/* DGTL Logo */}
                   <div className="flex-1">
-                    <img
-                      src="/images/partners/dgtl.jpg"
-                      alt="DGTL"
+                    <img 
+                      src="/images/partners/dgtl.jpg" 
+                      alt="DGTL" 
                       className="h-16 object-contain"
                     />
                   </div>
 
                   {/* Amnesia Ibiza Logo */}
                   <div className="flex-1">
-                    <img
-                      src="/images/partners/amnesia.jpg"
-                      alt="Amnesia Ibiza"
+                    <img 
+                      src="/images/partners/amnesia.jpg" 
+                      alt="Amnesia Ibiza" 
                       className="h-16 object-contain"
                     />
                   </div>
@@ -1107,20 +969,16 @@ const AboutUs: React.FC = () => {
 
           {/* Content Overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10 -mt-48 md:mt-0">
-            <p className="text-gray-400 text-xs sm:text-base mb-3 mt-24 md:mt-0">
-              are you ready?
-            </p>
+            <p className="text-gray-400 text-xs sm:text-base mb-3 mt-24 md:mt-0">are you ready?</p>
             <h2 className="text-white text-2xl sm:text-3xl md:text-5xl font-bold text-center mb-6 max-w-3xl">
-              BE A PART OF THE
-              <br />
+              BE A PART OF THE<br />
               NEXT BIG THING
             </h2>
-            <button
+            <button 
               onClick={() => setIsEmailPopupOpen(true)}
               className="bg-[#F4A261] text-white px-6 sm:px-8 py-2 sm:py-3 rounded-full 
                        text-sm sm:text-base font-medium hover:bg-[#E76F51] transition-colors
-                       hover:scale-105 active:scale-95 transform duration-200"
-            >
+                       hover:scale-105 active:scale-95 transform duration-200">
               EARLY ACCESS
             </button>
           </div>
@@ -1135,8 +993,8 @@ const AboutUs: React.FC = () => {
             </h2>
           </div>
 
-          {/* Update connect section positioning - Added z-50 to ensure it's above other elements */}
-          <div className="absolute bottom-1 md:bottom-8 right-4 md:right-8 text-right z-50">
+          {/* Update connect section positioning */}
+          <div className="absolute bottom-1 md:bottom-8 right-4 md:right-8 text-right">
             <div className="hidden md:flex md:flex-col items-end">
               <h3 className="text-white text-xs md:text-sm font-bold tracking-[0.2em] mb-1">
                 CLICK
@@ -1148,45 +1006,32 @@ const AboutUs: React.FC = () => {
                 CONNECT
               </h3>
             </div>
-            {/* Added pointer-events-auto to ensure clicks are registered */}
-            <div className="flex gap-4 justify-end text-white/80 pointer-events-auto relative">
-              <a
-                href="https://www.tiktok.com/@sonder__ofc"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition-colors hover:text-white cursor-pointer z-50"
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.open('https://www.tiktok.com/@sonder__ofc', '_blank');
-                }}
+            <div className="flex gap-4 justify-end text-white/80">
+              <a 
+                href="https://www.tiktok.com/@sonder__ofc?_t=8sLe4DVlm6A&_r=1" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="transition-colors hover:text-white"
                 aria-label="Follow us on TikTok"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 448 512">
-                  <path fill="currentColor" d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z" />
+                  <path fill="currentColor" d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z"/>
                 </svg>
               </a>
-              <a
-                href="https://www.instagram.com/sonder__ofc/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transition-colors hover:text-white cursor-pointer z-50"
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.open('https://www.instagram.com/sonder__ofc/', '_blank');
-                }}
+              <a 
+                href="https://www.instagram.com/sonder__ofc/?utm_source=ig_web_button_share_sheet" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="transition-colors hover:text-white"
                 aria-label="Follow us on Instagram"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z" />
                 </svg>
               </a>
-              <a
-                href="mailto:info@sonder-official.com"
-                className="transition-colors hover:text-white cursor-pointer z-50"
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.location.href = 'mailto:info@sonder-official.com';
-                }}
+              <a 
+                href="mailto:info@sonder-official.com" 
+                className="transition-colors hover:text-white"
                 aria-label="Email us"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
@@ -1207,13 +1052,13 @@ const AboutUs: React.FC = () => {
         </div>
       )}
 
-      <EmailPopup
+      <EmailPopup 
         isOpen={isEmailPopupOpen}
         closeModal={() => setIsEmailPopupOpen(false)}
         onSubmit={handleEmailSubmit}
       />
 
-      <Toast
+      <Toast 
         message={toastMessage}
         type={toastType}
         isVisible={showToast}
@@ -1223,4 +1068,4 @@ const AboutUs: React.FC = () => {
   );
 };
 
-export default AboutUs;
+export default AboutUs; 
